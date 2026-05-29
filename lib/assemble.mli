@@ -40,12 +40,20 @@ val mark_current :
 
 val page :
    ?preamble:bool
+  -> ?flat:bool
+  -> ?strip_anchors:bool
   -> template:string
   -> current:string
   -> string
   -> string
-(** [page ~template ~current odoc_html] is the convenience pipeline:
-    {!Parts.of_odoc_html}, then {!fill} of the standard holes, then
-    {!mark_current}. [preamble] (default [true]) controls whether the page's
-    [<h1>] title block fills the [{{preamble}}] hole; pass [false] for pages
-    that should not show a title. *)
+(** [page ~template ~current odoc_html] builds a full page: extract the odoc
+    parts, {!Render.html} the content fragment (the template chrome is never
+    rendered), fill the template holes, then {!mark_current}.
+
+    - [preamble] (default [true]): fill [{{preamble}}] with the page [<h1>] title
+      block; pass [false] for pages that should not show a title.
+    - [flat] (default [false]): for full-width pages whose containers span the
+      odoc preamble/content boundary, concatenate the inner preamble and content
+      (dropping odoc's wrappers) into [{{content}}] and leave [{{preamble}}]
+      empty.
+    - [strip_anchors] (default [true]): drop odoc's heading hover-anchors. *)

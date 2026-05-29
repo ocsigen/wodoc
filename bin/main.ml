@@ -35,7 +35,10 @@ let () =
       | [] -> usage ())
   | _ :: "assemble" :: args -> (
       let preamble = not (List.mem "--no-preamble" args) in
-      let args = List.filter (fun a -> a <> "--no-preamble") args in
+      let flat = List.mem "--flat" args in
+      let keep_anchors = List.mem "--keep-anchors" args in
+      let bools = ["--no-preamble"; "--flat"; "--keep-anchors"] in
+      let args = List.filter (fun a -> not (List.mem a bools)) args in
       let flags, pos = parse_args args in
       match List.assoc_opt "template" flags, pos with
       | Some tmpl, file :: _ ->
@@ -44,6 +47,8 @@ let () =
           in
           let template = read_file tmpl in
           print_string
-            (Wodoc.Assemble.page ~preamble ~template ~current (read_file file))
+            (Wodoc.Assemble.page ~preamble ~flat
+               ~strip_anchors:(not keep_anchors) ~template ~current
+               (read_file file))
       | _ -> usage ())
   | _ -> usage ()
