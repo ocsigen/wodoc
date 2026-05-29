@@ -19,7 +19,6 @@ depends: [
   "dune" {>= "3.0"}
   "ocaml" {>= "4.08"}
   "odoc" {>= "3.0"}
-  "str"
 ]
 build: [
   ["dune" "subst"] {dev}
