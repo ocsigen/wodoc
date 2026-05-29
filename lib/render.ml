@@ -276,4 +276,14 @@ let hoist s =
   done;
   Buffer.contents out
 
-let html s = s |> emit_tags |> fuse_attrs |> hoist
+(* odoc adds an empty [<a href="#id" class="anchor"></a>] inside every heading
+   for hover-to-link. On website pages this both differs from the site style and,
+   inside a clickable card, would nest an <a> in an <a>. Optionally drop them. *)
+let strip_heading_anchors s =
+  Str.global_replace
+    (Str.regexp "<a href=\"#[^\"]*\" class=\"anchor\">[^<]*</a>")
+    "" s
+
+let html ?(strip_anchors = false) s =
+  let s = s |> emit_tags |> fuse_attrs |> hoist in
+  if strip_anchors then strip_heading_anchors s else s

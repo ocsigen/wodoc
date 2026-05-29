@@ -23,8 +23,16 @@ let () =
   match Array.to_list Sys.argv with
   | _ :: "preprocess" :: file :: _ ->
       print_string (Wodoc.Preprocess.string (read_file file))
-  | _ :: "render" :: file :: _ ->
-      print_string (Wodoc.Render.html (read_file file))
+  | _ :: "render" :: args -> (
+      let strip_anchors = List.mem "--strip-anchors" args in
+      match
+        List.filter
+          (fun a -> not (String.length a > 2 && String.sub a 0 2 = "--"))
+          args
+      with
+      | file :: _ ->
+          print_string (Wodoc.Render.html ~strip_anchors (read_file file))
+      | [] -> usage ())
   | _ :: "assemble" :: args -> (
       let flags, pos = parse_args args in
       match List.assoc_opt "template" flags, pos with

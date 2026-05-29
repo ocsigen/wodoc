@@ -11,7 +11,9 @@
   table / row / cell — mirroring html_of_wiki's `@@a@b@c@@`), and self-contained
   images (`img`). Hoists structural tags out of odoc's forced `<p>` wrappers.
   A standalone `@` marker targets the following element (paragraph, table,
-  heading…); empty `<p>` left behind by a marker are dropped.
+  heading…); empty `<p>` left behind by a marker are dropped. Optional
+  `strip_anchors` removes odoc's empty hover-link anchors from headings (useful
+  for website pages and required when a heading sits inside a clickable link).
 - `Assemble`: wrap rendered odoc HTML in a project-provided site template
   (holes `{{title}}`/`{{preamble}}`/`{{toc}}`/`{{content}}`, current-page marking
   via `data-wodoc-page`). The chrome stays in the project, wodoc stays generic.
