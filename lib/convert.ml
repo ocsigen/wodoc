@@ -244,6 +244,16 @@ let rstrip_eq s =
   done;
   String.sub s 0 !n
 
+(* A leading anchor on a heading, e.g. @@id="upload"@@ or @@id='upload' (no
+   closing @@): becomes an odoc heading label so cross-page fragment references
+   ({{!page-x.upload}..}) resolve. Returns (label option, remaining text). *)
+let heading_label_re = Str.regexp "^@@id=[\"']\\([^\"']+\\)[\"']\\(@@\\)?[ \t]*"
+
+let split_heading_label text =
+  if Str.string_match heading_label_re text 0
+  then Some (Str.matched_group 1 text), Str.string_after text (Str.match_end ())
+  else None, text
+
 (* An odoc page has a single level-0 title. Classify lines first, then enforce
    exactly one {0}: if a title exists, keep the first and demote later level-0
    headings to {1}; if none exists, promote the first heading to the title. *)
@@ -254,7 +264,8 @@ let lines_pass s =
       if Str.string_match heading_re line 0
       then
         let level = max 0 (String.length (Str.matched_group 1 line) - 1) in
-        `Heading (level, rstrip_eq (Str.matched_group 2 line))
+        let label, text = split_heading_label (rstrip_eq (Str.matched_group 2 line)) in
+        `Heading (level, label, text)
       else if Str.string_match item_re line 0
       then
         let marks = Str.matched_group 1 line in
@@ -266,7 +277,7 @@ let lines_pass s =
       else `Line line)
   in
   let has_title =
-    List.exists (function `Heading (0, _) -> true | _ -> false) parsed
+    List.exists (function `Heading (0, _, _) -> true | _ -> false) parsed
   in
   let title_used = ref false and promoted = ref false in
   let level_of orig =
@@ -288,7 +299,9 @@ let lines_pass s =
   parsed
   |> List.map (function
        | `Line l -> l
-       | `Heading (level, text) -> Printf.sprintf "{%d %s}" (level_of level) text)
+       | `Heading (level, label, text) ->
+           let anchor = match label with Some l -> ":" ^ l | None -> "" in
+           Printf.sprintf "{%d%s %s}" (level_of level) anchor text)
   |> String.concat "\n"
 
 (* ---- D. inline ---- *)
