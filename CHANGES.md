@@ -10,6 +10,8 @@
   (`@ S0 | S1 | S2`, the `@@` equivalent: successive nesting levels — e.g.
   table / row / cell — mirroring html_of_wiki's `@@a@b@c@@`), and self-contained
   images (`img`). Hoists structural tags out of odoc's forced `<p>` wrappers.
+  A standalone `@` marker targets the following element (paragraph, table,
+  heading…); empty `<p>` left behind by a marker are dropped.
 - `Assemble`: wrap rendered odoc HTML in a project-provided site template
   (holes `{{title}}`/`{{preamble}}`/`{{toc}}`/`{{content}}`, current-page marking
   via `data-wodoc-page`). The chrome stays in the project, wodoc stays generic.

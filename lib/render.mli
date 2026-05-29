@@ -14,7 +14,9 @@
       equivalent and mirrors html_of_wiki's [\@\@a\@b\@c\@\@] (e.g. table / row /
       cell). A [class] is merged with any existing one; an empty section styles
       nothing but still descends. A single section ([\@ class=...]) targets the
-      next element;
+      next element. The marker must stand alone (a blank line before the element
+      it applies to), so it targets the following element rather than being
+      absorbed into a paragraph;
     - [img src=... class=... alt=...] emits a self-contained [<img>].
 
     The directive set is intentionally small and generic; project-specific
