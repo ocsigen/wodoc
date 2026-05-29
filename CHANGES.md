@@ -22,7 +22,13 @@
   `<<div/span/header>>` wrappers, `<<|...>>` comments, `@@class@@` attributes,
   images and `\\` line breaks. `{{{...}}}` becomes verbatim, `<<code lang|...>>`
   becomes a highlighted code block, and indented headings/lists are recognised.
-  Output is meant to be reviewed by hand.
+  `<<a_api [text=..]|module M / val M.f>>` becomes an odoc reference
+  (`{!M}` / `{{!M}text}`) and `<<a_manual chapter=c [fragment=f]|text>>` becomes
+  a page reference (`{{!page-c}text}` / `{{!page-c.f}text}`). Headings are
+  normalised so each page emits a single level-0 title (`{0}`): a second
+  top-level heading is demoted, and a page without one promotes its first
+  heading. Output is meant to be reviewed by hand.
+- Tests: cram suite for the converter (`test/convert.t`).
 - `Assemble`: build a full page — extract the odoc parts, render the content
   fragment (never the template chrome), fill a project-provided template
   (holes `{{title}}`/`{{preamble}}`/`{{toc}}`/`{{content}}`), mark the current
