@@ -54,6 +54,25 @@ odoc and no separate dialect to learn.
 | `@ key=val …` | add attributes to the next element (the `@@` equivalent; `class` is merged) |
 | `img src=… class=… alt=…` | a self-contained `<img>` |
 
+## Authoring: what survives on ocaml.org
+
+The `{%wodoc:...%}` target is unknown to stock odoc, so it is **dropped** when the
+same sources are built with a stock odoc (e.g. on ocaml.org). Choose per
+construct:
+
+- **Must be meaningful on ocaml.org → use native odoc** (never a dropped marker):
+  links `{{:url}text}`, content images `{image:url}`, text, code, lists, tables,
+  headings. These render identically with or without wodoc.
+- **`{%wodoc:@ ...%}`** only adds attributes to a *native* element: the element
+  (and its content) survives on ocaml.org, only the class is absent there.
+- **Drop on ocaml.org → `{%wodoc:div/span/a/...%}`**: purely presentational
+  wrappers and chrome (layout containers, whole-block clickable wrappers). The
+  native content inside still survives on ocaml.org; only the shell disappears.
+
+In particular, prefer **native links** so they keep working on ocaml.org; reserve
+`{%wodoc:a%}` for making a whole block clickable (which native odoc cannot
+express), keeping a native link inside when the target should remain reachable.
+
 ## Status
 
 Early work in progress. The core (`Preprocess`, `Render`) and a small CLI are in
