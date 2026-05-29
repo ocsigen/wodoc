@@ -21,6 +21,8 @@ let parse_args args =
 
 let () =
   match Array.to_list Sys.argv with
+  | _ :: "convert" :: file :: _ ->
+      print_string (Wodoc.Convert.wiki_to_mld (read_file file))
   | _ :: "preprocess" :: file :: _ ->
       print_string (Wodoc.Preprocess.string (read_file file))
   | _ :: "render" :: args -> (

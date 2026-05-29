@@ -1,0 +1,318 @@
+(* Best-effort wikicréole -> odoc .mld converter. Staged string rewrites:
+   A. protect {{{...}}} code/verbatim
+   B. << name args | ... >> wrappers (stack) + <<|...>> comments
+   C. line-start headings and lists
+   D. inline: links, images, @@attrs, bold/italic/monospace, line breaks
+   E. restore code.
+   It is a migration aid; output is expected to be reviewed by hand. *)
+
+let find s sub from =
+  let len = String.length s and sl = String.length sub in
+  let rec go j =
+    if j + sl > len
+    then None
+    else if String.sub s j sl = sub
+    then Some j
+    else go (j + 1)
+  in
+  go from
+
+let starts_with p s =
+  String.length s >= String.length p && String.sub s 0 (String.length p) = p
+
+let replace_once s ph repl =
+  match find s ph 0 with
+  | None -> s
+  | Some p ->
+      String.sub s 0 p ^ repl
+      ^ String.sub s
+          (p + String.length ph)
+          (String.length s - p - String.length ph)
+
+(* ---- A. protect code ---- *)
+let protect_code s =
+  let n = String.length s in
+  let buf = Buffer.create n in
+  let blocks = ref [] in
+  let idx = ref 0 in
+  let i = ref 0 in
+  while !i < n do
+    if !i + 3 <= n && String.sub s !i 3 = "{{{"
+    then (
+      match find s "}}}" (!i + 3) with
+      | Some e ->
+          let inner = String.sub s (!i + 3) (e - (!i + 3)) in
+          blocks := (!idx, inner) :: !blocks;
+          Buffer.add_string buf (Printf.sprintf "\000C%d\000" !idx);
+          incr idx;
+          i := e + 3
+      | None ->
+          Buffer.add_char buf s.[!i];
+          incr i)
+    else begin
+      Buffer.add_char buf s.[!i];
+      incr i
+    end
+  done;
+  Buffer.contents buf, !blocks
+
+let restore_code s blocks =
+  List.fold_left
+    (fun acc (idx, inner) ->
+       let ph = Printf.sprintf "\000C%d\000" idx in
+       let repl =
+         if String.contains inner '\n'
+         then "{[" ^ inner ^ "]}"
+         else "[" ^ String.trim inner ^ "]"
+       in
+       replace_once acc ph repl)
+    s blocks
+
+(* ---- B. << ... >> wrappers ---- *)
+(* parse a class="..." attribute out of an opener's argument string *)
+let class_attr args =
+  match Str.search_forward (Str.regexp "class=\"\\([^\"]*\\)\"") args 0 with
+  | exception Not_found -> ""
+  | _ -> Printf.sprintf " class=\"%s\"" (Str.matched_group 1 args)
+
+type closer = Close of string | Drop
+
+let wrappers s =
+  let n = String.length s in
+  let buf = Buffer.create n in
+  let stack = ref [] in
+  let drop = ref 0 in
+  let emit str = if !drop = 0 then Buffer.add_string buf str in
+  let emit_char c = if !drop = 0 then Buffer.add_char buf c in
+  let i = ref 0 in
+  while !i < n do
+    if !i + 2 <= n && s.[!i] = '<' && s.[!i + 1] = '<'
+    then begin
+      (* find first of '|' or '>>' after the "<<" *)
+      let pipe = find s "|" (!i + 2) in
+      let close = find s ">>" (!i + 2) in
+      let body_sep =
+        match pipe, close with
+        | Some p, Some c -> if p < c then `Pipe p else `NoBody c
+        | Some p, None -> `Pipe p
+        | None, Some c -> `NoBody c
+        | None, None -> `None
+      in
+      match body_sep with
+      | `None ->
+          emit_char s.[!i];
+          incr i
+      | `NoBody c ->
+          (* <<ext>> with no body: drop (menu/version/etc. are not content) *)
+          i := c + 2
+      | `Pipe p ->
+          let opener = String.trim (String.sub s (!i + 2) (p - (!i + 2))) in
+          if opener = ""
+          then (
+            (* <<|  comment: drop until matching >> *)
+            stack := Drop :: !stack;
+            incr drop)
+          else if starts_with "header" opener
+          then stack := Close "" :: !stack
+          else if starts_with "div" opener
+          then (
+            emit (Printf.sprintf "{%%wodoc:div%s%%}" (class_attr opener));
+            stack := Close "{%wodoc:end%}" :: !stack)
+          else if starts_with "span" opener
+          then (
+            emit (Printf.sprintf "{%%wodoc:span%s%%}" (class_attr opener));
+            stack := Close "{%wodoc:end%}" :: !stack)
+          else if
+            starts_with "head-css" opener || starts_with "head-script" opener
+          then (
+            stack := Drop :: !stack;
+            incr drop)
+          else (
+            (* unknown wrapper: keep its body, mark for review *)
+            emit (Printf.sprintf "{%%wodoc:%s%%}" opener);
+            stack := Close "{%wodoc:end%}" :: !stack);
+          i := p + 1
+    end
+    else if !i + 2 <= n && s.[!i] = '>' && s.[!i + 1] = '>'
+    then begin
+      (match !stack with
+      | Drop :: tl ->
+          stack := tl;
+          decr drop
+      | Close c :: tl ->
+          stack := tl;
+          emit c
+      | [] -> ());
+      i := !i + 2
+    end
+    else begin
+      emit_char s.[!i];
+      incr i
+    end
+  done;
+  Buffer.contents buf
+
+(* ---- C. headings and lists (line-based) ---- *)
+let heading_re = Str.regexp "^\\(=+\\)[ \t]*\\(.*\\)$"
+let item_re = Str.regexp "^\\([*#]+\\)[ \t]+\\(.*\\)$"
+
+let rstrip_eq s =
+  let n = ref (String.length s) in
+  while !n > 0 && (s.[!n - 1] = '=' || s.[!n - 1] = ' ' || s.[!n - 1] = '\t') do
+    decr n
+  done;
+  String.sub s 0 !n
+
+let lines_pass s =
+  String.split_on_char '\n' s
+  |> List.map (fun line ->
+    if Str.string_match heading_re line 0
+    then
+      let level = String.length (Str.matched_group 1 line) - 1 in
+      let level = if level < 0 then 0 else level in
+      let text = rstrip_eq (Str.matched_group 2 line) in
+      Printf.sprintf "{%d %s}" level text
+    else if Str.string_match item_re line 0
+    then
+      let marks = Str.matched_group 1 line in
+      let text = Str.matched_group 2 line in
+      let bullet = if marks.[String.length marks - 1] = '#' then "+" else "-" in
+      Printf.sprintf "%s %s" bullet text
+    else line)
+  |> String.concat "\n"
+
+(* ---- D. inline ---- *)
+let deabbrev url =
+  if starts_with "wiki(" url
+  then
+    match
+      Str.search_forward (Str.regexp "^wiki(\"\\([^\"]+\\)\"):\\(.*\\)$") url 0
+    with
+    | exception Not_found -> url
+    | _ ->
+        let w = Str.matched_group 1 url and p = Str.matched_group 2 url in
+        "../" ^ w ^ "/" ^ p
+  else if starts_with "site:/" url
+  then "../" ^ String.sub url 6 (String.length url - 6)
+  else if starts_with "site:" url
+  then "../" ^ String.sub url 5 (String.length url - 5)
+  else url
+
+(* extract [[...]] links and {{...}} images into placeholders (already converted
+   to mld), so later inline passes don't touch their URLs *)
+let protect_links s =
+  let n = String.length s in
+  let buf = Buffer.create n in
+  let store = ref [] in
+  let idx = ref 0 in
+  let stash repl =
+    let ph = Printf.sprintf "\000L%d\000" !idx in
+    store := (ph, repl) :: !store;
+    incr idx;
+    Buffer.add_string buf ph
+  in
+  let i = ref 0 in
+  while !i < n do
+    if !i + 2 <= n && s.[!i] = '[' && s.[!i + 1] = '['
+    then (
+      match find s "]]" (!i + 2) with
+      | Some e ->
+          let inner = String.sub s (!i + 2) (e - (!i + 2)) in
+          let url, text =
+            match String.index_opt inner '|' with
+            | Some b ->
+                ( String.sub inner 0 b
+                , String.sub inner (b + 1) (String.length inner - b - 1) )
+            | None -> inner, inner
+          in
+          stash (Printf.sprintf "{{:%s}%s}" (deabbrev (String.trim url)) text);
+          i := e + 2
+      | None ->
+          Buffer.add_char buf s.[!i];
+          incr i)
+    else if !i + 2 <= n && s.[!i] = '{' && s.[!i + 1] = '{'
+    then (
+      match find s "}}" (!i + 2) with
+      | Some e ->
+          let inner = String.sub s (!i + 2) (e - (!i + 2)) in
+          (* optional leading @@class="..."@@ *)
+          let cls, inner =
+            match
+              Str.search_forward
+                (Str.regexp "^@@class=\"\\([^\"]*\\)\"@@")
+                inner 0
+            with
+            | exception Not_found -> "", inner
+            | _ ->
+                ( Printf.sprintf " class=\"%s\"" (Str.matched_group 1 inner)
+                , Str.string_after inner (Str.match_end ()) )
+          in
+          let url, alt =
+            match String.index_opt inner '|' with
+            | Some b ->
+                ( String.sub inner 0 b
+                , String.sub inner (b + 1) (String.length inner - b - 1) )
+            | None -> inner, ""
+          in
+          stash
+            (Printf.sprintf "{%%wodoc:img%s src=\"%s\" alt=\"%s\"%%}" cls
+               (deabbrev (String.trim url))
+               (String.trim alt));
+          i := e + 2
+      | None ->
+          Buffer.add_char buf s.[!i];
+          incr i)
+    else begin
+      Buffer.add_char buf s.[!i];
+      incr i
+    end
+  done;
+  Buffer.contents buf, !store
+
+let restore_links s store =
+  List.fold_left (fun acc (ph, repl) -> replace_once acc ph repl) s store
+
+(* toggle a paired marker [mk] into [op]/[cl] *)
+let toggle s mk op cl =
+  let n = String.length s and ml = String.length mk in
+  let buf = Buffer.create n in
+  let i = ref 0 and opened = ref false in
+  while !i < n do
+    if !i + ml <= n && String.sub s !i ml = mk
+    then (
+      Buffer.add_string buf (if !opened then cl else op);
+      opened := not !opened;
+      i := !i + ml)
+    else begin
+      Buffer.add_char buf s.[!i];
+      incr i
+    end
+  done;
+  Buffer.contents buf
+
+(* @@class="a"@b@c@@ -> {%wodoc:@ class="a" | b | c%} *)
+let attrs_pass s =
+  Str.global_substitute
+    (Str.regexp "@@\\([^@]*\\(@[^@]*\\)*\\)@@")
+    (fun m ->
+       let inner = Str.matched_group 1 m in
+       let sections = String.split_on_char '@' inner |> List.map String.trim in
+       Printf.sprintf "{%%wodoc:@ %s%%}" (String.concat " | " sections))
+    s
+
+let inline s =
+  let s, links = protect_links s in
+  let s = attrs_pass s in
+  let s = toggle s "**" "{b " "}" in
+  let s = toggle s "//" "{e " "}" in
+  let s = toggle s "##" "[" "]" in
+  let s = Str.global_replace (Str.regexp_string "\\\\") "{%html:<br/>%}" s in
+  restore_links s links
+
+let wiki_to_mld s =
+  let s, code = protect_code s in
+  let s = wrappers s in
+  let s = lines_pass s in
+  let s = inline s in
+  let s = restore_code s code in
+  s
