@@ -38,7 +38,14 @@ val mark_current :
     start tag whose [attr] (default ["data-wodoc-page"]) equals [current],
     merging with an existing [class]. [current = ""] marks nothing. *)
 
-val page : template:string -> current:string -> string -> string
+val page :
+   ?preamble:bool
+  -> template:string
+  -> current:string
+  -> string
+  -> string
 (** [page ~template ~current odoc_html] is the convenience pipeline:
     {!Parts.of_odoc_html}, then {!fill} of the standard holes, then
-    {!mark_current}. *)
+    {!mark_current}. [preamble] (default [true]) controls whether the page's
+    [<h1>] title block fills the [{{preamble}}] hole; pass [false] for pages
+    that should not show a title. *)

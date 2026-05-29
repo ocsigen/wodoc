@@ -138,12 +138,12 @@ let mark_current ?(attr = "data-wodoc-page") ?(class_ = "current") ~current s =
     done;
     Buffer.contents out
 
-let page ~template ~current odoc_html =
+let page ?(preamble = true) ~template ~current odoc_html =
   let p = Parts.of_odoc_html odoc_html in
   let filled =
     fill ~template
       [ "title", p.title
-      ; "preamble", p.preamble
+      ; ("preamble", if preamble then p.preamble else "")
       ; "toc", p.toc
       ; "content", p.content ]
   in

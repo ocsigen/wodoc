@@ -34,6 +34,8 @@ let () =
           print_string (Wodoc.Render.html ~strip_anchors (read_file file))
       | [] -> usage ())
   | _ :: "assemble" :: args -> (
+      let preamble = not (List.mem "--no-preamble" args) in
+      let args = List.filter (fun a -> a <> "--no-preamble") args in
       let flags, pos = parse_args args in
       match List.assoc_opt "template" flags, pos with
       | Some tmpl, file :: _ ->
@@ -41,6 +43,7 @@ let () =
             Option.value ~default:"" (List.assoc_opt "current" flags)
           in
           let template = read_file tmpl in
-          print_string (Wodoc.Assemble.page ~template ~current (read_file file))
+          print_string
+            (Wodoc.Assemble.page ~preamble ~template ~current (read_file file))
       | _ -> usage ())
   | _ -> usage ()
