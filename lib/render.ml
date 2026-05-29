@@ -132,53 +132,84 @@ let merge_attrs_into_tag tag extra =
     ^ oa
     ^ String.sub tag (String.length tag - close) close
 
+let is_start_tag s p len =
+  p < len && s.[p] = '<' && p + 1 < len && s.[p + 1] <> '/' && s.[p + 1] <> '!'
+
+(* Skip whitespace and comments forward from [p]. When [skip_p] is true (only at
+   the first level), also skip odoc's [<p>]/[</p>] wrappers so we reach the real
+   construct. Returns the new position. *)
+let skip_noise s len ~skip_p p =
+  let p = ref p in
+  let again = ref true in
+  while !again && !p < len do
+    let c = s.[!p] in
+    if c = ' ' || c = '\n' || c = '\t' || c = '\r'
+    then incr p
+    else if skip_p && !p + 4 <= len && String.sub s !p 4 = "</p>"
+    then p := !p + 4
+    else if skip_p && !p + 3 <= len && String.sub s !p 3 = "<p>"
+    then p := !p + 3
+    else if !p + 4 <= len && String.sub s !p 4 = "<!--"
+    then
+      match find s "-->" !p with Some e -> p := e + 3 | None -> again := false
+    else again := false
+  done;
+  !p
+
+(* A [<!--wodoc-attr:S0 | S1 | S2-->] sentinel applies section [Si] to the
+   element reached by descending [i] times into the first child element, starting
+   at the next real element after the sentinel. A [class] is merged with any
+   existing one; an empty section styles nothing but still descends. This mirrors
+   html_of_wiki's [@@a@b@c@@] (e.g. table / row / cell). *)
 let fuse_attrs s =
-  let out = Buffer.create (String.length s) in
   let len = String.length s in
-  let i = ref 0 in
+  let out = Buffer.create len in
   let asent = "<!--wodoc-attr:" in
+  let alen = String.length asent in
+  let copied = ref 0 in
+  let i = ref 0 in
   while !i < len do
     match find s asent !i with
-    | None ->
-        Buffer.add_substring out s !i (len - !i);
-        i := len
+    | None -> i := len
     | Some start -> (
-        Buffer.add_substring out s !i (start - !i);
-        match find s "-->" (start + String.length asent) with
-        | None ->
-            Buffer.add_substring out s start (len - start);
-            i := len
-        | Some cend -> (
-            let extra =
-              String.sub s
-                (start + String.length asent)
-                (cend - (start + String.length asent))
-            in
-            let j = ref (cend + 3) in
-            let skip = ref true in
-            while !skip && !j < len do
-              let c = s.[!j] in
-              if c = ' ' || c = '\n' || c = '\t' || c = '\r'
-              then incr j
-              else if !j + 4 <= len && String.sub s !j 4 = "</p>"
-              then j := !j + 4
-              else if !j + 3 <= len && String.sub s !j 3 = "<p>"
-              then j := !j + 3
-              else if !j + 4 <= len && String.sub s !j 4 = "<!--"
-              then
-                match find s "-->" !j with
-                | Some e -> j := e + 3
-                | None -> skip := false
-              else skip := false
-            done;
-            Buffer.add_substring out s (cend + 3) (!j - (cend + 3));
-            match find s ">" !j with
-            | Some gt ->
-                let tag = String.sub s !j (gt - !j + 1) in
-                Buffer.add_string out (merge_attrs_into_tag tag extra);
-                i := gt + 1
-            | None -> i := !j))
+      match find s "-->" (start + alen) with
+      | None -> i := len
+      | Some cend ->
+          (* copy up to the sentinel, then drop the sentinel itself *)
+          Buffer.add_substring out s !copied (start - !copied);
+          copied := cend + 3;
+          let extra = String.sub s (start + alen) (cend - (start + alen)) in
+          let sections =
+            List.map String.trim (String.split_on_char '|' extra)
+          in
+          let pos = ref (cend + 3) in
+          let stop = ref false in
+          List.iteri
+            (fun k section ->
+               if not !stop
+               then begin
+                 pos := skip_noise s len ~skip_p:(k = 0) !pos;
+                 if is_start_tag s !pos len
+                 then
+                   match find s ">" !pos with
+                   | Some gt ->
+                       Buffer.add_substring out s !copied (!pos - !copied);
+                       let tag = String.sub s !pos (gt - !pos + 1) in
+                       let tag =
+                         if section = ""
+                         then tag
+                         else merge_attrs_into_tag tag section
+                       in
+                       Buffer.add_string out tag;
+                       copied := gt + 1;
+                       pos := gt + 1
+                   | None -> stop := true
+                 else stop := true
+               end)
+            sections;
+          i := !pos)
   done;
+  Buffer.add_substring out s !copied (len - !copied);
   Buffer.contents out
 
 (* Pass 3: hoist structural tags out of odoc's forced <p> wrappers. *)
