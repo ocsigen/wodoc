@@ -12,19 +12,63 @@ let find s sub from =
   in
   go from
 
-(* "key=val key2=val2" -> " key=\"val\" key2=\"val2\"" *)
-let attrs_of toks =
-  let b = Buffer.create 32 in
-  List.iter
-    (fun t ->
-       match String.index_opt t '=' with
-       | Some i ->
-           let k = String.sub t 0 i in
-           let v = String.sub t (i + 1) (String.length t - i - 1) in
-           Buffer.add_string b (Printf.sprintf " %s=\"%s\"" k v)
-       | None -> ())
-    toks;
-  Buffer.contents b
+(* Parse [key=val key2="val with spaces"] into an assoc list. Values may be
+   double-quoted (to hold spaces, e.g. several CSS classes) or bare (no space). *)
+let parse_attrs s =
+  let n = String.length s in
+  let i = ref 0 in
+  let acc = ref [] in
+  while !i < n do
+    while !i < n && s.[!i] = ' ' do
+      incr i
+    done;
+    if !i < n
+    then begin
+      let ks = !i in
+      while !i < n && s.[!i] <> '=' && s.[!i] <> ' ' do
+        incr i
+      done;
+      let key = String.sub s ks (!i - ks) in
+      if !i < n && s.[!i] = '='
+      then begin
+        incr i;
+        let value =
+          if !i < n && s.[!i] = '"'
+          then begin
+            incr i;
+            let vs = !i in
+            while !i < n && s.[!i] <> '"' do
+              incr i
+            done;
+            let v = String.sub s vs (!i - vs) in
+            if !i < n then incr i;
+            v
+          end
+          else begin
+            let vs = !i in
+            while !i < n && s.[!i] <> ' ' do
+              incr i
+            done;
+            String.sub s vs (!i - vs)
+          end
+        in
+        if key <> "" then acc := (key, value) :: !acc
+      end
+    end
+  done;
+  List.rev !acc
+
+let attrs_to_html attrs =
+  String.concat ""
+    (List.map (fun (k, v) -> Printf.sprintf " %s=\"%s\"" k v) attrs)
+
+let attrs_of s = attrs_to_html (parse_attrs s)
+
+(* split a directive into its first word (kind) and the remaining attr string *)
+let kind_and_rest d =
+  match String.index_opt d ' ' with
+  | Some k -> String.sub d 0 k, String.sub d (k + 1) (String.length d - k - 1)
+  | None -> d, ""
 
 (* Pass 1: markers -> tags / void elements / attr-sentinels, tracking an
    open/[end] stack for paired containers. *)
@@ -47,32 +91,34 @@ let emit_tags s =
             i := len
         | Some cend ->
             let d = String.trim (String.sub s cstart (cend - cstart)) in
-            let toks = String.split_on_char ' ' d in
-            (match toks with
-            | "end" :: _ -> (
+            let kind, rest = kind_and_rest d in
+            (match kind with
+            | "end" -> (
               match !stack with
               | t :: tl ->
                   Buffer.add_string out t;
                   stack := tl
               | [] -> Buffer.add_string out "<!--wodoc:unbalanced-end-->")
-            | "div" :: r ->
-                Buffer.add_string out (Printf.sprintf "<div%s>" (attrs_of r));
+            | "div" ->
+                Buffer.add_string out (Printf.sprintf "<div%s>" (attrs_of rest));
                 stack := "</div>" :: !stack
-            | "a" :: r ->
-                Buffer.add_string out (Printf.sprintf "<a%s>" (attrs_of r));
+            | "a" ->
+                Buffer.add_string out (Printf.sprintf "<a%s>" (attrs_of rest));
                 stack := "</a>" :: !stack
-            | "span" :: r ->
-                Buffer.add_string out (Printf.sprintf "<span%s>" (attrs_of r));
+            | "span" ->
+                Buffer.add_string out
+                  (Printf.sprintf "<span%s>" (attrs_of rest));
                 stack := "</span>" :: !stack
-            | "img" :: r ->
-                Buffer.add_string out (Printf.sprintf "<img%s/>" (attrs_of r))
-            | "@" :: r ->
+            | "img" ->
                 Buffer.add_string out
-                  (Printf.sprintf "<!--wodoc-attr:%s-->" (String.concat " " r))
-            | other :: _ ->
+                  (Printf.sprintf "<img%s/>" (attrs_of rest))
+            | "@" ->
                 Buffer.add_string out
-                  (Printf.sprintf "<!--wodoc:unknown:%s-->" other)
-            | [] -> ());
+                  (Printf.sprintf "<!--wodoc-attr:%s-->" rest)
+            | "" -> ()
+            | other ->
+                Buffer.add_string out
+                  (Printf.sprintf "<!--wodoc:unknown:%s-->" other));
             i := cend + String.length mclose)
   done;
   Buffer.contents out
@@ -80,24 +126,11 @@ let emit_tags s =
 (* Pass 2: <!--wodoc-attr:k=v-->: inject k=v into the next start tag, merging
    [class] with any existing one. Skips whitespace, </p>, <p>, comments. *)
 let merge_attrs_into_tag tag extra =
-  let toks = String.split_on_char ' ' (String.trim extra) in
-  let is_class t =
-    match String.index_opt t '=' with
-    | Some i -> String.sub t 0 i = "class"
-    | None -> false
-  in
+  let attrs = parse_attrs (String.trim extra) in
   let cls =
-    List.filter_map
-      (fun t ->
-         match String.index_opt t '=' with
-         | Some i when String.sub t 0 i = "class" ->
-             Some (String.sub t (i + 1) (String.length t - i - 1))
-         | _ -> None)
-      toks
+    List.filter_map (fun (k, v) -> if k = "class" then Some v else None) attrs
   in
-  let others =
-    List.filter (fun t -> (not (is_class t)) && String.contains t '=') toks
-  in
+  let others = List.filter (fun (k, _) -> k <> "class") attrs in
   let extra_class = String.concat " " cls in
   let tag =
     if extra_class = ""
@@ -119,7 +152,7 @@ let merge_attrs_into_tag tag extra =
       ^ Printf.sprintf " class=\"%s\"" extra_class
       ^ String.sub tag (String.length tag - close) close
   in
-  let oa = attrs_of others in
+  let oa = attrs_to_html others in
   if oa = ""
   then tag
   else
@@ -222,6 +255,14 @@ let tail_re =
   Str.regexp
     "\\(</?\\(div\\|a\\|span\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)[ \t\r\n]*$"
 
+let contains s sub = find s sub 0 <> None
+let is_close g = String.length g >= 2 && g.[1] = '/'
+let is_img g = String.length g >= 4 && String.sub g 0 4 = "<img"
+
+(* Hoist only UNBALANCED structural tags out of the paragraph: an opening tag
+   whose close is not also inside (a container spanning paragraphs), or a closing
+   tag whose open is elsewhere. A balanced inline element (e.g. a link
+   [<a>text</a>] or [<a><img/></a>]) is left untouched inside the paragraph. *)
 let split_paragraph inner =
   let lead = Buffer.create 16 in
   let tail = ref "" in
@@ -230,19 +271,41 @@ let split_paragraph inner =
   while !again do
     again := false;
     if Str.string_match lead_re !mid 0
-    then (
-      Buffer.add_string lead (Str.matched_group 1 !mid);
-      mid := Str.string_after !mid (Str.match_end ());
-      again := true);
+    then begin
+      let g = Str.matched_group 1 !mid in
+      let rest = Str.string_after !mid (Str.match_end ()) in
+      let peel () =
+        Buffer.add_string lead g;
+        mid := rest;
+        again := true
+      in
+      if is_img g || is_close g
+      then peel ()
+      else
+        let name = Str.matched_group 2 !mid in
+        if not (contains rest ("</" ^ name ^ ">")) then peel ()
+    end
+  done;
+  again := true;
+  while !again do
+    again := false;
     try
       let _ = Str.search_forward tail_re !mid 0 in
       if Str.match_end () = String.length !mid
-      then (
+      then begin
         let g = Str.matched_group 1 !mid in
-        let b = Str.match_beginning () in
-        tail := g ^ !tail;
-        mid := String.sub !mid 0 b;
-        again := true)
+        let before = String.sub !mid 0 (Str.match_beginning ()) in
+        let peel () =
+          tail := g ^ !tail;
+          mid := before;
+          again := true
+        in
+        if is_img g || not (is_close g)
+        then peel ()
+        else
+          let name = Str.matched_group 2 !mid in
+          if not (contains before ("<" ^ name)) then peel ()
+      end
     with Not_found -> ()
   done;
   Buffer.contents lead, String.trim !mid, !tail
