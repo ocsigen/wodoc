@@ -8,8 +8,13 @@
     Supported directives (the content after [wodoc:]):
     - [div class=...] / [a class=... href=...] / [span class=...] open a
       container, paired with [end] which closes the most recent one;
-    - [\@ key=val ...] adds attributes to the {e next} HTML element (the [\@\@]
-      equivalent: a [class] is merged with any existing one);
+    - [\@ S0 | S1 | S2] adds attributes at successive nesting levels: section
+      [Si] is applied to the element reached by descending [i] times into the
+      first child element, starting at the next element. This is the [\@\@]
+      equivalent and mirrors html_of_wiki's [\@\@a\@b\@c\@\@] (e.g. table / row /
+      cell). A [class] is merged with any existing one; an empty section styles
+      nothing but still descends. A single section ([\@ class=...]) targets the
+      next element;
     - [img src=... class=... alt=...] emits a self-contained [<img>].
 
     The directive set is intentionally small and generic; project-specific
