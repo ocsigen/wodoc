@@ -1,0 +1,3 @@
+(library
+ (name wodoc)
+ (libraries str))
