@@ -27,7 +27,9 @@
   a page reference (`{{!page-c}text}` / `{{!page-c.f}text}`). Headings are
   normalised so each page emits a single level-0 title (`{0}`): a second
   top-level heading is demoted, and a page without one promotes its first
-  heading. Output is meant to be reviewed by hand.
+  heading. A leading `@@id="x"@@` anchor on a heading becomes an odoc heading
+  label (`{N:x ...}`) so cross-page fragment references resolve. Output is meant
+  to be reviewed by hand.
 - Tests: cram suite for the converter (`test/convert.t`).
 - `Assemble`: build a full page — extract the odoc parts, render the content
   fragment (never the template chrome), fill a project-provided template

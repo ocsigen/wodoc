@@ -35,6 +35,19 @@ No top-level heading: the first heading is promoted to the page title {0}.
   {0 Installation}
   {1 Usage}
 
+A leading @@id anchor on a heading becomes an odoc heading label, so cross-page
+fragment references resolve. The closing @@ is optional.
+
+  $ cat > anchor.wiki <<'EOF'
+  > = Title =
+  > ==@@id="foo"@@ Section foo==
+  > ===@@id='bar' Subsection bar===
+  > EOF
+  $ wodoc convert anchor.wiki
+  {0 Title}
+  {1:foo Section foo}
+  {2:bar Subsection bar}
+
 A title carried inside a <<header|...>> wrapper still becomes {0}, and the
 <<outline>> extension is dropped.
 
