@@ -6,8 +6,18 @@ let read_file f =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>   rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>      turn wodoc markers in odoc HTML into real HTML\n\nEach command reads the file and writes the result to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\nEach command writes the result to stdout.";
   exit 2
+
+(* minimal flag parser: returns (assoc of --flag value, positional args) *)
+let parse_args args =
+  let rec go flags pos = function
+    | f :: v :: rest when String.length f > 2 && String.sub f 0 2 = "--" ->
+        go ((String.sub f 2 (String.length f - 2), v) :: flags) pos rest
+    | a :: rest -> go flags (a :: pos) rest
+    | [] -> flags, List.rev pos
+  in
+  go [] [] args
 
 let () =
   match Array.to_list Sys.argv with
@@ -15,4 +25,14 @@ let () =
       print_string (Wodoc.Preprocess.string (read_file file))
   | _ :: "render" :: file :: _ ->
       print_string (Wodoc.Render.html (read_file file))
+  | _ :: "assemble" :: args -> (
+      let flags, pos = parse_args args in
+      match List.assoc_opt "template" flags, pos with
+      | Some tmpl, file :: _ ->
+          let current =
+            Option.value ~default:"" (List.assoc_opt "current" flags)
+          in
+          let template = read_file tmpl in
+          print_string (Wodoc.Assemble.page ~template ~current (read_file file))
+      | _ -> usage ())
   | _ -> usage ()
