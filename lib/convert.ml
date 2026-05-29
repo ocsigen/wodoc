@@ -30,22 +30,61 @@ let replace_once s ph repl =
           (String.length s - p - String.length ph)
 
 (* ---- A. protect code ---- *)
+let code_lang opener =
+  match
+    Str.search_forward
+      (Str.regexp "language=[\"']\\([a-zA-Z0-9_-]+\\)[\"']")
+      opener 0
+  with
+  | exception Not_found -> ""
+  | _ -> Str.matched_group 1 opener
+
+let verbatim_repl inner =
+  if String.contains inner '\n'
+  then "{v" ^ inner ^ "v}" (* plain preformatted block *)
+  else "[" ^ String.trim inner ^ "]" (* inline code *)
+
+let code_repl lang inner =
+  if lang = ""
+  then "{[" ^ inner ^ "]}"
+  else Printf.sprintf "{@%s[%s]}" lang inner
+
+(* Protect both {{{...}}} (verbatim) and <<code lang|...>> (highlighted code):
+   their bodies must not go through the inline/wrapper passes. *)
 let protect_code s =
   let n = String.length s in
   let buf = Buffer.create n in
-  let blocks = ref [] in
+  let store = ref [] in
   let idx = ref 0 in
+  let stash repl =
+    let ph = Printf.sprintf "\000C%d\000" !idx in
+    store := (ph, repl) :: !store;
+    incr idx;
+    Buffer.add_string buf ph
+  in
   let i = ref 0 in
   while !i < n do
     if !i + 3 <= n && String.sub s !i 3 = "{{{"
     then (
       match find s "}}}" (!i + 3) with
       | Some e ->
-          let inner = String.sub s (!i + 3) (e - (!i + 3)) in
-          blocks := (!idx, inner) :: !blocks;
-          Buffer.add_string buf (Printf.sprintf "\000C%d\000" !idx);
-          incr idx;
+          stash (verbatim_repl (String.sub s (!i + 3) (e - (!i + 3))));
           i := e + 3
+      | None ->
+          Buffer.add_char buf s.[!i];
+          incr i)
+    else if !i + 6 <= n && String.sub s !i 6 = "<<code"
+    then (
+      match find s "|" (!i + 6) with
+      | Some p -> (
+        match find s ">>" (p + 1) with
+        | Some e ->
+            let lang = code_lang (String.sub s (!i + 6) (p - (!i + 6))) in
+            stash (code_repl lang (String.sub s (p + 1) (e - (p + 1))));
+            i := e + 2
+        | None ->
+            Buffer.add_char buf s.[!i];
+            incr i)
       | None ->
           Buffer.add_char buf s.[!i];
           incr i)
@@ -54,19 +93,10 @@ let protect_code s =
       incr i
     end
   done;
-  Buffer.contents buf, !blocks
+  Buffer.contents buf, !store
 
-let restore_code s blocks =
-  List.fold_left
-    (fun acc (idx, inner) ->
-       let ph = Printf.sprintf "\000C%d\000" idx in
-       let repl =
-         if String.contains inner '\n'
-         then "{[" ^ inner ^ "]}"
-         else "[" ^ String.trim inner ^ "]"
-       in
-       replace_once acc ph repl)
-    s blocks
+let restore_code s store =
+  List.fold_left (fun acc (ph, repl) -> replace_once acc ph repl) s store
 
 (* ---- B. << ... >> wrappers ---- *)
 (* parse a class="..." attribute out of an opener's argument string *)
@@ -153,8 +183,8 @@ let wrappers s =
   Buffer.contents buf
 
 (* ---- C. headings and lists (line-based) ---- *)
-let heading_re = Str.regexp "^\\(=+\\)[ \t]*\\(.*\\)$"
-let item_re = Str.regexp "^\\([*#]+\\)[ \t]+\\(.*\\)$"
+let heading_re = Str.regexp "^[ \t]*\\(=+\\)[ \t]*\\(.*\\)$"
+let item_re = Str.regexp "^[ \t]*\\([*#]+\\)[ \t]+\\(.*\\)$"
 
 let rstrip_eq s =
   let n = ref (String.length s) in

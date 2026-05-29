@@ -20,7 +20,9 @@
 - `Convert` / `wodoc convert`: best-effort wikicréole → `.mld` converter (a
   migration aid): headings, bold/italic/monospace, links, lists, code blocks,
   `<<div/span/header>>` wrappers, `<<|...>>` comments, `@@class@@` attributes,
-  images and `\\` line breaks. Output is meant to be reviewed by hand.
+  images and `\\` line breaks. `{{{...}}}` becomes verbatim, `<<code lang|...>>`
+  becomes a highlighted code block, and indented headings/lists are recognised.
+  Output is meant to be reviewed by hand.
 - `Assemble`: build a full page — extract the odoc parts, render the content
   fragment (never the template chrome), fill a project-provided template
   (holes `{{title}}`/`{{preamble}}`/`{{toc}}`/`{{content}}`), mark the current
