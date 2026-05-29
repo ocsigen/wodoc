@@ -105,6 +105,40 @@ let class_attr args =
   | exception Not_found -> ""
   | _ -> Printf.sprintf " class=\"%s\"" (Str.matched_group 1 args)
 
+(* read a name="value" attribute out of an opener's argument string *)
+let attr_val name args =
+  match
+    Str.search_forward (Str.regexp (name ^ "=\"\\([^\"]*\\)\"")) args 0
+  with
+  | exception Not_found -> None
+  | _ -> Some (Str.matched_group 1 args)
+
+(* "module Cors" / "val Ocsigen.Server.start" -> "Cors" / "Ocsigen.Server.start":
+   drop a leading kind keyword (module/val/type/class/...), keep the path. *)
+let api_target body =
+  let body = String.trim body in
+  if Str.string_match (Str.regexp "^[a-z]+[ \t]+\\(.+\\)$") body 0
+  then String.trim (Str.matched_group 1 body)
+  else body
+
+(* <<a_api [text="..."]|module M>> -> {!M} or {{!M}text} *)
+let a_api_ref opener body =
+  let target = api_target body in
+  match attr_val "text" opener with
+  | Some t -> Printf.sprintf "{{!%s}%s}" target t
+  | None -> Printf.sprintf "{!%s}" target
+
+(* <<a_manual chapter="c" [fragment="f"]|text>> -> {{!page-c}text} / {{!page-c.f}text} *)
+let a_manual_ref opener body =
+  let text = String.trim body in
+  let page = Option.value ~default:"" (attr_val "chapter" opener) in
+  let target =
+    match attr_val "fragment" opener with
+    | Some f -> Printf.sprintf "page-%s.%s" page f
+    | None -> Printf.sprintf "page-%s" page
+  in
+  Printf.sprintf "{{!%s}%s}" target text
+
 type closer = Close of string | Drop
 
 let wrappers s =
@@ -137,31 +171,48 @@ let wrappers s =
           i := c + 2
       | `Pipe p ->
           let opener = String.trim (String.sub s (!i + 2) (p - (!i + 2))) in
-          if opener = ""
+          if starts_with "a_api" opener || starts_with "a_manual" opener
           then (
-            (* <<|  comment: drop until matching >> *)
-            stack := Drop :: !stack;
-            incr drop)
-          else if starts_with "header" opener
-          then stack := Close "" :: !stack
-          else if starts_with "div" opener
-          then (
-            emit (Printf.sprintf "{%%wodoc:div%s%%}" (class_attr opener));
-            stack := Close "{%wodoc:end%}" :: !stack)
-          else if starts_with "span" opener
-          then (
-            emit (Printf.sprintf "{%%wodoc:span%s%%}" (class_attr opener));
-            stack := Close "{%wodoc:end%}" :: !stack)
-          else if
-            starts_with "head-css" opener || starts_with "head-script" opener
-          then (
-            stack := Drop :: !stack;
-            incr drop)
-          else (
-            (* unknown wrapper: keep its body, mark for review *)
-            emit (Printf.sprintf "{%%wodoc:%s%%}" opener);
-            stack := Close "{%wodoc:end%}" :: !stack);
-          i := p + 1
+            (* inline cross-reference: consume through the matching >> and emit
+               an odoc reference (no entry on the wrapper stack) *)
+            match find s ">>" (p + 1) with
+            | Some e ->
+                let body = String.sub s (p + 1) (e - (p + 1)) in
+                emit
+                  (if starts_with "a_api" opener
+                   then a_api_ref opener body
+                   else a_manual_ref opener body);
+                i := e + 2
+            | None ->
+                emit_char s.[!i];
+                incr i)
+          else begin
+            (if opener = ""
+             then (
+               (* <<|  comment: drop until matching >> *)
+               stack := Drop :: !stack;
+               incr drop)
+             else if starts_with "header" opener
+             then stack := Close "" :: !stack
+             else if starts_with "div" opener
+             then (
+               emit (Printf.sprintf "{%%wodoc:div%s%%}" (class_attr opener));
+               stack := Close "{%wodoc:end%}" :: !stack)
+             else if starts_with "span" opener
+             then (
+               emit (Printf.sprintf "{%%wodoc:span%s%%}" (class_attr opener));
+               stack := Close "{%wodoc:end%}" :: !stack)
+             else if
+               starts_with "head-css" opener || starts_with "head-script" opener
+             then (
+               stack := Drop :: !stack;
+               incr drop)
+             else (
+               (* unknown wrapper: keep its body, mark for review *)
+               emit (Printf.sprintf "{%%wodoc:%s%%}" opener);
+               stack := Close "{%wodoc:end%}" :: !stack));
+            i := p + 1
+          end
     end
     else if !i + 2 <= n && s.[!i] = '>' && s.[!i + 1] = '>'
     then begin
@@ -193,22 +244,51 @@ let rstrip_eq s =
   done;
   String.sub s 0 !n
 
+(* An odoc page has a single level-0 title. Classify lines first, then enforce
+   exactly one {0}: if a title exists, keep the first and demote later level-0
+   headings to {1}; if none exists, promote the first heading to the title. *)
 let lines_pass s =
-  String.split_on_char '\n' s
-  |> List.map (fun line ->
-    if Str.string_match heading_re line 0
+  let parsed =
+    String.split_on_char '\n' s
+    |> List.map (fun line ->
+      if Str.string_match heading_re line 0
+      then
+        let level = max 0 (String.length (Str.matched_group 1 line) - 1) in
+        `Heading (level, rstrip_eq (Str.matched_group 2 line))
+      else if Str.string_match item_re line 0
+      then
+        let marks = Str.matched_group 1 line in
+        let text = Str.matched_group 2 line in
+        let bullet =
+          if marks.[String.length marks - 1] = '#' then "+" else "-"
+        in
+        `Line (Printf.sprintf "%s %s" bullet text)
+      else `Line line)
+  in
+  let has_title =
+    List.exists (function `Heading (0, _) -> true | _ -> false) parsed
+  in
+  let title_used = ref false and promoted = ref false in
+  let level_of orig =
+    if has_title
     then
-      let level = String.length (Str.matched_group 1 line) - 1 in
-      let level = if level < 0 then 0 else level in
-      let text = rstrip_eq (Str.matched_group 2 line) in
-      Printf.sprintf "{%d %s}" level text
-    else if Str.string_match item_re line 0
-    then
-      let marks = Str.matched_group 1 line in
-      let text = Str.matched_group 2 line in
-      let bullet = if marks.[String.length marks - 1] = '#' then "+" else "-" in
-      Printf.sprintf "%s %s" bullet text
-    else line)
+      if orig = 0 && not !title_used
+      then (
+        title_used := true;
+        0)
+      else if orig = 0
+      then 1 (* demote a second top-level heading *)
+      else orig
+    else if not !promoted
+    then (
+      promoted := true;
+      0 (* no explicit title: the first heading becomes the page title *))
+    else orig
+  in
+  parsed
+  |> List.map (function
+       | `Line l -> l
+       | `Heading (level, text) -> Printf.sprintf "{%d %s}" (level_of level) text)
   |> String.concat "\n"
 
 (* ---- D. inline ---- *)
@@ -260,7 +340,11 @@ let protect_links s =
       | None ->
           Buffer.add_char buf s.[!i];
           incr i)
-    else if !i + 2 <= n && s.[!i] = '{' && s.[!i + 1] = '{'
+    else if
+      !i + 2 <= n && s.[!i] = '{' && s.[!i + 1] = '{'
+      && (!i + 2 >= n || s.[!i + 2] <> '!')
+      (* a double-brace followed by '!' is an odoc reference (e.g. emitted by
+         a_api/a_manual), not a wiki image; leave it untouched. *)
     then (
       match find s "}}" (!i + 2) with
       | Some e ->
