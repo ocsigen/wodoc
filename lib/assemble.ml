@@ -138,13 +138,42 @@ let mark_current ?(attr = "data-wodoc-page") ?(class_ = "current") ~current s =
     done;
     Buffer.contents out
 
-let page ?(preamble = true) ~template ~current odoc_html =
+(* strip the outermost start/end tag of a balanced block: "<t ...>X</t>" -> "X" *)
+let inner block =
+  match String.index_opt block '>' with
+  | None -> block
+  | Some gt ->
+      let last =
+        try String.rindex block '<' with Not_found -> String.length block
+      in
+      if last > gt then String.sub block (gt + 1) (last - gt - 1) else ""
+
+let page
+      ?(preamble = true)
+      ?(flat = false)
+      ?(strip_anchors = true)
+      ~template
+      ~current
+      odoc_html
+  =
   let p = Parts.of_odoc_html odoc_html in
+  (* The content fragment is rendered here (not the template, whose chrome must
+     not go through the hoist pass). In [flat] mode, sections may span the
+     odoc preamble/content boundary, so concatenate their inner HTML — without
+     the <header>/<div odoc-content> wrappers — before rendering, so paired
+     wodoc markers are balanced. *)
+  let fragment =
+    if flat then inner p.preamble ^ "\n" ^ inner p.content else p.content
+  in
+  let content = Render.html ~strip_anchors fragment in
   let filled =
     fill ~template
       [ "title", p.title
-      ; ("preamble", if preamble then p.preamble else "")
+      ; ( "preamble"
+        , if flat || not preamble
+          then ""
+          else Render.html ~strip_anchors p.preamble )
       ; "toc", p.toc
-      ; "content", p.content ]
+      ; "content", content ]
   in
   mark_current ~current filled
