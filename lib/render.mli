@@ -22,7 +22,11 @@
     The directive set is intentionally small and generic; project-specific
     widgets (menus, switches…) belong to the assembly layer, not here. *)
 
-val html : string -> string
+val html : ?strip_anchors:bool -> string -> string
 (** [html s] processes the wodoc markers in odoc's HTML [s] and returns the
     transformed HTML. Markers are consumed; on malformed input the offending
-    marker is left as an HTML comment rather than raising. *)
+    marker is left as an HTML comment rather than raising.
+
+    [strip_anchors] (default [false]) removes the empty hover-link anchors odoc
+    inserts inside headings — useful for website pages (and required when a
+    heading sits inside a clickable card link, to avoid a nested [<a>]). *)
