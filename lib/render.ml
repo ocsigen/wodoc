@@ -144,11 +144,12 @@ let skip_noise s len ~skip_p p =
   while !again && !p < len do
     let c = s.[!p] in
     if c = ' ' || c = '\n' || c = '\t' || c = '\r'
-    then incr p
+    then
+      incr p
+      (* skip_p consumes only the marker's own closing [</p>]; a following [<p>]
+         is the target paragraph, not noise, so it is left in place. *)
     else if skip_p && !p + 4 <= len && String.sub s !p 4 = "</p>"
     then p := !p + 4
-    else if skip_p && !p + 3 <= len && String.sub s !p 3 = "<p>"
-    then p := !p + 3
     else if !p + 4 <= len && String.sub s !p 4 = "<!--"
     then
       match find s "-->" !p with Some e -> p := e + 3 | None -> again := false
