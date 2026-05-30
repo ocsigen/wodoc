@@ -107,9 +107,7 @@ let class_attr args =
 
 (* read a name="value" attribute out of an opener's argument string *)
 let attr_val name args =
-  match
-    Str.search_forward (Str.regexp (name ^ "=\"\\([^\"]*\\)\"")) args 0
-  with
+  match Str.search_forward (Str.regexp (name ^ "=\"\\([^\"]*\\)\"")) args 0 with
   | exception Not_found -> None
   | _ -> Some (Str.matched_group 1 args)
 
@@ -187,30 +185,30 @@ let wrappers s =
                 emit_char s.[!i];
                 incr i)
           else begin
-            (if opener = ""
-             then (
-               (* <<|  comment: drop until matching >> *)
-               stack := Drop :: !stack;
-               incr drop)
-             else if starts_with "header" opener
-             then stack := Close "" :: !stack
-             else if starts_with "div" opener
-             then (
-               emit (Printf.sprintf "{%%wodoc:div%s%%}" (class_attr opener));
-               stack := Close "{%wodoc:end%}" :: !stack)
-             else if starts_with "span" opener
-             then (
-               emit (Printf.sprintf "{%%wodoc:span%s%%}" (class_attr opener));
-               stack := Close "{%wodoc:end%}" :: !stack)
-             else if
-               starts_with "head-css" opener || starts_with "head-script" opener
-             then (
-               stack := Drop :: !stack;
-               incr drop)
-             else (
-               (* unknown wrapper: keep its body, mark for review *)
-               emit (Printf.sprintf "{%%wodoc:%s%%}" opener);
-               stack := Close "{%wodoc:end%}" :: !stack));
+            if opener = ""
+            then (
+              (* <<|  comment: drop until matching >> *)
+              stack := Drop :: !stack;
+              incr drop)
+            else if starts_with "header" opener
+            then stack := Close "" :: !stack
+            else if starts_with "div" opener
+            then (
+              emit (Printf.sprintf "{%%wodoc:div%s%%}" (class_attr opener));
+              stack := Close "{%wodoc:end%}" :: !stack)
+            else if starts_with "span" opener
+            then (
+              emit (Printf.sprintf "{%%wodoc:span%s%%}" (class_attr opener));
+              stack := Close "{%wodoc:end%}" :: !stack)
+            else if
+              starts_with "head-css" opener || starts_with "head-script" opener
+            then (
+              stack := Drop :: !stack;
+              incr drop)
+            else (
+              (* unknown wrapper: keep its body, mark for review *)
+              emit (Printf.sprintf "{%%wodoc:%s%%}" opener);
+              stack := Close "{%wodoc:end%}" :: !stack);
             i := p + 1
           end
     end
@@ -264,7 +262,9 @@ let lines_pass s =
       if Str.string_match heading_re line 0
       then
         let level = max 0 (String.length (Str.matched_group 1 line) - 1) in
-        let label, text = split_heading_label (rstrip_eq (Str.matched_group 2 line)) in
+        let label, text =
+          split_heading_label (rstrip_eq (Str.matched_group 2 line))
+        in
         `Heading (level, label, text)
       else if Str.string_match item_re line 0
       then
@@ -298,10 +298,10 @@ let lines_pass s =
   in
   parsed
   |> List.map (function
-       | `Line l -> l
-       | `Heading (level, label, text) ->
-           let anchor = match label with Some l -> ":" ^ l | None -> "" in
-           Printf.sprintf "{%d%s %s}" (level_of level) anchor text)
+    | `Line l -> l
+    | `Heading (level, label, text) ->
+        let anchor = match label with Some l -> ":" ^ l | None -> "" in
+        Printf.sprintf "{%d%s %s}" (level_of level) anchor text)
   |> String.concat "\n"
 
 (* ---- D. inline ---- *)
@@ -354,7 +354,9 @@ let protect_links s =
           Buffer.add_char buf s.[!i];
           incr i)
     else if
-      !i + 2 <= n && s.[!i] = '{' && s.[!i + 1] = '{'
+      !i + 2 <= n
+      && s.[!i] = '{'
+      && s.[!i + 1] = '{'
       && (!i + 2 >= n || s.[!i + 2] <> '!')
       (* a double-brace followed by '!' is an odoc reference (e.g. emitted by
          a_api/a_manual), not a wiki image; leave it untouched. *)

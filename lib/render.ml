@@ -220,13 +220,17 @@ let end_of_element s p len =
           | None -> q := len
           | Some lt -> (
               let close = lt + 1 < len && s.[lt + 1] = '/' in
-              let nm = name_at s (lt + (if close then 2 else 1)) len in
+              let nm = name_at s (lt + if close then 2 else 1) len in
               match find s ">" lt with
               | None -> q := len
               | Some gt ->
                   let selfclose = gt > lt && s.[gt - 1] = '/' in
                   if nm = name
-                  then if close then decr depth else if not selfclose then incr depth;
+                  then
+                    if close
+                    then decr depth
+                    else if not selfclose
+                    then incr depth;
                   q := gt + 1)
         done;
         !q
@@ -243,7 +247,9 @@ let parse_section sec =
   done;
   if !i = 0
   then 1, sec
-  else max 1 (int_of_string (String.sub sec 0 !i)), String.trim (Str.string_after sec !i)
+  else
+    ( max 1 (int_of_string (String.sub sec 0 !i))
+    , String.trim (Str.string_after sec !i) )
 
 (* A [<!--wodoc-attr:S0 | S1 | S2-->] sentinel applies section [Si] at nesting
    level [i], starting at the next real element after the sentinel. Each section
@@ -284,7 +290,10 @@ let fuse_attrs s =
                  (* skip [idx - 1] complete siblings to reach the [idx]th *)
                  for _ = 2 to idx do
                    if (not !stop) && is_start_tag s !pos len
-                   then pos := skip_noise s len ~skip_p:false (end_of_element s !pos len)
+                   then
+                     pos :=
+                       skip_noise s len ~skip_p:false
+                         (end_of_element s !pos len)
                    else stop := true
                  done;
                  if (not !stop) && is_start_tag s !pos len
