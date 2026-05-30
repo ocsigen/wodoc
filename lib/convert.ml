@@ -49,7 +49,9 @@ let verbatim_repl inner =
    on the themed site and is dropped on stock odoc. *)
 let code_class opener =
   match
-    Str.search_forward (Str.regexp "class=[\"']\\([a-zA-Z0-9_ -]+\\)[\"']") opener 0
+    Str.search_forward
+      (Str.regexp "class=[\"']\\([a-zA-Z0-9_ -]+\\)[\"']")
+      opener 0
   with
   | exception Not_found -> ""
   | _ -> Str.matched_group 1 opener
@@ -60,7 +62,9 @@ let code_repl ?(cls = "") lang inner =
     then "{[" ^ inner ^ "]}"
     else Printf.sprintf "{@%s[%s]}" lang inner
   in
-  if cls = "" then block else Printf.sprintf "{%%wodoc:@ class=%s%%}\n%s" cls block
+  if cls = ""
+  then block
+  else Printf.sprintf "{%%wodoc:@ class=%s%%}\n%s" cls block
 
 (* Protect both {{{...}}} (verbatim) and <<code lang|...>> (highlighted code):
    their bodies must not go through the inline/wrapper passes. *)
