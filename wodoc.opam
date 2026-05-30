@@ -12,7 +12,7 @@ documentation (e.g. on ocaml.org) and as a full themed site with wodoc.
 Usable by any OCaml project, not only Ocsigen."""
 maintainer: ["The Ocsigen team"]
 authors: ["The Ocsigen team"]
-license: "LGPL-2.1-only WITH OCaml-LGPL-linking-exception"
+license: "MIT"
 homepage: "https://github.com/ocsigen/wodoc"
 bug-reports: "https://github.com/ocsigen/wodoc/issues"
 depends: [
