@@ -148,10 +148,12 @@ let a_api_ref opener body =
 let a_manual_ref opener body =
   let text = String.trim body in
   let page = Option.value ~default:"" (attr_val "chapter" opener) in
+  (* quote the page name so hyphenated chapters (e.g. clientserver-applications)
+     resolve: odoc reads {!page-a-b} as qualifier "page-a", {!page-"a-b"} works. *)
   let target =
     match attr_val "fragment" opener with
-    | Some f -> Printf.sprintf "page-%s.%s" page f
-    | None -> Printf.sprintf "page-%s" page
+    | Some f -> Printf.sprintf "page-\"%s\".%s" page f
+    | None -> Printf.sprintf "page-\"%s\"" page
   in
   Printf.sprintf "{{!%s}%s}" target text
 
