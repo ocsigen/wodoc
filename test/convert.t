@@ -45,6 +45,20 @@ attribute marker on the resulting code block, so the side colouring applies.
   {%wodoc:@ class=server%}
   {@ocaml[let () = run ()]}
 
+Block notes (<<wip>>, <<paragraph>>, <<concept title=..>>) become divs carrying
+the wrapper name as class; a concept keeps its title as a bold lead.
+
+  $ cat > notes.wiki <<'EOF'
+  > <<wip|Incomplete.>>
+  > <<concept title="Summary"|Eliom is multi-tier.>>
+  > EOF
+  $ wodoc convert notes.wiki
+  {%wodoc:div class="wip"%}Incomplete.{%wodoc:end%}
+  {%wodoc:div class="concept"%}{b Summary}
+  
+  Eliom is multi-tier.{%wodoc:end%}
+
+
 A leading @@id anchor on a heading becomes an odoc heading label, so cross-page
 fragment references resolve. The closing @@ is optional.
 
