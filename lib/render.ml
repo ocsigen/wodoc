@@ -190,11 +190,68 @@ let skip_noise s len ~skip_p p =
   done;
   !p
 
-(* A [<!--wodoc-attr:S0 | S1 | S2-->] sentinel applies section [Si] to the
-   element reached by descending [i] times into the first child element, starting
-   at the next real element after the sentinel. A [class] is merged with any
-   existing one; an empty section styles nothing but still descends. This mirrors
-   html_of_wiki's [@@a@b@c@@] (e.g. table / row / cell). *)
+(* Read an HTML tag name ([A-Za-z0-9]+) starting at [p]. *)
+let name_at s p len =
+  let q = ref p in
+  while
+    !q < len
+    &&
+    let c = s.[!q] in
+    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+  do
+    incr q
+  done;
+  String.sub s p (!q - p)
+
+(* [p] is at a start tag [<name ...>]; return the position just after the
+   element's matching close tag, accounting for nested elements of the same name
+   (e.g. a table nested inside a cell). Self-closing tags end at their [>]. *)
+let end_of_element s p len =
+  match find s ">" p with
+  | None -> len
+  | Some gt0 ->
+      if gt0 > p && s.[gt0 - 1] = '/'
+      then gt0 + 1
+      else begin
+        let name = name_at s (p + 1) len in
+        let depth = ref 1 and q = ref (gt0 + 1) in
+        while !depth > 0 && !q < len do
+          match find s "<" !q with
+          | None -> q := len
+          | Some lt -> (
+              let close = lt + 1 < len && s.[lt + 1] = '/' in
+              let nm = name_at s (lt + (if close then 2 else 1)) len in
+              match find s ">" lt with
+              | None -> q := len
+              | Some gt ->
+                  let selfclose = gt > lt && s.[gt - 1] = '/' in
+                  if nm = name
+                  then if close then decr depth else if not selfclose then incr depth;
+                  q := gt + 1)
+        done;
+        !q
+      end
+
+(* Parse a section [N attrs] into its 1-based sibling index (default 1) and its
+   attribute string. ["2 class=x"] -> [(2, "class=x")]; ["class=x"] -> [(1,
+   "class=x")]; [""] -> [(1, "")]. *)
+let parse_section sec =
+  let n = String.length sec in
+  let i = ref 0 in
+  while !i < n && sec.[!i] >= '0' && sec.[!i] <= '9' do
+    incr i
+  done;
+  if !i = 0
+  then 1, sec
+  else max 1 (int_of_string (String.sub sec 0 !i)), String.trim (Str.string_after sec !i)
+
+(* A [<!--wodoc-attr:S0 | S1 | S2-->] sentinel applies section [Si] at nesting
+   level [i], starting at the next real element after the sentinel. Each section
+   is [[N] attrs]: descend to the first child at this level, skip [N-1] siblings
+   to reach the [N]th (default the 1st), and merge [attrs] into it (a [class] is
+   merged with any existing one). An empty attribute set styles nothing but still
+   descends/selects. This mirrors html_of_wiki's [@@a@b@c@@] (e.g. table / row /
+   cell), the index allowing any row or cell, not only the first. *)
 let fuse_attrs s =
   let len = String.length s in
   let out = Buffer.create len in
@@ -222,20 +279,25 @@ let fuse_attrs s =
             (fun k section ->
                if not !stop
                then begin
+                 let idx, attrs = parse_section section in
                  pos := skip_noise s len ~skip_p:(k = 0) !pos;
-                 if is_start_tag s !pos len
+                 (* skip [idx - 1] complete siblings to reach the [idx]th *)
+                 for _ = 2 to idx do
+                   if (not !stop) && is_start_tag s !pos len
+                   then pos := skip_noise s len ~skip_p:false (end_of_element s !pos len)
+                   else stop := true
+                 done;
+                 if (not !stop) && is_start_tag s !pos len
                  then
                    match find s ">" !pos with
                    | Some gt ->
-                       Buffer.add_substring out s !copied (!pos - !copied);
-                       let tag = String.sub s !pos (gt - !pos + 1) in
-                       let tag =
-                         if section = ""
-                         then tag
-                         else merge_attrs_into_tag tag section
-                       in
-                       Buffer.add_string out tag;
-                       copied := gt + 1;
+                       if attrs <> ""
+                       then begin
+                         Buffer.add_substring out s !copied (!pos - !copied);
+                         let tag = String.sub s !pos (gt - !pos + 1) in
+                         Buffer.add_string out (merge_attrs_into_tag tag attrs);
+                         copied := gt + 1
+                       end;
                        pos := gt + 1
                    | None -> stop := true
                  else stop := true

@@ -94,7 +94,7 @@ restriction).
 |---|---|
 | `div class=…` / `a class=… href=…` / `span class=…` … `end` | open/close a container |
 | `@ key=val …` | add attributes to the next element (the `@@` equivalent; `class` is merged) |
-| `@ S0 \| S1 \| S2 …` | add attributes at successive nesting levels (see below) |
+| `@ S0 \| S1 \| S2 …` | add attributes at successive nesting levels, each section optionally prefixed by a sibling index (see below) |
 | `img src=… class=… alt=…` | a self-contained `<img>` |
 
 ### Attributes on nested elements (`@ S0 | S1 | S2`)
@@ -121,6 +121,20 @@ puts `class="pricing"` on the `<table>`, `class="headrow"` on the first `<tr>`,
 and `class="firstcell"` on its first `<th>` — exactly html_of_wiki's "class on
 the table / on a row / on a cell". Use empty sections to reach a deeper level
 without touching the ones above, e.g. `@ | | class=firstcell`.
+
+A section may start with a **1-based index** to select the *N*th sibling at that
+level instead of the first (the default). So `@ class=pricing | 2 class=highlight`
+styles the table and its **second** row, and `@ | 2 | 3 class=hot` reaches the
+**third cell of the second row**. Sibling skipping respects nesting (a table
+inside a cell is skipped as a whole). Each `@` marker descends independently, so
+stacking several before one table styles several rows:
+
+```
+{%wodoc:@ class=pricing%}
+{%wodoc:@ | 2 class=highlight%}
+{%wodoc:@ | 4 class=total%}
+{t … }
+```
 
 ## Authoring: what survives on ocaml.org
 
