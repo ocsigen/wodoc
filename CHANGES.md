@@ -9,7 +9,9 @@
 - `Render`: turn the markers in odoc's HTML output into real, correctly nested
   HTML — containers (`div`/`a`/`span`/`end`), multi-level attribute injection
   (`@ S0 | S1 | S2`, html_of_wiki's `@@` equivalent: successive nesting levels — e.g.
-  table / row / cell — mirroring html_of_wiki's `@@a@b@c@@`), and self-contained
+  table / row / cell — mirroring html_of_wiki's `@@a@b@c@@`; each section may
+  start with a 1-based sibling index to reach the Nth row/cell rather than the
+  first, sibling skipping respecting nesting), and self-contained
   images (`img`). Hoists structural tags out of odoc's forced `<p>` wrappers.
   A standalone `@` marker targets the following element (paragraph, table,
   heading…); empty `<p>` left behind by a marker are dropped. Optional
