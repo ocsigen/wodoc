@@ -97,6 +97,13 @@ restriction).
 | `@ S0 \| S1 \| S2 …` | add attributes at successive nesting levels, each section optionally prefixed by a sibling index (see below) |
 | `img src=… class=… alt=…` | a self-contained `<img>` |
 
+**Several classes**, HTML-style, are written space-separated inside quotes —
+`{%wodoc:@ class="card big shadow"%}`. The quotes are required: without them the
+space ends the value, so `class=card big shadow` would keep only `card`. The
+classes are merged with any class odoc already put on the element (e.g.
+`{%wodoc:@ class="pricing wide"%}` on a table yields
+`class="odoc-table pricing wide"`).
+
 ### Attributes on nested elements (`@ S0 | S1 | S2`)
 
 A single element rarely needs more than `@ class=…`, but some structures have no

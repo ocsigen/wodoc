@@ -37,6 +37,18 @@ descend/select without styling:
   <table><tr><td>a1</td><td>a2</td><td>a3</td></tr><tr><td>b1</td><td>b2</td><td class="hot">b3</td></tr></table>
 
 
+Several classes, HTML-style, need quotes (spaces separate them); they merge with
+any class odoc already put on the element:
+
+  $ cat > multi.html <<'EOF'
+  > <p><!--wodoc:@ class="pricing wide"--></p>
+  > <table class="odoc-table"><tr><td>a</td></tr></table>
+  > EOF
+  $ wodoc render multi.html
+  
+  <table class="odoc-table pricing wide"><tr><td>a</td></tr></table>
+
+
 Sibling skipping respects nesting: a table nested inside the first row's cell is
 skipped as a whole, so index 2 reaches the real second row:
 
