@@ -12,6 +12,22 @@ Cross-references: <<a_api ...>> and <<a_manual ...>> become odoc references.
   Chapter {{!page-"config"}Configuration} and
   {{!page-"config".upload}configuration}.
 
+a_api/a_manual with a side or project become direct links into the themed tree
+(clickable from a standalone build), emitted as [[url|text]] so the inline pass
+protects the URL; plain ones stay odoc references.
+
+  $ cat > sides.wiki <<'EOF'
+  > s <<a_api subproject="server"|module Service>>
+  > c <<a_api project="lwt"|module Lwt>>
+  > p <<a_api|module Cors>>
+  > t <<a_manual project="tuto" chapter="basics"|Tutorial>>
+  > EOF
+  $ wodoc convert sides.wiki
+  s {{:../eliom.server/Eliom/Service/index.html}Service}
+  c {{:https://ocsigen.org/wodoc/lwt/latest/Lwt/index.html}Lwt}
+  p {!Cors}
+  t {{:https://ocsigen.org/tuto/basics.html}Tutorial}
+
 Single page title: a second top-level (=) heading is demoted to {1}, so a page
 never emits two {0} headings.
 

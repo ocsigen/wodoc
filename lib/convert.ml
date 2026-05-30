@@ -123,11 +123,17 @@ let class_attr args =
   | exception Not_found -> ""
   | _ -> Printf.sprintf " class=\"%s\"" (Str.matched_group 1 args)
 
-(* read a name="value" attribute out of an opener's argument string *)
+(* read a name="value" attribute out of an opener's argument string. The name
+   must be on a word boundary so that "project" does not match "subproject". *)
 let attr_val name args =
-  match Str.search_forward (Str.regexp (name ^ "=\"\\([^\"]*\\)\"")) args 0 with
+  match
+    Str.search_forward
+      (Str.regexp
+         (Printf.sprintf "\\(^\\|[^a-zA-Z_]\\)%s=\"\\([^\"]*\\)\"" name))
+      args 0
+  with
   | exception Not_found -> None
-  | _ -> Some (Str.matched_group 1 args)
+  | _ -> Some (Str.matched_group 2 args)
 
 (* "module Cors" / "val Ocsigen.Server.start" -> "Cors" / "Ocsigen.Server.start":
    drop a leading kind keyword (module/val/type/class/...), keep the path. *)
@@ -137,25 +143,55 @@ let api_target body =
   then String.trim (Str.matched_group 1 body)
   else body
 
-(* <<a_api [text="..."]|module M>> -> {!M} or {{!M}text} *)
+(* <<a_api [project=P] [subproject=S] [text=T]|module M>>.
+   Without project/subproject: an odoc reference {!M} (resolves in-package, e.g.
+   on ocaml.org). With a side or project (Eliom-style), a direct link into the
+   themed wodoc tree so it is clickable even from a standalone manual build:
+   - subproject=server|client (this project) -> ../eliom.<side>/Eliom/<path>/
+   - project=P (another Ocsigen project) -> /wodoc/<P>/latest/<path>/
+   The latter may 404 until that project's doc is deployed — an intentional,
+   visible reminder rather than dropping the link. *)
 let a_api_ref opener body =
   let target = api_target body in
-  match attr_val "text" opener with
-  | Some t -> Printf.sprintf "{{!%s}%s}" target t
-  | None -> Printf.sprintf "{!%s}" target
+  let text = Option.value ~default:target (attr_val "text" opener) in
+  let path = String.map (fun c -> if c = '.' then '/' else c) target in
+  (* URL links are emitted as wikicreole [[url|text]] so the later inline pass
+     protects them (a raw "https://" would otherwise be mangled by the // -> emphasis
+     rule); odoc-reference cases have no such problem. *)
+  match attr_val "project" opener, attr_val "subproject" opener with
+  | Some proj, _ when proj <> "eliom" ->
+      Printf.sprintf "[[https://ocsigen.org/wodoc/%s/latest/%s/index.html|%s]]"
+        proj path text
+  | _, Some side ->
+      Printf.sprintf "[[../eliom.%s/Eliom/%s/index.html|%s]]" side path text
+  | _ -> (
+    match attr_val "text" opener with
+    | Some t -> Printf.sprintf "{{!%s}%s}" target t
+    | None -> Printf.sprintf "{!%s}" target)
 
 (* <<a_manual chapter="c" [fragment="f"]|text>> -> {{!page-c}text} / {{!page-c.f}text} *)
 let a_manual_ref opener body =
   let text = String.trim body in
   let page = Option.value ~default:"" (attr_val "chapter" opener) in
-  (* quote the page name so hyphenated chapters (e.g. clientserver-applications)
-     resolve: odoc reads {!page-a-b} as qualifier "page-a", {!page-"a-b"} works. *)
-  let target =
-    match attr_val "fragment" opener with
-    | Some f -> Printf.sprintf "page-\"%s\".%s" page f
-    | None -> Printf.sprintf "page-\"%s\"" page
-  in
-  Printf.sprintf "{{!%s}%s}" target text
+  let frag = attr_val "fragment" opener in
+  match attr_val "project" opener with
+  | Some proj ->
+      (* another project's manual (e.g. tuto): link into its site (may 404 until
+         deployed — a visible reminder). Emitted as [[url|text]] so the inline
+         pass protects the URL. *)
+      let anchor = match frag with Some f -> "#" ^ f | None -> "" in
+      Printf.sprintf "[[https://ocsigen.org/%s/%s.html%s|%s]]" proj page anchor
+        text
+  | None ->
+      (* same manual: an odoc page reference. The page name is quoted so
+         hyphenated chapters (clientserver-applications) resolve — odoc reads
+         {!page-a-b} as qualifier "page-a", whereas {!page-"a-b"} works. *)
+      let target =
+        match frag with
+        | Some f -> Printf.sprintf "page-\"%s\".%s" page f
+        | None -> Printf.sprintf "page-\"%s\"" page
+      in
+      Printf.sprintf "{{!%s}%s}" target text
 
 type closer = Close of string | Drop
 
