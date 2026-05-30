@@ -24,6 +24,13 @@ adds these through a custom raw-markup target, `{%wodoc:DIRECTIVE%}`:
 {@ocaml[ let () = run () ]}
 ```
 
+In that example, `div … end` wraps a block in a `<div class="card">`, and the
+`@` directive adds attributes to the **next element** — here it puts
+`class="server-code"` on the code block. `@` is wodoc's equivalent of
+html_of_wiki's `@@…@@`: it is how you attach an arbitrary class (or `id`,
+`style`, …) to an element that odoc would otherwise render bare, without
+wrapping it in a container. See the [directives](#directives) table below.
+
 Because the target is unknown to stock odoc, **the very same sources render as
 plain semantic documentation** with a stock odoc (for example on ocaml.org),
 and as the **full themed website** when built with wodoc. There is no fork of
@@ -31,20 +38,55 @@ odoc and no separate dialect to learn.
 
 ### Pipeline
 
+Nodes are document representations; each arrow is labelled with the command that
+performs the transformation. The same sources take two paths:
+
 ```
- source .mld / .mli
-   │  Preprocess :  {%wodoc:d%}  ->  {%html:<!--wodoc:d-->%}   (.mld only)
-   ▼
- stock odoc  (compile / link / html-generate)
-   │  the markers survive as HTML comments
-   ▼
- Render :  comments -> real, correctly nested HTML
-   │        containers, classes (the @@ equivalent), images
-   ▼
- Assemble :  wrap with the site chrome (header / menu / version)   [planned]
-   ▼
- themed website                              +   ocaml.org (plain odoc)
+            .mld / .mli  (sources, with {%wodoc:…%} markers)
+                 │
+     ┌───────────┴────────────────────────┐
+     │ wodoc preprocess                    │ odoc compile/link/html-generate
+     ▼                                     ▼
+ preprocessed .mld                     plain HTML            ──►  ocaml.org
+ ({%html:<!--wodoc:…-->%})             (markers dropped)
+     │
+     │ odoc compile/link/html-generate
+     ▼
+ odoc HTML  (markers kept as HTML comments)
+     │
+     │ wodoc render
+     ▼
+ HTML fragment  (real nested HTML: containers, classes, images)
+     │
+     │ wodoc assemble                                          [planned]
+     ▼
+ themed website page                                ──►  ocsigen.org
 ```
+
+### Why rewrite the markers to HTML comments?
+
+This is a deliberate trick to work around a limitation of odoc (absence of presentational markup). odoc's HTML
+backend only keeps raw markup whose target it knows: `{%html:...%}` is emitted
+verbatim, **any other target is silently dropped** (`| _ -> []` in odoc's
+generator). That drop is exactly what we want on ocaml.org — `{%wodoc:...%}`
+vanishes and the docs stay semantic. But it also means that, by the time we get
+odoc's HTML, our own markers are *gone*, so the `Render` pass would have nothing
+left to transform.
+
+So before running odoc we rewrite `{%wodoc:d%}` to `{%html:<!--wodoc:d-->%}`.
+odoc recognises the `html` target and passes the content through unchanged, as an
+**HTML comment**. The comment survives odoc's HTML output (so `Render` can find
+it), is invisible in the browser (harmless if `Render` never runs), and is a
+clean sentinel to turn into real, nested HTML. We cannot use `{%html:<div>%}`
+directly in the sources instead: the `html` target is honoured *everywhere*, so a
+real `<div>` would also leak into the plain ocaml.org output, defeating the
+"one source, two outputs" goal.
+
+Note that this rewrite happens on a temporary copy at build time; the committed
+sources always keep the clean `{%wodoc:...%}` form. It also only applies to
+`.mld` text — markers inside `.mli` doc-comments are frozen in the `.cmti` and
+cannot be post-processed this way (a future model-level driver would lift this
+restriction).
 
 ## Directives
 
@@ -52,7 +94,33 @@ odoc and no separate dialect to learn.
 |---|---|
 | `div class=…` / `a class=… href=…` / `span class=…` … `end` | open/close a container |
 | `@ key=val …` | add attributes to the next element (the `@@` equivalent; `class` is merged) |
+| `@ S0 \| S1 \| S2 …` | add attributes at successive nesting levels (see below) |
 | `img src=… class=… alt=…` | a self-contained `<img>` |
+
+### Attributes on nested elements (`@ S0 | S1 | S2`)
+
+A single element rarely needs more than `@ class=…`, but some structures have no
+outer element to hang a class on — a table being the typical case: odoc emits the
+`<table>`, `<tr>` and `<td>` together, with no marker slot before the row or the
+cell. The multi-section form solves this, mirroring html_of_wiki's `@@a@b@c@@`.
+
+Sections are separated by `|`. Section `S0` styles the next element, `S1` the
+element reached by descending once into its first child, `S2` by descending
+again, and so on. An **empty** section descends a level without styling it. So,
+before a table:
+
+```
+{%wodoc:@ class=pricing | class=headrow | class=firstcell%}
+{t
+  | Plan | Price |
+  ...
+}
+```
+
+puts `class="pricing"` on the `<table>`, `class="headrow"` on the first `<tr>`,
+and `class="firstcell"` on its first `<th>` — exactly html_of_wiki's "class on
+the table / on a row / on a cell". Use empty sections to reach a deeper level
+without touching the ones above, e.g. `@ | | class=firstcell`.
 
 ## Authoring: what survives on ocaml.org
 

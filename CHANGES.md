@@ -7,7 +7,7 @@
   so stock odoc preserves them as HTML comments.
 - `Render`: turn the markers in odoc's HTML output into real, correctly nested
   HTML — containers (`div`/`a`/`span`/`end`), multi-level attribute injection
-  (`@ S0 | S1 | S2`, the `@@` equivalent: successive nesting levels — e.g.
+  (`@ S0 | S1 | S2`, html_of_wiki's `@@` equivalent: successive nesting levels — e.g.
   table / row / cell — mirroring html_of_wiki's `@@a@b@c@@`), and self-contained
   images (`img`). Hoists structural tags out of odoc's forced `<p>` wrappers.
   A standalone `@` marker targets the following element (paragraph, table,
@@ -38,3 +38,5 @@
   `?flat` concatenates the inner preamble and content for full-width pages whose
   containers span the odoc preamble/content boundary. The chrome stays in the
   project, wodoc stays generic.
+- Docs: explain in the README why the markers are rewritten to HTML comments
+  (a trick to carry them through odoc, which otherwise drops unknown raw markup).
