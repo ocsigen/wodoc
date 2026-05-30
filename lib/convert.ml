@@ -223,6 +223,21 @@ let wrappers s =
             then (
               stack := Drop :: !stack;
               incr drop)
+            else if starts_with "paragraph" opener || starts_with "wip" opener
+            then (
+              (* block notes: a div carrying the wrapper's name as class *)
+              let name =
+                if starts_with "wip" opener then "wip" else "paragraph"
+              in
+              emit (Printf.sprintf "{%%wodoc:div class=\"%s\"%%}" name);
+              stack := Close "{%wodoc:end%}" :: !stack)
+            else if starts_with "concept" opener
+            then (
+              emit "{%wodoc:div class=\"concept\"%}";
+              (match attr_val "title" opener with
+              | Some t when t <> "" -> emit (Printf.sprintf "{b %s}\n\n" t)
+              | _ -> ());
+              stack := Close "{%wodoc:end%}" :: !stack)
             else (
               (* unknown wrapper: keep its body, mark for review *)
               emit (Printf.sprintf "{%%wodoc:%s%%}" opener);
