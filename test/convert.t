@@ -9,8 +9,8 @@ Cross-references: <<a_api ...>> and <<a_manual ...>> become odoc references.
   $ wodoc convert refs.wiki
   See {!Cors} and {!Ocsigen.Server.start}.
   Also {{!Staticmod}API documentation}.
-  Chapter {{!page-config}Configuration} and
-  {{!page-config.upload}configuration}.
+  Chapter {{!page-"config"}Configuration} and
+  {{!page-"config".upload}configuration}.
 
 Single page title: a second top-level (=) heading is demoted to {1}, so a page
 never emits two {0} headings.
