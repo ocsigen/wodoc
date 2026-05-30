@@ -147,8 +147,9 @@ let api_target body =
    Without project/subproject: an odoc reference {!M} (resolves in-package, e.g.
    on ocaml.org). With a side or project (Eliom-style), a direct link into the
    themed wodoc tree so it is clickable even from a standalone manual build:
-   - subproject=server|client (this project) -> ../eliom.<side>/Eliom/<path>/
+   - subproject=server|client (this project) -> ../eliom.<side>/<path>/
    - project=P (another Ocsigen project) -> /wodoc/<P>/latest/<path>/
+   The module path already carries its full qualification (e.g. Eliom.Service).
    The latter may 404 until that project's doc is deployed — an intentional,
    visible reminder rather than dropping the link. *)
 let a_api_ref opener body =
@@ -163,7 +164,7 @@ let a_api_ref opener body =
       Printf.sprintf "[[https://ocsigen.org/wodoc/%s/latest/%s/index.html|%s]]"
         proj path text
   | _, Some side ->
-      Printf.sprintf "[[../eliom.%s/Eliom/%s/index.html|%s]]" side path text
+      Printf.sprintf "[[../eliom.%s/%s/index.html|%s]]" side path text
   | _ -> (
     match attr_val "text" opener with
     | Some t -> Printf.sprintf "{{!%s}%s}" target t

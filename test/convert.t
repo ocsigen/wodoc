@@ -17,13 +17,13 @@ a_api/a_manual with a side or project become direct links into the themed tree
 protects the URL; plain ones stay odoc references.
 
   $ cat > sides.wiki <<'EOF'
-  > s <<a_api subproject="server"|module Service>>
+  > s <<a_api subproject="server"|module Eliom.Service>>
   > c <<a_api project="lwt"|module Lwt>>
   > p <<a_api|module Cors>>
   > t <<a_manual project="tuto" chapter="basics"|Tutorial>>
   > EOF
   $ wodoc convert sides.wiki
-  s {{:../eliom.server/Eliom/Service/index.html}Service}
+  s {{:../eliom.server/Eliom/Service/index.html}Eliom.Service}
   c {{:https://ocsigen.org/wodoc/lwt/latest/Lwt/index.html}Lwt}
   p {!Cors}
   t {{:https://ocsigen.org/tuto/basics.html}Tutorial}
