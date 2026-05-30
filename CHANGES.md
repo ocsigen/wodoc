@@ -25,7 +25,9 @@ and `.mli` sources. It provides:
   migration aid): headings, bold/italic/monospace, links, lists, code blocks,
   `<<div/span/header>>` wrappers, `<<|...>>` comments, `@@class@@` attributes,
   images and `\\` line breaks. `{{{...}}}` becomes verbatim, `<<code lang|...>>`
-  becomes a highlighted code block, and indented headings/lists are recognised.
+  becomes a highlighted code block (a `class=` on it, e.g. Eliom's
+  server/client/shared, is kept as a wodoc attribute marker for side colouring),
+  and indented headings/lists are recognised.
   `<<a_api [text=..]|module M / val M.f>>` becomes an odoc reference
   (`{!M}` / `{{!M}text}`) and `<<a_manual chapter=c [fragment=f]|text>>` becomes
   a page reference (`{{!page-c}text}` / `{{!page-c.f}text}`). Headings are
