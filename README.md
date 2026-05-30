@@ -162,15 +162,34 @@ In particular, prefer **native links** so they keep working on ocaml.org; reserv
 `{%wodoc:a%}` for making a whole block clickable (which native odoc cannot
 express), keeping a native link inside when the target should remain reachable.
 
+## Commands
+
+```
+wodoc preprocess <file.mld>
+    rewrite {%wodoc:..%} markers into {%html:<!--wodoc:..-->%} so stock odoc
+    keeps them as HTML comments
+
+wodoc render [--strip-anchors] <odoc.html>
+    turn the markers in odoc's HTML into real, nested HTML
+
+wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
+               [--keep-anchors] <odoc.html>
+    wrap rendered odoc HTML in a site template (fills {{title}}/{{preamble}}/
+    {{toc}}/{{content}} and marks the current navigation entry)
+
+wodoc convert <file.wiki>
+    best-effort wikicréole -> .mld converter to migrate an existing manual
+    (headings, lists, links, code blocks, {%wodoc:%} for classes/containers,
+    odoc references from <<a_api>>/<<a_manual>>); the output is meant to be
+    reviewed by hand
+```
+
+A typical website build chains `preprocess | odoc | render | assemble` per page,
+using `convert` once up front to bring a legacy wiki manual over to `.mld`.
+
 ## Status
 
-Early work in progress. The core (`Preprocess`, `Render`) and a small CLI are in
-place. The assembly layer and a `wiki`→`.mld` converter are next.
-
-```
-wodoc preprocess <file.mld>   # {%wodoc:..%} -> {%html:<!--wodoc:..-->%}
-wodoc render <odoc.html>      # turn the markers in odoc HTML into real HTML
-```
+Early work in progress.
 
 ## License
 
