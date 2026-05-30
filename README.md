@@ -153,4 +153,4 @@ wodoc render <odoc.html>      # turn the markers in odoc HTML into real HTML
 
 ## License
 
-LGPL-2.1 with the OCaml linking exception.
+MIT. See [LICENSE](LICENSE).

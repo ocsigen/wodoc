@@ -13,7 +13,7 @@
 
 (maintainers "The Ocsigen team")
 
-(license "LGPL-2.1-only WITH OCaml-LGPL-linking-exception")
+(license MIT)
 
 (package
  (name wodoc)

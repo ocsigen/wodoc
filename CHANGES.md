@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- License: MIT (was LGPL-2.1); add a `LICENSE` file.
 - Initial project skeleton: `wodoc` library and CLI.
 - `Preprocess`: rewrite `{%wodoc:..%}` markers into `{%html:<!--wodoc:..-->%}`
   so stock odoc preserves them as HTML comments.
