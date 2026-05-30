@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- License: MIT (was LGPL-2.1); add a `LICENSE` file.
-- Initial project skeleton: `wodoc` library and CLI.
+First release: an odoc driver that builds complete, styled websites from `.mld`
+and `.mli` sources. It provides:
+
 - `Preprocess`: rewrite `{%wodoc:..%}` markers into `{%html:<!--wodoc:..-->%}`
   so stock odoc preserves them as HTML comments.
 - `Render`: turn the markers in odoc's HTML output into real, correctly nested
@@ -33,7 +34,6 @@
   heading. A leading `@@id="x"@@` anchor on a heading becomes an odoc heading
   label (`{N:x ...}`) so cross-page fragment references resolve. Output is meant
   to be reviewed by hand.
-- Tests: cram suite for the converter (`test/convert.t`).
 - `Assemble`: build a full page — extract the odoc parts, render the content
   fragment (never the template chrome), fill a project-provided template
   (holes `{{title}}`/`{{preamble}}`/`{{toc}}`/`{{content}}`), mark the current
@@ -41,5 +41,7 @@
   `?flat` concatenates the inner preamble and content for full-width pages whose
   containers span the odoc preamble/content boundary. The chrome stays in the
   project, wodoc stays generic.
-- Docs: explain in the README why the markers are rewritten to HTML comments
-  (a trick to carry them through odoc, which otherwise drops unknown raw markup).
+- Tests: cram suites for the converter and the renderer.
+- Documentation: a README describing the approach, the pipeline and the
+  authoring rules.
+- Distributed under the MIT license.
