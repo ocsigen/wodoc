@@ -35,6 +35,16 @@ No top-level heading: the first heading is promoted to the page title {0}.
   {0 Installation}
   {1 Usage}
 
+A class on a code block (e.g. Eliom's server/client/shared) is kept as a wodoc
+attribute marker on the resulting code block, so the side colouring applies.
+
+  $ cat > codeclass.wiki <<'EOF'
+  > <<code language="ocaml" class="server"|let () = run ()>>
+  > EOF
+  $ wodoc convert codeclass.wiki
+  {%wodoc:@ class=server%}
+  {@ocaml[let () = run ()]}
+
 A leading @@id anchor on a heading becomes an odoc heading label, so cross-page
 fragment references resolve. The closing @@ is optional.
 

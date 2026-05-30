@@ -44,10 +44,27 @@ let verbatim_repl inner =
   then "{v" ^ inner ^ "v}" (* plain preformatted block *)
   else "[" ^ String.trim inner ^ "]" (* inline code *)
 
-let code_repl lang inner =
-  if lang = ""
-  then "{[" ^ inner ^ "]}"
-  else Printf.sprintf "{@%s[%s]}" lang inner
+(* a class on a code block (e.g. server/client/shared for Eliom) is kept as a
+   wodoc attribute marker on the resulting <pre>, so the side colouring applies
+   on the themed site and is dropped on stock odoc. *)
+let code_class opener =
+  match
+    Str.search_forward
+      (Str.regexp "class=[\"']\\([a-zA-Z0-9_ -]+\\)[\"']")
+      opener 0
+  with
+  | exception Not_found -> ""
+  | _ -> Str.matched_group 1 opener
+
+let code_repl ?(cls = "") lang inner =
+  let block =
+    if lang = ""
+    then "{[" ^ inner ^ "]}"
+    else Printf.sprintf "{@%s[%s]}" lang inner
+  in
+  if cls = ""
+  then block
+  else Printf.sprintf "{%%wodoc:@ class=%s%%}\n%s" cls block
 
 (* Protect both {{{...}}} (verbatim) and <<code lang|...>> (highlighted code):
    their bodies must not go through the inline/wrapper passes. *)
@@ -79,8 +96,9 @@ let protect_code s =
       | Some p -> (
         match find s ">>" (p + 1) with
         | Some e ->
-            let lang = code_lang (String.sub s (!i + 6) (p - (!i + 6))) in
-            stash (code_repl lang (String.sub s (p + 1) (e - (p + 1))));
+            let opener = String.sub s (!i + 6) (p - (!i + 6)) in
+            let lang = code_lang opener and cls = code_class opener in
+            stash (code_repl ~cls lang (String.sub s (p + 1) (e - (p + 1))));
             i := e + 2
         | None ->
             Buffer.add_char buf s.[!i];
