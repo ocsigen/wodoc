@@ -41,6 +41,20 @@ to its module's page with an odoc anchor (#val-x / #type-x).
   v {{:../eliom.server/Eliom/Service/index.html#val-create}Eliom.Service.create}
   y {{:../eliom.server/Eliom/Bus/index.html#type-t}Eliom.Bus.t}
 
+With --odoc-refs (the manual built in the same odoc run as the API), a_api and
+a_manual become native odoc references that resolve in that build; another
+project's manual still gets an external link.
+
+  $ cat > inpkg.wiki <<'EOF'
+  > a <<a_api subproject="server"|module Eliom.Service>>
+  > c <<a_manual chapter="clientserver-html" fragment="syntax"|the manual>>
+  > t <<a_manual project="tuto" chapter="basics"|tuto>>
+  > EOF
+  $ wodoc convert --odoc-refs inpkg.wiki
+  a {!Eliom.Service}
+  c {{!page-"clientserver-html".syntax}the manual}
+  t {{:https://ocsigen.org/tuto/basics.html}tuto}
+
 Single page title: a second top-level (=) heading is demoted to {1}, so a page
 never emits two {0} headings.
 

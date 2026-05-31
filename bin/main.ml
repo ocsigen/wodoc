@@ -22,6 +22,8 @@ let parse_args args =
 let () =
   match Array.to_list Sys.argv with
   | _ :: "convert" :: args -> (
+      let odoc_refs = List.mem "--odoc-refs" args in
+      let args = List.filter (fun a -> a <> "--odoc-refs") args in
       let flags, pos = parse_args args in
       match pos with
       | file :: _ ->
@@ -29,7 +31,7 @@ let () =
             Option.value ~default:"" (List.assoc_opt "api-side" flags)
           in
           print_string
-            (Wodoc.Convert.wiki_to_mld ~default_side (read_file file))
+            (Wodoc.Convert.wiki_to_mld ~default_side ~odoc_refs (read_file file))
       | [] -> usage ())
   | _ :: "preprocess" :: file :: _ ->
       print_string (Wodoc.Preprocess.string (read_file file))
