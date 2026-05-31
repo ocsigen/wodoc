@@ -29,8 +29,13 @@ and `.mli` sources. It provides:
   server/client/shared, is kept as a wodoc attribute marker for side colouring),
   and indented headings/lists are recognised.
   `<<a_api [text=..]|module M / val M.f>>` becomes an odoc reference
-  (`{!M}` / `{{!M}text}`) and `<<a_manual chapter=c [fragment=f]|text>>` becomes
-  a page reference (`{{!page-c}text}` / `{{!page-c.f}text}`). Headings are
+  (`{!M}` / `{{!M}text}`); with a `subproject`/`project` (or the `--api-side`
+  default for a sided manual) it becomes a relative link into the themed API
+  (`../<pkg>.<side>/<path>/index.html`, or another project's `/wodoc/<P>/…`),
+  with the right page and odoc anchor for a `val`/`type` (`#val-x`/`#type-x`).
+  `<<a_manual chapter=c [fragment=f]|text>>` becomes a page reference
+  (`{{!page-"c"}text}`, quoted so hyphenated chapters resolve); with `project=`
+  it links to that project's manual. Headings are
   normalised so each page emits a single level-0 title (`{0}`): a second
   top-level heading is demoted, and a page without one promotes its first
   heading. A leading `@@id="x"@@` anchor on a heading becomes an odoc heading

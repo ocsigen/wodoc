@@ -21,8 +21,16 @@ let parse_args args =
 
 let () =
   match Array.to_list Sys.argv with
-  | _ :: "convert" :: file :: _ ->
-      print_string (Wodoc.Convert.wiki_to_mld (read_file file))
+  | _ :: "convert" :: args -> (
+      let flags, pos = parse_args args in
+      match pos with
+      | file :: _ ->
+          let default_side =
+            Option.value ~default:"" (List.assoc_opt "api-side" flags)
+          in
+          print_string
+            (Wodoc.Convert.wiki_to_mld ~default_side (read_file file))
+      | [] -> usage ())
   | _ :: "preprocess" :: file :: _ ->
       print_string (Wodoc.Preprocess.string (read_file file))
   | _ :: "render" :: args -> (

@@ -135,40 +135,68 @@ let attr_val name args =
   | exception Not_found -> None
   | _ -> Some (Str.matched_group 2 args)
 
-(* "module Cors" / "val Ocsigen.Server.start" -> "Cors" / "Ocsigen.Server.start":
-   drop a leading kind keyword (module/val/type/class/...), keep the path. *)
-let api_target body =
+(* Split an API target into its kind keyword and qualified name:
+   "module Cors" -> ("module", "Cors"); "val Eliom.Service.start" ->
+   ("val", "Eliom.Service.start"). With no keyword, assume a module. *)
+let api_kind_and_name body =
   let body = String.trim body in
-  if Str.string_match (Str.regexp "^[a-z]+[ \t]+\\(.+\\)$") body 0
-  then String.trim (Str.matched_group 1 body)
-  else body
+  if Str.string_match (Str.regexp "^\\([a-z]+\\)[ \t]+\\(.+\\)$") body 0
+  then Str.matched_group 1 body, String.trim (Str.matched_group 2 body)
+  else "module", body
 
-(* <<a_api [project=P] [subproject=S] [text=T]|module M>>.
-   Without project/subproject: an odoc reference {!M} (resolves in-package, e.g.
-   on ocaml.org). With a side or project (Eliom-style), a direct link into the
-   themed wodoc tree so it is clickable even from a standalone manual build:
-   - subproject=server|client (this project) -> ../eliom.<side>/<path>/
-   - project=P (another Ocsigen project) -> /wodoc/<P>/latest/<path>/
-   The module path already carries its full qualification (e.g. Eliom.Service).
-   The latter may 404 until that project's doc is deployed — an intentional,
-   visible reminder rather than dropping the link. *)
-let a_api_ref opener body =
-  let target = api_target body in
-  let text = Option.value ~default:target (attr_val "text" opener) in
-  let path = String.map (fun c -> if c = '.' then '/' else c) target in
-  (* URL links are emitted as wikicreole [[url|text]] so the later inline pass
-     protects them (a raw "https://" would otherwise be mangled by the // -> emphasis
-     rule); odoc-reference cases have no such problem. *)
-  match attr_val "project" opener, attr_val "subproject" opener with
+(* The page path and in-page anchor for an API target. A module is a page of its
+   own; a val/type/exception/… lives on its parent module's page under an odoc
+   anchor (#val-x / #type-x / …). *)
+let api_path_anchor kind name =
+  let comps = String.split_on_char '.' name in
+  let module_page () = String.concat "/" comps, "" in
+  let member prefix =
+    match List.rev comps with
+    | last :: rev_mod ->
+        ( String.concat "/" (List.rev rev_mod)
+        , Printf.sprintf "#%s-%s" prefix last )
+    | [] -> module_page ()
+  in
+  match kind with
+  | "val" | "value" | "method" -> member "val"
+  | "type" -> member "type"
+  | "exception" -> member "exception"
+  | _ -> module_page ()
+
+(* <<a_api [project=P] [subproject=S] [text=T]|KIND M>>.
+   Without project/subproject (and no [default_side]): an odoc reference {!M}
+   (resolves in-package, e.g. on ocaml.org). With a side or project, a direct
+   link into the themed wodoc tree so it is clickable even from a standalone
+   manual build:
+   - side server|client (this project) -> ../eliom.<side>/<path>/index.html[#a]
+   - project=P (another Ocsigen project) -> /wodoc/<P>/latest/<path>/index.html[#a]
+   [default_side] makes a plain <<a_api|...>> behave as that side (the manual's
+   bare references are server-side). Links to other projects may 404 until their
+   doc is deployed — an intentional, visible reminder rather than a dropped link.
+   URL links are emitted as wikicreole [[url|text]] so the later inline pass
+   protects them (a raw "https://" would otherwise be mangled by // -> emphasis). *)
+let a_api_ref ?(default_side = "") opener body =
+  let kind, name = api_kind_and_name body in
+  let text = Option.value ~default:name (attr_val "text" opener) in
+  let path, anchor = api_path_anchor kind name in
+  let project = attr_val "project" opener in
+  let side =
+    match attr_val "subproject" opener with
+    | Some s -> Some s
+    | None ->
+        if project = None && default_side <> "" then Some default_side else None
+  in
+  match project, side with
   | Some proj, _ when proj <> "eliom" ->
-      Printf.sprintf "[[https://ocsigen.org/wodoc/%s/latest/%s/index.html|%s]]"
-        proj path text
+      Printf.sprintf
+        "[[https://ocsigen.org/wodoc/%s/latest/%s/index.html%s|%s]]" proj path
+        anchor text
   | _, Some side ->
-      Printf.sprintf "[[../eliom.%s/%s/index.html|%s]]" side path text
+      Printf.sprintf "[[../eliom.%s/%s/index.html%s|%s]]" side path anchor text
   | _ -> (
     match attr_val "text" opener with
-    | Some t -> Printf.sprintf "{{!%s}%s}" target t
-    | None -> Printf.sprintf "{!%s}" target)
+    | Some t -> Printf.sprintf "{{!%s}%s}" name t
+    | None -> Printf.sprintf "{!%s}" name)
 
 (* <<a_manual chapter="c" [fragment="f"]|text>> -> {{!page-c}text} / {{!page-c.f}text} *)
 let a_manual_ref opener body =
@@ -196,7 +224,7 @@ let a_manual_ref opener body =
 
 type closer = Close of string | Drop
 
-let wrappers s =
+let wrappers ?(default_side = "") s =
   let n = String.length s in
   let buf = Buffer.create n in
   let stack = ref [] in
@@ -235,7 +263,7 @@ let wrappers s =
                 let body = String.sub s (p + 1) (e - (p + 1)) in
                 emit
                   (if starts_with "a_api" opener
-                   then a_api_ref opener body
+                   then a_api_ref ~default_side opener body
                    else a_manual_ref opener body);
                 i := e + 2
             | None ->
@@ -510,9 +538,9 @@ let inline s =
   let s = Str.global_replace (Str.regexp_string "\\\\") "{%html:<br/>%}" s in
   restore_links s links
 
-let wiki_to_mld s =
+let wiki_to_mld ?(default_side = "") s =
   let s, code = protect_code s in
-  let s = wrappers s in
+  let s = wrappers ~default_side s in
   let s = lines_pass s in
   let s = inline s in
   let s = restore_code s code in
