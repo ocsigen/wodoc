@@ -173,7 +173,9 @@ let page
         , if flat || not preamble
           then ""
           else Render.html ~strip_anchors p.preamble )
-      ; "toc", p.toc
+        (* headings can carry wodoc markers (e.g. inline code spans), which odoc
+           copies verbatim into the toc; render them here too *)
+      ; "toc", Render.html ~strip_anchors p.toc
       ; "content", content ]
   in
   mark_current ~current filled
