@@ -298,7 +298,11 @@ let wrappers ?(default_side = "") ?(odoc_refs = false) s =
               emit (Printf.sprintf "{%%wodoc:span%s%%}" (class_attr opener));
               stack := Close "{%wodoc:end%}" :: !stack)
             else if
-              starts_with "head-css" opener || starts_with "head-script" opener
+              starts_with "head-css" opener
+              || starts_with "head-script" opener
+              (* odoc builds its own page TOC, so the manual TOC directive and
+                 its placeholder body are dropped *)
+              || starts_with "outline" opener
             then (
               stack := Drop :: !stack;
               incr drop)
