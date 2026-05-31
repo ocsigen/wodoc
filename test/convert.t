@@ -28,6 +28,19 @@ protects the URL; plain ones stay odoc references.
   p {!Cors}
   t {{:https://ocsigen.org/tuto/basics.html}Tutorial}
 
+With --api-side, a plain <<a_api|...>> links into that side, and a val/type goes
+to its module's page with an odoc anchor (#val-x / #type-x).
+
+  $ cat > plain.wiki <<'EOF'
+  > m <<a_api|module Eliom.State>>
+  > v <<a_api|val Eliom.Service.create>>
+  > y <<a_api|type Eliom.Bus.t>>
+  > EOF
+  $ wodoc convert --api-side server plain.wiki
+  m {{:../eliom.server/Eliom/State/index.html}Eliom.State}
+  v {{:../eliom.server/Eliom/Service/index.html#val-create}Eliom.Service.create}
+  y {{:../eliom.server/Eliom/Bus/index.html#type-t}Eliom.Bus.t}
+
 Single page title: a second top-level (=) heading is demoted to {1}, so a page
 never emits two {0} headings.
 
