@@ -198,29 +198,23 @@ let a_api_ref ?(default_side = "") opener body =
     | Some t -> Printf.sprintf "{{!%s}%s}" name t
     | None -> Printf.sprintf "{!%s}" name)
 
-(* <<a_manual chapter="c" [fragment="f"]|text>> -> {{!page-c}text} / {{!page-c.f}text} *)
+(* <<a_manual [project=P] chapter="c" [fragment="f"]|text>> -> a relative link to
+   the sibling manual page (c.html[#f]), or to another project's manual for
+   [project=P]. Relative links are robust (hyphenated chapters, section anchors,
+   same-side) and keep working on both ocaml.org and ocsigen.org, where manual
+   pages are siblings. Emitted as wikicreole [[url|text]] so the inline pass
+   protects the URL. *)
 let a_manual_ref opener body =
   let text = String.trim body in
   let page = Option.value ~default:"" (attr_val "chapter" opener) in
-  let frag = attr_val "fragment" opener in
+  let anchor =
+    match attr_val "fragment" opener with Some f -> "#" ^ f | None -> ""
+  in
   match attr_val "project" opener with
   | Some proj ->
-      (* another project's manual (e.g. tuto): link into its site (may 404 until
-         deployed — a visible reminder). Emitted as [[url|text]] so the inline
-         pass protects the URL. *)
-      let anchor = match frag with Some f -> "#" ^ f | None -> "" in
       Printf.sprintf "[[https://ocsigen.org/%s/%s.html%s|%s]]" proj page anchor
         text
-  | None ->
-      (* same manual: an odoc page reference. The page name is quoted so
-         hyphenated chapters (clientserver-applications) resolve — odoc reads
-         {!page-a-b} as qualifier "page-a", whereas {!page-"a-b"} works. *)
-      let target =
-        match frag with
-        | Some f -> Printf.sprintf "page-\"%s\".%s" page f
-        | None -> Printf.sprintf "page-\"%s\"" page
-      in
-      Printf.sprintf "{{!%s}%s}" target text
+  | None -> Printf.sprintf "[[%s.html%s|%s]]" page anchor text
 
 type closer = Close of string | Drop
 

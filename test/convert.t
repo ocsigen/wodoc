@@ -9,8 +9,8 @@ Cross-references: <<a_api ...>> and <<a_manual ...>> become odoc references.
   $ wodoc convert refs.wiki
   See {!Cors} and {!Ocsigen.Server.start}.
   Also {{!Staticmod}API documentation}.
-  Chapter {{!page-"config"}Configuration} and
-  {{!page-"config".upload}configuration}.
+  Chapter {{:config.html}Configuration} and
+  {{:config.html#upload}configuration}.
 
 a_api/a_manual with a side or project become direct links into the themed tree
 (clickable from a standalone build), emitted as [[url|text]] so the inline pass

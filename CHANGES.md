@@ -33,9 +33,10 @@ and `.mli` sources. It provides:
   default for a sided manual) it becomes a relative link into the themed API
   (`../<pkg>.<side>/<path>/index.html`, or another project's `/wodoc/<P>/…`),
   with the right page and odoc anchor for a `val`/`type` (`#val-x`/`#type-x`).
-  `<<a_manual chapter=c [fragment=f]|text>>` becomes a page reference
-  (`{{!page-"c"}text}`, quoted so hyphenated chapters resolve); with `project=`
-  it links to that project's manual. Headings are
+  `<<a_manual chapter=c [fragment=f]|text>>` becomes a relative link to the
+  sibling manual page (`c.html[#f]`) — robust for hyphenated chapters, section
+  anchors and same-side, and valid on both ocaml.org and ocsigen.org; with
+  `project=` it links to that project's manual. Headings are
   normalised so each page emits a single level-0 title (`{0}`): a second
   top-level heading is demoted, and a page without one promotes its first
   heading. A leading `@@id="x"@@` anchor on a heading becomes an odoc heading
