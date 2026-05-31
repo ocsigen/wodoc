@@ -175,7 +175,7 @@ let api_path_anchor kind name =
    doc is deployed — an intentional, visible reminder rather than a dropped link.
    URL links are emitted as wikicreole [[url|text]] so the later inline pass
    protects them (a raw "https://" would otherwise be mangled by // -> emphasis). *)
-let a_api_ref ?(default_side = "") opener body =
+let a_api_ref ?(default_side = "") ?(odoc_refs = false) opener body =
   let kind, name = api_kind_and_name body in
   let text = Option.value ~default:name (attr_val "text" opener) in
   let path, anchor = api_path_anchor kind name in
@@ -186,17 +186,28 @@ let a_api_ref ?(default_side = "") opener body =
     | None ->
         if project = None && default_side <> "" then Some default_side else None
   in
-  match project, side with
-  | Some proj, _ when proj <> "eliom" ->
-      Printf.sprintf
-        "[[https://ocsigen.org/wodoc/%s/latest/%s/index.html%s|%s]]" proj path
-        anchor text
-  | _, Some side ->
-      Printf.sprintf "[[../eliom.%s/%s/index.html%s|%s]]" side path anchor text
-  | _ -> (
+  (* odoc_refs: emit a native reference {!Name} (resolves same-side in-library and
+     cross-package via odoc) — used when the manual is built in the same odoc
+     run as the API (unified in-package build). project/subproject are dropped:
+     the qualified name suffices. *)
+  if odoc_refs
+  then
     match attr_val "text" opener with
     | Some t -> Printf.sprintf "{{!%s}%s}" name t
-    | None -> Printf.sprintf "{!%s}" name)
+    | None -> Printf.sprintf "{!%s}" name
+  else
+    match project, side with
+    | Some proj, _ when proj <> "eliom" ->
+        Printf.sprintf
+          "[[https://ocsigen.org/wodoc/%s/latest/%s/index.html%s|%s]]" proj path
+          anchor text
+    | _, Some side ->
+        Printf.sprintf "[[../eliom.%s/%s/index.html%s|%s]]" side path anchor
+          text
+    | _ -> (
+      match attr_val "text" opener with
+      | Some t -> Printf.sprintf "{{!%s}%s}" name t
+      | None -> Printf.sprintf "{!%s}" name)
 
 (* <<a_manual [project=P] chapter="c" [fragment="f"]|text>> -> a relative link to
    the sibling manual page (c.html[#f]), or to another project's manual for
@@ -204,21 +215,28 @@ let a_api_ref ?(default_side = "") opener body =
    same-side) and keep working on both ocaml.org and ocsigen.org, where manual
    pages are siblings. Emitted as wikicreole [[url|text]] so the inline pass
    protects the URL. *)
-let a_manual_ref opener body =
+let a_manual_ref ?(odoc_refs = false) opener body =
   let text = String.trim body in
   let page = Option.value ~default:"" (attr_val "chapter" opener) in
-  let anchor =
-    match attr_val "fragment" opener with Some f -> "#" ^ f | None -> ""
-  in
+  let frag = attr_val "fragment" opener in
+  let anchor = match frag with Some f -> "#" ^ f | None -> "" in
   match attr_val "project" opener with
   | Some proj ->
       Printf.sprintf "[[https://ocsigen.org/%s/%s.html%s|%s]]" proj page anchor
         text
+  | None when odoc_refs ->
+      (* in-package build: an odoc page reference (resolves in the same run) *)
+      let target =
+        match frag with
+        | Some f -> Printf.sprintf "page-\"%s\".%s" page f
+        | None -> Printf.sprintf "page-\"%s\"" page
+      in
+      Printf.sprintf "{{!%s}%s}" target text
   | None -> Printf.sprintf "[[%s.html%s|%s]]" page anchor text
 
 type closer = Close of string | Drop
 
-let wrappers ?(default_side = "") s =
+let wrappers ?(default_side = "") ?(odoc_refs = false) s =
   let n = String.length s in
   let buf = Buffer.create n in
   let stack = ref [] in
@@ -257,8 +275,8 @@ let wrappers ?(default_side = "") s =
                 let body = String.sub s (p + 1) (e - (p + 1)) in
                 emit
                   (if starts_with "a_api" opener
-                   then a_api_ref ~default_side opener body
-                   else a_manual_ref opener body);
+                   then a_api_ref ~default_side ~odoc_refs opener body
+                   else a_manual_ref ~odoc_refs opener body);
                 i := e + 2
             | None ->
                 emit_char s.[!i];
@@ -532,9 +550,9 @@ let inline s =
   let s = Str.global_replace (Str.regexp_string "\\\\") "{%html:<br/>%}" s in
   restore_links s links
 
-let wiki_to_mld ?(default_side = "") s =
+let wiki_to_mld ?(default_side = "") ?(odoc_refs = false) s =
   let s, code = protect_code s in
-  let s = wrappers ~default_side s in
+  let s = wrappers ~default_side ~odoc_refs s in
   let s = lines_pass s in
   let s = inline s in
   let s = restore_code s code in
