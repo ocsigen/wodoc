@@ -138,6 +138,76 @@ let mark_current ?(attr = "data-wodoc-page") ?(class_ = "current") ~current s =
     done;
     Buffer.contents out
 
+(* odoc 3.x's sidebar is a global page/library tree, not a per-page section toc,
+   so reusing it for an "On this page" panel just duplicates the manual/API
+   navigation. Synthesise a real local toc from the rendered content's heading
+   anchors (<h2 id>/<h3 id>/<h4 id>), nested by level. Returns "" when the page
+   has no sections (the theme hides the panel via the odoc-local-toc class). *)
+let local_toc content =
+  let len = String.length content in
+  let items = ref [] in
+  let i = ref 0 in
+  while !i < len do
+    if
+      !i + 3 <= len
+      && content.[!i] = '<'
+      && content.[!i + 1] = 'h'
+      && (content.[!i + 2] = '2'
+         || content.[!i + 2] = '3'
+         || content.[!i + 2] = '4')
+    then
+      let lvl = Char.code content.[!i + 2] - Char.code '0' in
+      match find content ">" !i with
+      | None -> i := len
+      | Some gt -> (
+          let opentag = String.sub content !i (gt - !i + 1) in
+          let close = Printf.sprintf "</h%d>" lvl in
+          match find content close (gt + 1) with
+          | None -> i := gt + 1
+          | Some ce ->
+              (if
+                 Str.string_match (Str.regexp ".*id=\"\\([^\"]*\\)\"") opentag 0
+               then
+                 let id = Str.matched_group 1 opentag in
+                 let title =
+                   strip_tags (String.sub content (gt + 1) (ce - gt - 1))
+                 in
+                 if title <> "" then items := (lvl, id, title) :: !items);
+              i := ce + String.length close)
+    else incr i
+  done;
+  let items = List.rev !items in
+  if items = []
+  then ""
+  else
+    let minlvl = List.fold_left (fun m (l, _, _) -> min m l) 9 items in
+    let b = Buffer.create 256 in
+    let depth = ref 0 in
+    List.iter
+      (fun (lvl, id, title) ->
+         let d = lvl - minlvl + 1 in
+         if d > !depth
+         then
+           for _ = !depth + 1 to d do
+             Buffer.add_string b "<ul>"
+           done
+         else (
+           Buffer.add_string b "</li>";
+           for _ = d + 1 to !depth do
+             Buffer.add_string b "</ul></li>"
+           done);
+         depth := d;
+         Buffer.add_string b
+           (Printf.sprintf "<li><a href=\"#%s\">%s</a>" id title))
+      items;
+    Buffer.add_string b "</li>";
+    for _ = 2 to !depth do
+      Buffer.add_string b "</ul></li>"
+    done;
+    Buffer.add_string b "</ul>";
+    Printf.sprintf "<nav class=\"odoc-toc odoc-local-toc\">%s</nav>"
+      (Buffer.contents b)
+
 (* strip the outermost start/end tag of a balanced block: "<t ...>X</t>" -> "X" *)
 let inner block =
   match String.index_opt block '>' with
@@ -175,9 +245,9 @@ let page
         , if flat || not preamble
           then ""
           else Render.html ~strip_anchors p.preamble )
-        (* headings can carry wodoc markers (e.g. inline code spans), which odoc
-           copies verbatim into the toc; render them here too *)
-      ; "toc", Render.html ~strip_anchors p.toc
+        (* a real per-page "On this page", synthesised from the content's
+           section headings (odoc 3.x only gives a global page tree) *)
+      ; "toc", local_toc content
       ; "content", content ]
   in
   mark_current ~current filled
