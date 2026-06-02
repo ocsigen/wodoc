@@ -266,7 +266,15 @@ let wrappers ?(default_side = "") ?(odoc_refs = false) s =
           i := c + 2
       | `Pipe p ->
           let opener = String.trim (String.sub s (!i + 2) (p - (!i + 2))) in
-          if starts_with "a_api" opener || starts_with "a_manual" opener
+          if opener = ""
+          then
+            (* <<|...>> comment: skip it whole, opaquely — scan to the first >>
+               rather than parsing the inner tokens. A nested <<a_manual>> would
+               otherwise be read as an inline reference and consume this
+               comment's closing >>, leaving the comment open and dropping the
+               rest of the page. *)
+            i := match find s ">>" (p + 1) with Some e -> e + 2 | None -> n
+          else if starts_with "a_api" opener || starts_with "a_manual" opener
           then (
             (* inline cross-reference: consume through the matching >> and emit
                an odoc reference (no entry on the wrapper stack) *)
@@ -282,12 +290,7 @@ let wrappers ?(default_side = "") ?(odoc_refs = false) s =
                 emit_char s.[!i];
                 incr i)
           else begin
-            if opener = ""
-            then (
-              (* <<|  comment: drop until matching >> *)
-              stack := Drop :: !stack;
-              incr drop)
-            else if starts_with "header" opener
+            if starts_with "header" opener
             then stack := Close "" :: !stack
             else if starts_with "div" opener
             then (

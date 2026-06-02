@@ -137,3 +137,22 @@ A title carried inside a <<header|...>> wrapper still becomes {0}, and the
 
 
 
+
+A <<|...>> comment is skipped whole, even when it contains a nested wrapper
+(e.g. <<a_manual>>): the comment is opaque, so the inner wrapper does not
+consume the comment's closing >> and swallow the rest of the page.
+
+  $ cat > comment.wiki <<'EOF'
+  > Before.
+  > <<| See <<a_manual chapter="x" fragment="y"| Y > >. >>
+  > After, this survives.
+  > EOF
+  $ wodoc convert comment.wiki
+  Before.
+  
+  After, this survives.
+
+
+
+
+
