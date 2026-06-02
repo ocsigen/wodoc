@@ -9,7 +9,7 @@
     - marks the current navigation entry ({!mark_current}).
 
     A template is HTML containing holes written [{{name}}]. The standard holes
-    filled by {!page} are [{{title}}], [{{preamble}}], [{{toc}}] and
+    filled by {!page} are [{{base}}], [{{title}}], [{{preamble}}], [{{toc}}] and
     [{{content}}]. Menu links carry a [data-wodoc-page] attribute; the entry
     whose value equals the current page id receives the [current] class. *)
 
@@ -42,6 +42,7 @@ val page :
    ?preamble:bool
   -> ?flat:bool
   -> ?strip_anchors:bool
+  -> ?base:string
   -> template:string
   -> current:string
   -> string
@@ -56,4 +57,7 @@ val page :
       odoc preamble/content boundary, concatenate the inner preamble and content
       (dropping odoc's wrappers) into [{{content}}] and leave [{{preamble}}]
       empty.
-    - [strip_anchors] (default [true]): drop odoc's heading hover-anchors. *)
+    - [strip_anchors] (default [true]): drop odoc's heading hover-anchors.
+    - [base] (default [""]): fills [{{base}}], the relative path from the page to
+      the doc root (e.g. ["."], [".."], ["../.."]), so a version's internal links
+      stay within that version and never mention it. *)
