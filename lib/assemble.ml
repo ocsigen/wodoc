@@ -152,6 +152,7 @@ let page
       ?(preamble = true)
       ?(flat = false)
       ?(strip_anchors = true)
+      ?(base = "")
       ~template
       ~current
       odoc_html
@@ -168,7 +169,8 @@ let page
   let content = Render.html ~strip_anchors fragment in
   let filled =
     fill ~template
-      [ "title", p.title
+      [ "base", base
+      ; "title", p.title
       ; ( "preamble"
         , if flat || not preamble
           then ""

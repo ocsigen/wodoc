@@ -57,10 +57,11 @@ let () =
           let current =
             Option.value ~default:"" (List.assoc_opt "current" flags)
           in
+          let base = Option.value ~default:"" (List.assoc_opt "base" flags) in
           let template = read_file tmpl in
           print_string
             (Wodoc.Assemble.page ~preamble ~flat
-               ~strip_anchors:(not keep_anchors) ~template ~current
+               ~strip_anchors:(not keep_anchors) ~base ~template ~current
                (read_file file))
       | _ -> usage ())
   | _ -> usage ()
