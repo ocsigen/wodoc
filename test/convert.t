@@ -26,7 +26,7 @@ protects the URL; plain ones stay odoc references.
   s {{:../eliom.server/Eliom/Service/index.html}Eliom.Service}
   c {{:https://ocsigen.org/wodoc/lwt/latest/Lwt/index.html}Lwt}
   p {!Cors}
-  t {{:https://ocsigen.org/tuto/basics.html}Tutorial}
+  t {{:../tuto/basics.html}Tutorial}
 
 With --api-side, a plain <<a_api|...>> links into that side, and a val/type goes
 to its module's page with an odoc anchor (#val-x / #type-x).
@@ -53,7 +53,7 @@ project's manual still gets an external link.
   $ wodoc convert --odoc-refs inpkg.wiki
   a {!Eliom.Service}
   c {{!page-"clientserver-html".syntax}the manual}
-  t {{:https://ocsigen.org/tuto/basics.html}tuto}
+  t {{:../tuto/basics.html}tuto}
 
 Single page title: a second top-level (=) heading is demoted to {1}, so a page
 never emits two {0} headings.
@@ -96,8 +96,10 @@ the wrapper name as class; a concept keeps its title as a bold lead.
   > <<concept title="Summary"|Eliom is multi-tier.>>
   > EOF
   $ wodoc convert notes.wiki
-  {%wodoc:div class="wip"%}Incomplete.{%wodoc:end%}
-  {%wodoc:div class="concept"%}{b Summary}
+  {%wodoc:aside class="wip"%}{b Work in progress}
+  
+  Incomplete.{%wodoc:end%}
+  {%wodoc:aside class="concept"%}{b Concept: Summary}
   
   Eliom is multi-tier.{%wodoc:end%}
 
@@ -138,21 +140,64 @@ A title carried inside a <<header|...>> wrapper still becomes {0}, and the
 
 
 
-A <<|...>> comment is skipped whole, even when it contains a nested wrapper
-(e.g. <<a_manual>>): the comment is opaque, so the inner wrapper does not
-consume the comment's closing >> and swallow the rest of the page.
+A <<|...>> comment is removed (pre-pass, before code protection) up to its
+first UNescaped >>, exactly like html_of_wiki — even a commented-out code
+example inside it is dropped, and a section heading that follows survives (it is
+not swallowed). The ~>> inside the example is escaped, so it does not close the
+comment; the code's own >> does.
 
   $ cat > comment.wiki <<'EOF'
   > Before.
-  > <<| See <<a_manual chapter="x" fragment="y"| Y > >. >>
-  > After, this survives.
+  > <<|Commented-out example:
+  > <<code language="ocaml"|let f = get () ~>>= fun y -> y>>
+  > = After, this heading survives =
   > EOF
   $ wodoc convert comment.wiki
   Before.
   
-  After, this survives.
+  {0 After, this heading survives}
 
 
 
 
 
+
+
+
+Two @@class@@ attribute markers on the same line (a leading class plus an image
+carrying its own) must not be merged by a greedy match into one bogus
+multi-section attribute spanning both.
+
+  $ cat > attrs.wiki <<'WIKI'
+  > @@class="centered"@@{{@@class="wide"@@files/x.svg|My alt}}
+  > WIKI
+  $ wodoc convert attrs.wiki
+  {%wodoc:@ class="centered"%}{%wodoc:img class="wide" src="files/x.svg" alt="My alt"%}
+
+A code block keeps escaped >> (~>>, used for OCaml >>= and camlp4 quotations):
+the block does not close at the escaped >>, and the ~ is dropped in the output.
+
+  $ cat > esc.wiki <<'WIKI'
+  > <<code language="ocaml"|
+  > let f x = get () ~>>= fun y -> <:t< a ~>> in f
+  > >>
+  > WIKI
+  $ wodoc convert esc.wiki
+  {@ocaml[
+  let f x = get () >>= fun y -> <:t< a >> in f
+  ]}
+
+Wikicreole tables (|=header cell|, |data cell|) become odoc light tables; the
+header-cell marker and unsupported per-cell @@class/@@colspan attributes are
+dropped (odoc tables carry none), and a [[..|..]] link inside a cell keeps its
+pipe out of the split.
+
+  $ cat > table.wiki <<'WIKI'
+  > |=@@class="row"@@First|@@colspan="3"@@Description one|
+  > |=Second|See [[basics|the guide]] now|
+  > WIKI
+  $ wodoc convert table.wiki
+  {t
+   | First | Description one |
+   | Second | See {{:basics.html}the guide} now |
+  }

@@ -99,16 +99,11 @@ let emit_tags s =
                   Buffer.add_string out t;
                   stack := tl
               | [] -> Buffer.add_string out "<!--wodoc:unbalanced-end-->")
-            | "div" ->
-                Buffer.add_string out (Printf.sprintf "<div%s>" (attrs_of rest));
-                stack := "</div>" :: !stack
-            | "a" ->
-                Buffer.add_string out (Printf.sprintf "<a%s>" (attrs_of rest));
-                stack := "</a>" :: !stack
-            | "span" ->
+            | ( "div" | "a" | "span" | "section" | "header" | "footer"
+              | "aside" | "nav" | "article" ) as tag ->
                 Buffer.add_string out
-                  (Printf.sprintf "<span%s>" (attrs_of rest));
-                stack := "</span>" :: !stack
+                  (Printf.sprintf "<%s%s>" tag (attrs_of rest));
+                stack := Printf.sprintf "</%s>" tag :: !stack
             | "img" ->
                 Buffer.add_string out
                   (Printf.sprintf "<img%s/>" (attrs_of rest))

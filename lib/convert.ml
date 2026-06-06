@@ -66,6 +66,48 @@ let code_repl ?(cls = "") lang inner =
   then block
   else Printf.sprintf "{%%wodoc:@ class=%s%%}\n%s" cls block
 
+(* In wikicreole [~] escapes the next markup, so [~>>] / [~<<] are a literal
+   [>>] / [<<] inside a code block — used so OCaml [>>=] (Lwt bind) and camlp4
+   [<:table< … >>] quotations don't close the [<<code …>>] block. Find the
+   closing [>>] = the first one NOT escaped by a preceding [~]. *)
+let find_code_close s from =
+  let rec go i =
+    match find s ">>" i with
+    | None -> None
+    | Some k -> if k > 0 && s.[k - 1] = '~' then go (k + 2) else Some k
+  in
+  go from
+
+(* Drop the [~] from an escaped [~>>] / [~<<] in a (verbatim) code body, so the
+   rendered code shows the real [>>] / [<<]. Other [~] (labelled arguments like
+   [~service]) are left untouched. *)
+let unescape_code s =
+  let s = Str.global_replace (Str.regexp_string "~>>") ">>" s in
+  Str.global_replace (Str.regexp_string "~<<") "<<" s
+
+(* Remove [<<|...>>] comments BEFORE anything else, exactly as html_of_wiki
+   does: a comment is opaque and closes at the FIRST [>>], so its body (even a
+   nested [<<code…>>] example, an [<<a_manual…>>], or text) is dropped wholesale
+   without being parsed. Doing this before protect_code matters: otherwise
+   protect_code would grab a [<<code…>>] that lives inside a comment and consume
+   the very [>>] that closes the comment, making the comment overrun into real
+   content that follows (a section heading). *)
+let strip_comments s =
+  let n = String.length s in
+  let buf = Buffer.create n in
+  let i = ref 0 in
+  while !i < n do
+    if !i + 3 <= n && s.[!i] = '<' && s.[!i + 1] = '<' && s.[!i + 2] = '|'
+    then
+      (* close at the first UNescaped >> (a ~>> is a literal >>, e.g. >>= in a
+         commented-out code example, and does not close the comment). *)
+      i := (match find_code_close s (!i + 3) with Some e -> e + 2 | None -> n)
+    else (
+      Buffer.add_char buf s.[!i];
+      incr i)
+  done;
+  Buffer.contents buf
+
 (* Protect both {{{...}}} (verbatim) and <<code lang|...>> (highlighted code):
    their bodies must not go through the inline/wrapper passes. *)
 let protect_code s =
@@ -94,11 +136,12 @@ let protect_code s =
     then (
       match find s "|" (!i + 6) with
       | Some p -> (
-        match find s ">>" (p + 1) with
+        match find_code_close s (p + 1) with
         | Some e ->
             let opener = String.sub s (!i + 6) (p - (!i + 6)) in
             let lang = code_lang opener and cls = code_class opener in
-            stash (code_repl ~cls lang (String.sub s (p + 1) (e - (p + 1))));
+            let body = unescape_code (String.sub s (p + 1) (e - (p + 1))) in
+            stash (code_repl ~cls lang body);
             i := e + 2
         | None ->
             Buffer.add_char buf s.[!i];
@@ -222,8 +265,11 @@ let a_manual_ref ?(odoc_refs = false) opener body =
   let anchor = match frag with Some f -> "#" ^ f | None -> "" in
   match attr_val "project" opener with
   | Some proj ->
-      Printf.sprintf "[[https://ocsigen.org/%s/%s.html%s|%s]]" proj page anchor
-        text
+      (* another project's manual page: a RELATIVE link to the sibling project,
+         correct on the final flat ocsigen.org/<proj>/ layout and on ocaml.org
+         where manuals are siblings (report piège #10 — never absolute for
+         content). *)
+      Printf.sprintf "[[../%s/%s.html%s|%s]]" proj page anchor text
   | None when odoc_refs ->
       (* in-package build: an odoc page reference (resolves in the same run) *)
       let target =
@@ -233,6 +279,12 @@ let a_manual_ref ?(odoc_refs = false) opener body =
       in
       Printf.sprintf "{{!%s}%s}" target text
   | None -> Printf.sprintf "[[%s.html%s|%s]]" page anchor text
+
+(* <<a_file src="path"|text>> -> a link to a downloadable asset shipped under
+   files/ (the manual's assets directory). *)
+let a_file_ref opener body =
+  let src = Option.value ~default:"" (attr_val "src" opener) in
+  Printf.sprintf "[[files/%s|%s]]" src (String.trim body)
 
 type closer = Close of string | Drop
 
@@ -268,30 +320,36 @@ let wrappers ?(default_side = "") ?(odoc_refs = false) s =
           let opener = String.trim (String.sub s (!i + 2) (p - (!i + 2))) in
           if opener = ""
           then
-            (* <<|...>> comment: skip it whole, opaquely — scan to the first >>
-               rather than parsing the inner tokens. A nested <<a_manual>> would
-               otherwise be read as an inline reference and consume this
-               comment's closing >>, leaving the comment open and dropping the
-               rest of the page. *)
-            i := match find s ">>" (p + 1) with Some e -> e + 2 | None -> n
-          else if starts_with "a_api" opener || starts_with "a_manual" opener
+            (* <<|...>> comment: skip to the first >> (opaque). Comments are
+               normally already removed by strip_comments (a pre-pass run before
+               protect_code, matching html_of_wiki's first->> closing); this is
+               a fallback for any comment that survived. *)
+            i := (match find s ">>" (p + 1) with Some e -> e + 2 | None -> n)
+          else if
+            starts_with "a_api" opener || starts_with "a_manual" opener
+            || starts_with "a_file" opener
           then (
             (* inline cross-reference: consume through the matching >> and emit
-               an odoc reference (no entry on the wrapper stack) *)
+               an odoc reference / link (no entry on the wrapper stack) *)
             match find s ">>" (p + 1) with
             | Some e ->
                 let body = String.sub s (p + 1) (e - (p + 1)) in
                 emit
                   (if starts_with "a_api" opener
                    then a_api_ref ~default_side ~odoc_refs opener body
+                   else if starts_with "a_file" opener
+                   then a_file_ref opener body
                    else a_manual_ref ~odoc_refs opener body);
                 i := e + 2
             | None ->
                 emit_char s.[!i];
                 incr i)
           else begin
-            if starts_with "header" opener
-            then stack := Close "" :: !stack
+            if starts_with "header" opener || starts_with "webonly" opener
+            then
+              (* <<header|..>> wraps a heading; <<webonly|..>> shows its body on
+                 the web (which is us). Both: keep the body, drop the wrapper. *)
+              stack := Close "" :: !stack
             else if starts_with "div" opener
             then (
               emit (Printf.sprintf "{%%wodoc:div%s%%}" (class_attr opener));
@@ -309,20 +367,34 @@ let wrappers ?(default_side = "") ?(odoc_refs = false) s =
             then (
               stack := Drop :: !stack;
               incr drop)
-            else if starts_with "paragraph" opener || starts_with "wip" opener
+            else if starts_with "wip" opener
             then (
-              (* block notes: a div carrying the wrapper's name as class *)
-              let name =
-                if starts_with "wip" opener then "wip" else "paragraph"
-              in
-              emit (Printf.sprintf "{%%wodoc:div class=\"%s\"%%}" name);
+              (* "work in progress" note: html_of_wiki renders <aside
+                 class="wip"><h5>Work in progress</h5>…; mirror the element and
+                 its auto-header so the existing CSS applies. *)
+              emit "{%wodoc:aside class=\"wip\"%}{b Work in progress}\n\n";
+              stack := Close "{%wodoc:end%}" :: !stack)
+            else if starts_with "paragraph" opener
+            then (
+              (* block note: a div carrying the wrapper's name as class *)
+              emit "{%wodoc:div class=\"paragraph\"%}";
+              stack := Close "{%wodoc:end%}" :: !stack)
+            else if starts_with "concepts" opener
+            then (
+              (* the "Concepts" summary box (plural): listed upcoming concepts,
+                 rendered <aside class="concepts"> with an auto "Concepts"
+                 header. Check BEFORE the singular "concept" (a prefix of it). *)
+              emit "{%wodoc:aside class=\"concepts\"%}{b Concepts}\n\n";
               stack := Close "{%wodoc:end%}" :: !stack)
             else if starts_with "concept" opener
             then (
-              emit "{%wodoc:div class=\"concept\"%}";
+              (* a "Concept: <title>" callout box (singular), <aside
+                 class="concept">. *)
+              emit "{%wodoc:aside class=\"concept\"%}";
               (match attr_val "title" opener with
-              | Some t when t <> "" -> emit (Printf.sprintf "{b %s}\n\n" t)
-              | _ -> ());
+              | Some t when t <> "" ->
+                  emit (Printf.sprintf "{b Concept: %s}\n\n" t)
+              | _ -> emit "{b Concept}\n\n");
               stack := Close "{%wodoc:end%}" :: !stack)
             else (
               (* unknown wrapper: keep its body, mark for review *)
@@ -364,7 +436,8 @@ let rstrip_eq s =
 (* A leading anchor on a heading, e.g. @@id="upload"@@ or @@id='upload' (no
    closing @@): becomes an odoc heading label so cross-page fragment references
    ({{!page-x.upload}..}) resolve. Returns (label option, remaining text). *)
-let heading_label_re = Str.regexp "^@@id=[\"']\\([^\"']+\\)[\"']\\(@@\\)?[ \t]*"
+let heading_label_re =
+  Str.regexp "^@@[Ii][Dd]=[\"']\\([^\"']+\\)[\"']\\(@@\\)?[ \t]*"
 
 let split_heading_label text =
   if Str.string_match heading_label_re text 0
@@ -424,6 +497,23 @@ let lines_pass s =
   |> String.concat "\n"
 
 (* ---- D. inline ---- *)
+(* A bare wiki page reference ([[basics-server|…]], or the page part of a
+   [wiki("w"):page] inter-project link) names a manual page, which is published
+   as <page>.html. Append the extension, preserving a trailing #anchor, unless
+   the reference already looks like a URL/anchor/path/file (scheme, '/', '#',
+   '.', leading '#'). *)
+let add_html_ext p =
+  let page, anchor =
+    match String.index_opt p '#' with
+    | Some k -> String.sub p 0 k, String.sub p k (String.length p - k)
+    | None -> p, ""
+  in
+  if
+    page = "" || String.contains page ':' || String.contains page '/'
+    || String.contains page '.'
+  then p
+  else page ^ ".html" ^ anchor
+
 let deabbrev url =
   if starts_with "wiki(" url
   then
@@ -433,12 +523,14 @@ let deabbrev url =
     | exception Not_found -> url
     | _ ->
         let w = Str.matched_group 1 url and p = Str.matched_group 2 url in
-        "../" ^ w ^ "/" ^ p
+        "../" ^ w ^ "/" ^ add_html_ext p
   else if starts_with "site:/" url
   then "../" ^ String.sub url 6 (String.length url - 6)
   else if starts_with "site:" url
   then "../" ^ String.sub url 5 (String.length url - 5)
-  else url
+  else if String.contains url ':' || (String.length url > 0 && url.[0] = '#')
+  then url (* a scheme URL (http:, mailto:) or an in-page anchor: leave as-is *)
+  else add_html_ext url
 
 (* extract [[...]] links and {{...}} images into placeholders (already converted
    to mld), so later inline passes don't touch their URLs *)
@@ -540,16 +632,89 @@ let toggle s mk op cl =
 
 (* @@class="a"@b@c@@ -> {%wodoc:@ class="a" | b | c%} *)
 let attrs_pass s =
+  (* The inner part of [@@ ... @@] may contain single [@] section separators
+     ([@@a@b@c@@]) but must NOT span across a closing [@@]: each inner [@] has to
+     be followed by a non-[@] char, so a [@@] always terminates the match.
+     Otherwise a greedy match would swallow everything between two distant [@@]
+     markers across the whole document. *)
   Str.global_substitute
-    (Str.regexp "@@\\([^@]*\\(@[^@]*\\)*\\)@@")
+    (Str.regexp "@@\\([^@]*\\(@[^@][^@]*\\)*\\)@@")
     (fun m ->
        let inner = Str.matched_group 1 m in
        let sections = String.split_on_char '@' inner |> List.map String.trim in
        Printf.sprintf "{%%wodoc:@ %s%%}" (String.concat " | " sections))
     s
 
+(* wikicreole tables: each row is a line [|cell|cell|], a header cell starting
+   with [|=]. odoc has no per-cell class/colspan (report "manque dur #2"), so we
+   drop those cell attributes and the header-cell marker, and emit a plain odoc
+   light table {t | c | c | }. Run after protect_links so any [[..|..]] link
+   inside a cell is already a pipe-free placeholder; code is still protected, so
+   OCaml [| pattern] lines are inside placeholders, not real rows. *)
+let cell_attr_re = Str.regexp "@@\\([^@]*\\(@[^@][^@]*\\)*\\)@@"
+
+let table_cell c =
+  let c = String.trim c in
+  let c =
+    if String.length c > 0 && c.[0] = '='
+    then String.sub c 1 (String.length c - 1)
+    else c
+  in
+  String.trim (Str.global_replace cell_attr_re "" c)
+
+let is_table_row line =
+  let t = String.trim line in
+  String.length t >= 2 && t.[0] = '|'
+
+let emit_table rows =
+  let buf = Buffer.create 256 in
+  Buffer.add_string buf "{t\n";
+  List.iter
+    (fun row ->
+      let row = String.trim row in
+      let n = String.length row in
+      let a = if n > 0 && row.[0] = '|' then 1 else 0 in
+      let b = if n > a && row.[n - 1] = '|' then n - 1 else n in
+      let cells =
+        String.sub row a (b - a) |> String.split_on_char '|'
+        |> List.map table_cell
+      in
+      Buffer.add_string buf (" | " ^ String.concat " | " cells ^ " |\n"))
+    rows;
+  Buffer.add_string buf "}";
+  Buffer.contents buf
+
+let tables_pass s =
+  let lines = String.split_on_char '\n' s in
+  let buf = Buffer.create (String.length s) in
+  let rec go = function
+    | [] -> ()
+    | line :: rest when is_table_row line ->
+        let rows, rest =
+          let rec take acc = function
+            | l :: r when is_table_row l -> take (l :: acc) r
+            | r -> List.rev acc, r
+          in
+          take [ line ] rest
+        in
+        Buffer.add_string buf (emit_table rows);
+        Buffer.add_char buf '\n';
+        go rest
+    | line :: rest ->
+        Buffer.add_string buf line;
+        Buffer.add_char buf '\n';
+        go rest
+  in
+  go lines;
+  (* drop the single trailing newline String.split/iter introduces *)
+  let r = Buffer.contents buf in
+  if String.length r > 0 && r.[String.length r - 1] = '\n'
+  then String.sub r 0 (String.length r - 1)
+  else r
+
 let inline s =
   let s, links = protect_links s in
+  let s = tables_pass s in
   let s = attrs_pass s in
   let s = toggle s "**" "{b " "}" in
   let s = toggle s "//" "{e " "}" in
@@ -558,6 +723,7 @@ let inline s =
   restore_links s links
 
 let wiki_to_mld ?(default_side = "") ?(odoc_refs = false) s =
+  let s = strip_comments s in
   let s, code = protect_code s in
   let s = wrappers ~default_side ~odoc_refs s in
   let s = lines_pass s in
