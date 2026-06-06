@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>How wodoc works — Wodoc</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <!-- odoc emits code blocks as <pre class="language-..">; highlight them
+       client-side with odoc's bundled highlight.js (loaded in <head>, as odoc
+       does). wodoc-highlight.js starts highlighting. -->
+  <script src="../highlight.pack.js"></script>
+  <script src="../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <div class="page-header">
+    <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+    <p class="logo-subproject">Wodoc</p>
+
+    <div class="mainmenu">
+      <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+      <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+      <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+      <p data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+      <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+      <p data-wodoc-page="tyxml"><a href="/tyxml/">TyXML</a></p>
+      <p class="mainmenu-current"><a href="../index.html">Wodoc</a></p>
+    </div>
+
+    <form id="googlesearch" action="https://google.com/search">
+      <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+      <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+      <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+    </form>
+
+    <aside class="how-drawer">
+      <input id="how-drawer-toggle" type="checkbox"/>
+      <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+      <nav class="how-drawer-content">
+        <ul class="drawermainmenu">
+          <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+          <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+          <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+          <li class="drawermainmenu-project" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+          <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+          <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+          <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+          <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+          <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+          <li class="drawermainmenu-project drawermainmenu-current"><a href="../index.html">Wodoc</a></li>
+          <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+          <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+          <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+          <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+          <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog">Blog</a></li>
+          <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+          <li class="drawermainmenu-page"><a href="https://github.com/ocsigen/wodoc">Source code</a></li>
+        </ul>
+        <!-- On mobile the left column is hidden; its menu lives here in the
+             burger (.how-doctree, shown only on narrow screens), as the old site
+             did. Same single-sourced nav fragment as the left column. -->
+        <nav class="how-doctree">
+<!-- Left-column navigation, single source of truth. build.sh injects this into
+     BOTH the left column and the burger drawer via the leftnav hole. The
+     version/manual/toc holes inside are filled afterwards. The manual nav
+     (from doc/menu.wiki) carries the manual pages and the "API overview" link. -->
+<div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+              <option value="latest">latest</option>
+              <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#pipeline">Pipeline</a></li><li><a href="#why-rewrite-the-markers-to-html-comments?">Why rewrite the markers to HTML comments?</a></li></ul></nav>
+</div>
+
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<h4 class="ml2">Manual</h4>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="index"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="overview"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="directives"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="authoring"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="commands"><a href="../wodoc/commands.html">Commands</a></li>
+</ul>
+<h4 class="ml2">API</h4>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="api"><a href="../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+<!-- end leftnav -->
+        </nav>
+      </nav>
+    </aside>
+  </div>
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+<!-- Left-column navigation, single source of truth. build.sh injects this into
+     BOTH the left column and the burger drawer via the leftnav hole. The
+     version/manual/toc holes inside are filled afterwards. The manual nav
+     (from doc/menu.wiki) carries the manual pages and the "API overview" link. -->
+<div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+              <option value="latest">latest</option>
+              <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#pipeline">Pipeline</a></li><li><a href="#why-rewrite-the-markers-to-html-comments?">Why rewrite the markers to HTML comments?</a></li></ul></nav>
+</div>
+
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<h4 class="ml2">Manual</h4>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="index"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="overview"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="directives"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="authoring"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="commands"><a href="../wodoc/commands.html">Commands</a></li>
+</ul>
+<h4 class="ml2">API</h4>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="api"><a href="../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+<!-- end leftnav -->
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1 id="how-wodoc-works">How wodoc works</h1><p>odoc's lightweight markup is intentionally semantic: it has no way to put an arbitrary class on an element, no block containers, no page templating. wodoc adds these through a custom raw-markup target, <code>{%wodoc:DIRECTIVE%}</code>:</p><pre class="language-text"><code>{%wodoc:div class=card%}
+  {2 Eliom}
+  Write client and server as one program.
+{%wodoc:end%}
+
+{%wodoc:@ class=server-code%}
+{@ocaml[ let () = run () </code></pre><p>In that example, <code>div … end</code> wraps a block in a <code>&lt;div class=&quot;card&quot;&gt;</code>, and the <code>@</code> directive adds attributes to the <b>next element</b> — here it puts <code>class=&quot;server-code&quot;</code> on the code block. See the <a href="directives.html" title="directives">directives reference</a> for the full list.</p><p>Because the target is unknown to stock odoc, <b>the very same sources render as plain semantic documentation</b> with a stock odoc (for example on ocaml.org), and as the <b>full themed website</b> when built with wodoc. There is no fork of odoc and no separate dialect to learn.</p></header>
+        <div class="odoc-content"><h2 id="pipeline">Pipeline</h2><p>The same sources take two paths. Each arrow is the command that performs the transformation.</p><pre class="language-text"><code>            .mld / .mli  (sources, with {%wodoc:…%} markers)
+                 │
+     ┌───────────┴────────────────────────┐
+     │ wodoc preprocess                    │ odoc compile/link/html-generate
+     ▼                                     ▼
+ preprocessed .mld                     plain HTML            ──►  ocaml.org
+ ({%html:&lt;!--wodoc:…--&gt;%})             (markers dropped)
+     │
+     │ odoc compile/link/html-generate
+     ▼
+ odoc HTML  (markers kept as HTML comments)
+     │
+     │ wodoc render
+     ▼
+ HTML fragment  (real nested HTML: containers, classes, images)
+     │
+     │ wodoc assemble
+     ▼
+ themed website page                                ──►  ocsigen.org</code></pre><p>A typical website build chains <code>preprocess | odoc | render | assemble</code> per page, using <a href="commands.html" title="commands"><code>convert</code></a> once up front to bring a legacy wikicréole manual over to <code>.mld</code>.</p><h2 id="why-rewrite-the-markers-to-html-comments?">Why rewrite the markers to HTML comments?</h2><p>This is a deliberate trick to work around a limitation of odoc (the absence of presentational markup). odoc's HTML backend only keeps raw markup whose target it knows: <code>{%html:...%}</code> is emitted verbatim, <b>any other target is silently dropped</b> (<code>| _ -&gt; []</code> in odoc's generator). That drop is exactly what we want on ocaml.org — <code>{%wodoc:...%}</code> vanishes and the docs stay semantic. But it also means that, by the time we get odoc's HTML, our own markers are <em>gone</em>, so the <a href="Wodoc/Render/index.html"><code>Wodoc.Render</code></a> pass would have nothing left to transform.</p><p>So before running odoc we rewrite <code>{%wodoc:d%}</code> to <code>{%html:&lt;!--wodoc:d--&gt;%}</code>. odoc recognises the <code>html</code> target and passes the content through unchanged, as an <b>HTML comment</b>. The comment survives odoc's HTML output (so <code>render</code> can find it), is invisible in the browser (harmless if <code>render</code> never runs), and is a clean sentinel to turn into real, nested HTML. We cannot use <code>{%html:&lt;div&gt;%}</code> directly in the sources instead: the <code>html</code> target is honoured <em>everywhere</em>, so a real <code>&lt;div&gt;</code> would also leak into the plain ocaml.org output, defeating the &quot;one source, two outputs&quot; goal.</p><p>Note that this rewrite happens on a temporary copy at build time; the committed sources always keep the clean <code>{%wodoc:...%}</code> form. It also only applies to <code>.mld</code> text — markers inside <code>.mli</code> doc-comments are frozen in the <code>.cmti</code> and cannot be post-processed this way (a future model-level driver would lift this restriction).</p></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    // Switch documentation version, staying on the same page when possible:
+    // only the version segment of the current path is swapped.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(/wodoc/)[^/]+');
+      var p = location.pathname;
+      location.href = re.test(p) ? p.replace(re, '$1' + v) : '/wodoc/' + v + '/index.html';
+    }
+    // The current version comes from the URL, not the build: the same files are
+    // served under <version>/ and the `latest` symlink, so mark the selected
+    // option from the path. There are two selectors (left column + burger).
+    (function () {
+      var m = location.pathname.match(new RegExp('^/wodoc/([^/]+)'));
+      if (!m) return;
+      document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+        var ok = false, i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === m[1]) { sel.selectedIndex = i; ok = true; break; }
+        if (!ok) {
+          var o = document.createElement('option');
+          o.value = m[1]; o.textContent = m[1]; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
