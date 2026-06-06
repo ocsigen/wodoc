@@ -6,7 +6,7 @@ let read_file f =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\nExcept resolve-refs (in place), each command writes the result to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html> [--label <v>]\n\              [--src <odoc _html>] [--latest]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\nExcept resolve-refs and build (which write files), each command writes to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -188,4 +188,28 @@ let () =
              output_string oc out;
              close_out oc))
         files
+  | _ :: "build" :: args ->
+      let set_latest = List.mem "--latest" args in
+      let args = List.filter (fun a -> a <> "--latest") args in
+      let flags, _ = parse_args args in
+      let req k = match List.assoc_opt k flags with Some v -> v | None -> usage () in
+      let cfg = req "config" in
+      let c = Wodoc.Config.of_string (read_file cfg) in
+      let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in
+      (* --src points at a prebuilt odoc _html tree; without it, build it here
+         with dune in the current checkout (the common dev case). *)
+      let src =
+        match List.assoc_opt "src" flags with
+        | Some s -> s
+        | None ->
+            let profile =
+              match c.profile with Some p -> " --profile " ^ p | None -> ""
+            in
+            let manual = if c.doc_manual then " @doc-manual" else "" in
+            if Sys.command ("dune build @doc" ^ manual ^ profile) <> 0
+            then (prerr_endline "wodoc build: dune build @doc failed"; exit 1);
+            "_build/default/_doc/_html"
+      in
+      Wodoc.Build.run c ~src ~out:(req "out") ~label ~menu:(req "menu")
+        ~assets_dir:(Filename.dirname cfg) ~set_latest
   | _ -> usage ()
