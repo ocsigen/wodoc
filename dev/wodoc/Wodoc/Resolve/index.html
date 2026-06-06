@@ -143,7 +143,13 @@
   <span><span class="label">siblings</span>:<span><span>(string * <span>string list</span>)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">base</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span>string <span class="arrow">&#45;&gt;</span></span>
-  string</span></code></div><div class="spec-doc"><p><code>html ~siblings ~base page</code> rewrites every sibling reference in <code>page</code> (both <code>xref-unresolved</code> spans and bare <code>&lt;code&gt;</code> qualified names), outside <code>&lt;pre&gt;</code> blocks, and returns the new HTML.</p></div></div></div>
+  string</span></code></div><div class="spec-doc"><p><code>html ~siblings ~base page</code> rewrites every sibling reference in <code>page</code> (both <code>xref-unresolved</code> spans and bare <code>&lt;code&gt;</code> qualified names), outside <code>&lt;pre&gt;</code> blocks, and returns the new HTML.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-deps"><code><span><span class="keyword">val</span> deps : 
+  <span><span class="label">hosted</span>:<span><span>(string * <span>(string * bool * string)</span>)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">relroot</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">side</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">self</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  string</span></code></div><div class="spec-doc"><p><code>deps ~hosted ~relroot ~side ~self page</code> rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and <code>xref-unresolved</code> spans. <code>hosted</code> maps a package to <code>(dir, multilib, wrapper)</code>; <code>relroot</code> is the path from the page to the shared root holding every project; <code>side</code> is <code>&quot;server&quot;</code>/<code>&quot;client&quot;</code>/<code>&quot;&quot;</code>; <code>self</code> is the package being documented (its own leftover refs are kept as text). The OCaml port of <code>resolve-deps.py</code>.</p></div></div></div>
       </article>
     </div>
   </div>
