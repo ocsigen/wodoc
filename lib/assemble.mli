@@ -43,6 +43,10 @@ val page :
   -> ?flat:bool
   -> ?strip_anchors:bool
   -> ?base:string
+  -> ?menu:string
+  -> ?subproject:string
+  -> ?menu_current:string
+  -> ?leftnav:string
   -> template:string
   -> current:string
   -> string
@@ -60,4 +64,17 @@ val page :
     - [strip_anchors] (default [true]): drop odoc's heading hover-anchors.
     - [base] (default [""]): fills [{{base}}], the relative path from the page to
       the doc root (e.g. ["."], [".."], ["../.."]), so a version's internal links
-      stay within that version and never mention it. *)
+      stay within that version and never mention it.
+    - [menu] (default [""]): fills [{{menu}}] with the shared site menu fragment
+      (header, top menu, drawer). The fragment may carry its own holes
+      ([{{subproject}}], [{{base}}], [{{leftnav}}]); the first two are filled here,
+      [{{leftnav}}] is left for the caller. Lets every page share one menu source.
+    - [subproject] (default [""]): fills [{{subproject}}] (the sub-project name
+      shown next to the Ocsigen logo); empty on the vitrine.
+    - [menu_current] (default [""]): like [current] but for the menu's current
+      {e project} entry ([data-wodoc-page=<project>]), kept separate from
+      [current] so a project page can highlight both its menu entry and its
+      in-page nav.
+    - [leftnav] (default [""]): fills every [{{leftnav}}] hole (the drawer's
+      mobile menu and the left column share one source), so the navigation is
+      defined once instead of being [sed]-expanded into both slots. *)

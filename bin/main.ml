@@ -58,10 +58,26 @@ let () =
             Option.value ~default:"" (List.assoc_opt "current" flags)
           in
           let base = Option.value ~default:"" (List.assoc_opt "base" flags) in
+          let menu =
+            match List.assoc_opt "menu" flags with
+            | Some f -> read_file f
+            | None -> ""
+          in
+          let subproject =
+            Option.value ~default:"" (List.assoc_opt "subproject" flags)
+          in
+          let menu_current =
+            Option.value ~default:"" (List.assoc_opt "menu-current" flags)
+          in
+          let leftnav =
+            match List.assoc_opt "leftnav" flags with
+            | Some f -> read_file f
+            | None -> ""
+          in
           let template = read_file tmpl in
           print_string
             (Wodoc.Assemble.page ~preamble ~flat
-               ~strip_anchors:(not keep_anchors) ~base ~template ~current
-               (read_file file))
+               ~strip_anchors:(not keep_anchors) ~base ~menu ~subproject
+               ~menu_current ~leftnav ~template ~current (read_file file))
       | _ -> usage ())
   | _ -> usage ()
