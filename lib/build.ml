@@ -167,6 +167,16 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~set_latest =
   let menu_html = read_file menu in
   let nav = leftnav c (versions ~out ~label) in
   let subproject = Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title) in
+  (* with no explicit (packages ...), assemble every top-level subtree odoc
+     produced (skipping its support assets and the top package-list index) *)
+  let pkgs =
+    if c.packages <> []
+    then c.packages
+    else
+      Array.to_list (Sys.readdir src)
+      |> List.filter (fun e -> e <> "odoc.support" && Sys.is_directory (Filename.concat src e))
+      |> List.sort compare
+  in
   List.iter
     (fun pkg ->
        List.iter
@@ -185,7 +195,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~set_latest =
             mkdir_p (Filename.dirname dst);
             write_file dst page)
          (html_files src pkg))
-    c.packages;
+    pkgs;
   (* version root index.html: redirect to the landing page *)
   write_file (Filename.concat out "index.html")
     (Printf.sprintf
