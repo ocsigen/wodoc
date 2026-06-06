@@ -51,9 +51,11 @@ transformation.
  themed website page                                ──►  ocsigen.org
 ]}
 
-A typical website build chains [preprocess | odoc | render | assemble] per
-page, using {{!page-"commands"}[convert]} once up front to bring a legacy
-wikicréole manual over to [.mld].
+The turn-key {{!page-"commands"}[wodoc build]} command drives this whole pipeline
+from one declarative [doc/wodoc] config: it runs [dune build @doc] and chains
+[preprocess | odoc | render | assemble] for every page (adding the navigation and
+cross-package link resolution), using {{!page-"commands"}[convert]} once up front
+to bring a legacy wikicréole manual over to [.mld].
 
 {1 Why rewrite the markers to HTML comments?}
 

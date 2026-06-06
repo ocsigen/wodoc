@@ -58,10 +58,13 @@ performs the transformation. The same sources take two paths:
      ▼
  HTML fragment  (real nested HTML: containers, classes, images)
      │
-     │ wodoc assemble                                          [planned]
+     │ wodoc assemble  (menu, left nav, version selector)
      ▼
  themed website page                                ──►  ocsigen.org
 ```
+
+`wodoc build` drives this whole pipeline from a declarative `doc/wodoc` config,
+for every page of a project, in one command.
 
 ### Why rewrite the markers to HTML comments?
 
@@ -164,7 +167,17 @@ express), keeping a native link inside when the target should remain reachable.
 
 ## Commands
 
+The turn-key command is **`wodoc build`**: from one declarative config it builds
+a project's whole documentation site (it runs `dune build @doc` and assembles
+every page). The lower-level commands it chains are also available individually.
+
 ```
+wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html> [--label <v>]
+            [--src <odoc _html>] [--latest]
+    turn-key: assemble a whole odoc tree into the themed site from a per-project
+    config (project, packages, nav, siblings, …). Replaces a hand-written
+    build script, menu.wiki and template/nav HTML.
+
 wodoc preprocess <file.mld>
     rewrite {%wodoc:..%} markers into {%html:<!--wodoc:..-->%} so stock odoc
     keeps them as HTML comments
@@ -172,10 +185,20 @@ wodoc preprocess <file.mld>
 wodoc render [--strip-anchors] <odoc.html>
     turn the markers in odoc's HTML into real, nested HTML
 
-wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
-               [--keep-anchors] <odoc.html>
+wodoc assemble --template <tmpl.html> [--current <id>] [--base <b>] [--menu <f>]
+               [--subproject <s>] [--menu-current <id>] [--leftnav <f>]
+               [--no-preamble] [--flat] [--keep-anchors] <odoc.html>
     wrap rendered odoc HTML in a site template (fills {{title}}/{{preamble}}/
-    {{toc}}/{{content}} and marks the current navigation entry)
+    {{toc}}/{{content}}/{{menu}}/{{leftnav}} and marks the current entry)
+
+wodoc nav  --menu <menu.wiki> --base <b> …   |   --api <indexdoc> …   |   --anchors …
+    build a left-column navigation fragment (manual menu, API module index, or
+    in-page anchors)
+
+wodoc resolve-refs --base <b> --sibling <Mod=seg/..> [..] <file>..
+                   | --hosted <pkg=dir:multi:wrapper> --relroot <r> --side <s> [..]
+    link references odoc left dead, across packages (--sibling) or across hosted
+    projects (--hosted); rewrites files in place
 
 wodoc convert <file.wiki>
     best-effort wikicréole -> .mld converter to migrate an existing manual
@@ -184,8 +207,11 @@ wodoc convert <file.wiki>
     reviewed by hand
 ```
 
-A typical website build chains `preprocess | odoc | render | assemble` per page,
-using `convert` once up front to bring a legacy wiki manual over to `.mld`.
+A turn-key build is a single `wodoc build` per version, configured by a
+`doc/wodoc` file; under the hood it chains `preprocess | odoc | render |
+assemble` per page (plus `nav`/`resolve-refs` for the navigation and
+cross-package links), using `convert` once up front to bring a legacy wiki manual
+over to `.mld`.
 
 ## Status
 
