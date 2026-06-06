@@ -203,6 +203,19 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~set_latest =
        let srcf = Filename.concat assets_dir h in
        if Sys.file_exists srcf then write_file (Filename.concat out h) (read_file srcf)
    | None -> ());
+  (* manual assets (examples, images): odoc puts them under <dune>/manual/files,
+     a sibling of the _doc/_html tree given as [src] *)
+  (match c.manual_files with
+   | Some pkg ->
+       let files = Filename.concat (Filename.dirname (Filename.dirname src)) "manual/files" in
+       if Sys.file_exists files then begin
+         let dst = Filename.concat out pkg in
+         mkdir_p dst;
+         ignore (Sys.command (Printf.sprintf "cp -RL %s %s 2>/dev/null || cp -R %s %s"
+                                (Filename.quote files) (Filename.quote dst)
+                                (Filename.quote files) (Filename.quote dst)))
+       end
+   | None -> ());
   if set_latest then
     ignore (Sys.command (Printf.sprintf "ln -sfn %s %s"
                            (Filename.quote label)
