@@ -71,8 +71,8 @@ let of_string s =
   ; title = Sexp.field_atom_default "title" project stanzas
   ; pub = Sexp.field_atom_default "pub" ("/" ^ project) stanzas
   ; menu_current = Sexp.field_atom_default "menu-current" project stanzas
-  ; packages =
-      (match Sexp.field_atoms "packages" stanzas with [] -> [ project ] | l -> l)
+  ; packages = Sexp.field_atoms "packages" stanzas
+    (* [] = assemble every subtree odoc produced (see Build) *)
   ; landing = Sexp.field_atom_default "landing" (project ^ "/index.html") stanzas
   ; highlight = Sexp.field_atom "highlight" stanzas
   ; profile = Sexp.field_atom "profile" stanzas
