@@ -89,11 +89,29 @@ headings, lists, links, code blocks, [{%wodoc:%}] markers for classes and
 containers, and odoc references from [<<a_api>>]/[<<a_manual>>]. The output is
 meant to be reviewed by hand. See {!Wodoc.Convert}.
 
+{1 [wodoc build]}
+
+{@text[
+wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html> [--label <v>]
+            [--src <odoc _html>] [--latest]
+]}
+
+The turn-key command: assemble a whole odoc HTML tree into the themed site from
+ONE per-project {{!Wodoc.Config}config file} (a dune-style S-expression
+[doc/wodoc]) — replacing a project's [build.sh] {e and} its hand-written
+navigation ([menu.wiki] / [nav.html] / [leftnav.html] / [template.html]). It
+generates the page template and the left navigation (version selector,
+on-this-page, the config-declared nav), then fills the shared menu, marks the
+current project/package, resolves sibling references and ships the assets, the
+version redirect and the [latest] symlink. Without [--src] it runs
+[dune build @doc] itself. See {!Wodoc.Build}.
+
 {1 Putting it together}
 
-A full website build chains [preprocess | odoc | assemble] per page (with
-[nav]/[resolve-refs] as needed for the left navigation and cross-package links),
-using [convert] once up front to bring a legacy wiki manual over to [.mld]. This very
+The turn-key way is a single [wodoc build] per version, configured by [doc/wodoc].
+Under the hood that chains [preprocess | odoc | assemble] per page (with
+[nav]/[resolve-refs] for the left navigation and cross-package links), using
+[convert] once up front to bring a legacy wiki manual over to [.mld]. This very
 site is built that way; see
 {{:https://github.com/ocsigen/wodoc/blob/master/doc/build.sh}[doc/build.sh]} in
 the repository for a complete, working example.
