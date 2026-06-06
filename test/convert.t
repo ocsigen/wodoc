@@ -156,3 +156,15 @@ consume the comment's closing >> and swallow the rest of the page.
 
 
 
+
+An unmatched ## monospace marker on one line must NOT flip every following
+[code] span into ]inverted[ brackets across the rest of the document: the
+toggle state resets at each newline (per-line), so later ##spans## stay [spans].
+
+  $ cat > toggle.wiki <<'WIKI'
+  > A stray ##path/that/never/closes
+  > Later, ##dop## and ##quickdop## must render as code.
+  > WIKI
+  $ wodoc convert toggle.wiki
+  A stray [path/that/never/closes
+  Later, [dop] and [quickdop] must render as code.

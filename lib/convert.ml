@@ -538,6 +538,16 @@ let toggle s mk op cl =
   done;
   Buffer.contents buf
 
+(* Toggle per LINE: the open/close state resets at every newline. Wikicreole
+   emphasis markers (bold, italic, monospace) never span a line break, so this
+   bounds the damage of a stray/unmatched marker to its own line instead of
+   flipping every following pair across the whole document (which turned later
+   code spans into inverted ones). *)
+let toggle_lines s mk op cl =
+  String.split_on_char '\n' s
+  |> List.map (fun l -> toggle l mk op cl)
+  |> String.concat "\n"
+
 (* @@class="a"@b@c@@ -> {%wodoc:@ class="a" | b | c%} *)
 let attrs_pass s =
   Str.global_substitute
@@ -551,9 +561,9 @@ let attrs_pass s =
 let inline s =
   let s, links = protect_links s in
   let s = attrs_pass s in
-  let s = toggle s "**" "{b " "}" in
-  let s = toggle s "//" "{e " "}" in
-  let s = toggle s "##" "[" "]" in
+  let s = toggle_lines s "**" "{b " "}" in
+  let s = toggle_lines s "//" "{e " "}" in
+  let s = toggle_lines s "##" "[" "]" in
   let s = Str.global_replace (Str.regexp_string "\\\\") "{%html:<br/>%}" s in
   restore_links s links
 
