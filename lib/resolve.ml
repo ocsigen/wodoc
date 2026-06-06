@@ -47,6 +47,32 @@ let strip_parens s =
 
 let is_lower c = c >= 'a' && c <= 'z'
 
+(* Like [Str.global_substitute] but robust to the callback running its OWN [Str]
+   matches: the next position is saved BEFORE calling [f], so [f] clobbering the
+   global match state cannot derail the scan. [f] still reads the current match's
+   groups, so it must read everything it needs before doing any other [Str] call
+   (each callback below captures its groups on the first lines). *)
+let global_sub re f s =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  let pos = ref 0 and continue = ref true in
+  while !continue do
+    match (try Some (Str.search_forward re s !pos) with Not_found -> None) with
+    | None -> continue := false
+    | Some start ->
+        let e = Str.match_end () in
+        Buffer.add_substring buf s !pos (start - !pos);
+        Buffer.add_string buf (f s);
+        if e > start
+        then pos := e
+        else (
+          if start < len then Buffer.add_char buf s.[start];
+          pos := start + 1);
+        if !pos > len then continue := false
+  done;
+  if !pos <= len then Buffer.add_substring buf s !pos (len - !pos);
+  Buffer.contents buf
+
 (* [link_for siblings base raw] is the relative URL for a qualified name rooted
    at a known sibling, or [None]. [raw] may carry a "val "/"type "/… kind
    prefix (from a value/type/… spec heading). *)
@@ -83,15 +109,17 @@ let span_re =
     "<span class=\"xref-unresolved[^\"]*\"\\( title=\"\\([^\"]*\\)\"\\)?>\\([^<]*\\)</span>\\(\\(\\.[A-Za-z_][A-Za-z0-9_']*\\)*\\)"
 
 let fix_spans siblings base s =
-  Str.global_substitute span_re
+  global_sub span_re
     (fun whole ->
+       (* capture groups before link_for runs its own Str matches *)
+       let m0 = Str.matched_string whole in
        let title = try Str.matched_group 2 whole with Not_found -> "" in
        let visible = Str.matched_group 3 whole in
        let trailing = Str.matched_group 4 whole in
        let label = visible ^ trailing in
        match link_for siblings base (if title <> "" then title else label) with
        | Some url -> Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
-       | None -> Str.matched_string whole)
+       | None -> m0)
     s
 
 (* a bare unresolved ref renders as <code>Sib.path</code>; link only those
@@ -108,14 +136,15 @@ let fix_codes siblings base s =
         (Printf.sprintf
            "<code>\\(\\(%s\\)\\(\\.[A-Za-z_][A-Za-z0-9_']*\\)*\\)</code>" alt)
     in
-    Str.global_substitute code_re
+    global_sub code_re
       (fun whole ->
+         let m0 = Str.matched_string whole in
          let name = Str.matched_group 1 whole in
          match link_for siblings base name with
          | Some url ->
              Printf.sprintf "<a href=\"%s\"><code>%s</code></a>" url
                (html_escape name)
-         | None -> Str.matched_string whole)
+         | None -> m0)
       s
 
 let process siblings base segment =
@@ -157,3 +186,100 @@ let outside_pre f s =
   Buffer.contents b
 
 let html ~siblings ~base s = outside_pre (process siblings base) s
+
+(* ---- Cross-PROJECT references (resolve-deps.py) ----
+
+   A page may reference another Ocsigen project. odoc(_driver --remap) renders a
+   resolved dep as an absolute ocaml.org link; an unresolved one as an
+   [xref-unresolved] span. For projects we host ourselves we rewrite both into
+   RELATIVE links to that project's deployed docs. [hosted] maps a package to
+   [(dir, multilib, wrapper)]: [dir] is its directory under the shared root,
+   [multilib] whether its server/client libs sit in [<dir>.<side>/], [wrapper]
+   its wrapping module (used to collapse a wrapped path to the flat layout the
+   deployed docs use). *)
+
+let flat_module wrapper comp =
+  let pre = wrapper ^ "_" in
+  if String.starts_with ~prefix:pre comp then comp else pre ^ String.lowercase_ascii comp
+
+let flat_path wrapper path =
+  let re = Str.regexp (Str.quote wrapper ^ "/\\([A-Z][A-Za-z0-9_']*\\)\\(/.*\\)?$") in
+  if Str.string_match re path 0
+  then
+    let comp = Str.matched_group 1 path in
+    let tail = try Str.matched_group 2 path with Not_found -> "" in
+    flat_module wrapper comp ^ tail
+  else path
+
+let dep_base hosted relroot side pkg =
+  let dir, multilib, _ = List.assoc pkg hosted in
+  let b = relroot ^ "/" ^ dir ^ "/latest" in
+  if multilib then b ^ "/" ^ dir ^ "." ^ side else b
+
+let resolved_re =
+  Str.regexp "href=\"https://ocaml\\.org/p/\\([^/\"]+\\)/[^/\"]+/doc/\\([^\"]+\\)\""
+
+let fix_resolved hosted relroot side s =
+  global_sub resolved_re
+    (fun whole ->
+       let m0 = Str.matched_string whole in
+       let pkg = Str.matched_group 1 whole in
+       let path = Str.matched_group 2 whole in
+       match List.assoc_opt pkg hosted with
+       | Some (_, _, wrapper) when not (String.starts_with ~prefix:"src/" path) ->
+           Printf.sprintf "href=\"%s/%s\"" (dep_base hosted relroot side pkg)
+             (flat_path wrapper path)
+       | _ -> m0)
+    s
+
+let fix_dep_spans hosted relroot side self s =
+  let wrappers = List.map (fun (pkg, (_, _, w)) -> w, pkg) hosted in
+  global_sub span_re
+    (fun whole ->
+       let m0 = Str.matched_string whole in
+       let title = try Str.matched_group 2 whole with Not_found -> "" in
+       let visible = Str.matched_group 3 whole in
+       let trailing = Str.matched_group 4 whole in
+       let label = visible ^ trailing in
+       let raw = String.trim (if title <> "" then title else label) in
+       let kind, after =
+         if Str.string_match kind_re raw 0 then Str.matched_group 1 raw, Str.match_end () else "", 0
+       in
+       let name = strip_parens (String.sub raw after (String.length raw - after)) in
+       let toks = List.filter (fun t -> t <> "") (String.split_on_char '.' name) in
+       match toks with
+       | [] -> m0
+       | head :: _ -> (
+           match List.find_opt (fun (w, _) -> head = w || String.starts_with ~prefix:(w ^ "_") head) wrappers with
+           | None -> m0 (* dep we do not host: leave as text *)
+           | Some (wrapper, pkg) ->
+               if pkg = self then m0 (* self ref: keep text *)
+               else
+                 let modhead, rest =
+                   if head = wrapper
+                   then (match toks with _ :: m :: tl -> flat_module wrapper m, tl | _ -> "", [])
+                   else head, List.tl toks
+                 in
+                 if modhead = ""
+                 then m0
+                 else begin
+                   let last = match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1) in
+                   let but_last l = match l with [] -> [] | _ -> List.filteri (fun i _ -> i < List.length l - 1) l in
+                   let dirs, anchor =
+                     if rest <> [] && (kind = "val" || kind = "method" || (kind = "" && String.length last > 0 && is_lower last.[0]))
+                     then but_last rest, "#val-" ^ last
+                     else if rest <> [] && kind = "type"
+                     then but_last rest, "#type-" ^ last
+                     else rest, ""
+                   in
+                   let url =
+                     dep_base hosted relroot side pkg ^ "/" ^ modhead
+                     ^ String.concat "" (List.map (fun d -> "/" ^ d) dirs)
+                     ^ "/index.html" ^ anchor
+                   in
+                   Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
+                 end))
+    s
+
+let deps ~hosted ~relroot ~side ~self s =
+  fix_dep_spans hosted relroot side self (fix_resolved hosted relroot side s)

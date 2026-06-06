@@ -82,55 +82,106 @@ let () =
       | _ -> usage ())
   | _ :: "nav" :: args -> (
       let flags, _ = parse_args args in
-      match List.assoc_opt "menu" flags, List.assoc_opt "base" flags with
-      | Some menu_f, Some base ->
-          let pkg = Option.value ~default:"" (List.assoc_opt "pkg" flags) in
-          let heading =
-            Option.value ~default:"Manual" (List.assoc_opt "heading" flags)
-          in
-          let api_map =
-            match List.assoc_opt "api-map" flags with
-            | None -> []
-            | Some s ->
+      match List.assoc_opt "base" flags with
+      | None -> usage ()
+      | Some base -> (
+          let heading = List.assoc_opt "heading" flags in
+          match
+            ( List.assoc_opt "menu" flags
+            , List.assoc_opt "api" flags
+            , List.assoc_opt "anchors" flags )
+          with
+          | Some menu_f, _, _ ->
+              let pkg = Option.value ~default:"" (List.assoc_opt "pkg" flags) in
+              let heading = Option.value ~default:"Manual" heading in
+              let api_map =
+                match List.assoc_opt "api-map" flags with
+                | None -> []
+                | Some s ->
+                    List.filter_map
+                      (fun kv ->
+                         match String.index_opt kv '=' with
+                         | Some i ->
+                             Some
+                               ( String.sub kv 0 i
+                               , String.sub kv (i + 1) (String.length kv - i - 1) )
+                         | None -> None)
+                      (String.split_on_char ';' s)
+              in
+              print_string
+                (Wodoc.Nav.manual ~pkg ~heading ~api_map ~base (read_file menu_f))
+          | _, Some idx_f, _ ->
+              let lib = Option.value ~default:"" (List.assoc_opt "lib" flags) in
+              let wrapper =
+                Option.value ~default:"" (List.assoc_opt "wrapper" flags)
+              in
+              let heading = Option.value ~default:"Modules" heading in
+              let skip =
                 List.filter_map
-                  (fun kv ->
-                     match String.index_opt kv '=' with
-                     | Some i ->
-                         Some
-                           ( String.sub kv 0 i
-                           , String.sub kv (i + 1) (String.length kv - i - 1) )
-                     | None -> None)
-                  (String.split_on_char ';' s)
-          in
-          print_string
-            (Wodoc.Nav.manual ~pkg ~heading ~api_map ~base (read_file menu_f))
-      | _ -> usage ())
+                  (fun (k, v) -> if k = "skip-title" then Some v else None)
+                  flags
+              in
+              print_string
+                (Wodoc.Nav.api ~wrapper ~heading ~skip ~base ~lib
+                   (read_file idx_f))
+          | _, _, Some menu_f ->
+              let heading = Option.value ~default:"Manual" heading in
+              print_string (Wodoc.Nav.anchors ~heading ~base (read_file menu_f))
+          | None, None, None -> usage ()))
   | _ :: "resolve-refs" :: args ->
-      (* rewrites the given files IN PLACE (like the resolve-*.py scripts) *)
+      (* rewrites the given files IN PLACE (like the resolve-*.py scripts).
+         --hosted selects cross-PROJECT mode (resolve-deps.py); otherwise
+         --sibling selects cross-PACKAGE mode (resolve-siblings.py). *)
       let flags, files = parse_args args in
       let base = Option.value ~default:"" (List.assoc_opt "base" flags) in
-      let siblings =
+      let hosted =
         List.filter_map
           (fun (k, v) ->
-             if k <> "sibling"
+             if k <> "hosted"
              then None
              else
-               match String.index_opt v '=' with
-               | None -> None
-               | Some i ->
-                   let m = String.sub v 0 i in
-                   let segs =
-                     List.filter (fun s -> s <> "")
-                       (String.split_on_char '/'
-                          (String.sub v (i + 1) (String.length v - i - 1)))
-                   in
-                   Some (m, segs))
+               match String.split_on_char '=' v with
+               | [ pkg; spec ] -> (
+                   match String.split_on_char ':' spec with
+                   | [ dir; multi; wrapper ] -> Some (pkg, (dir, multi = "true", wrapper))
+                   | _ -> None)
+               | _ -> None)
           flags
+      in
+      let transform =
+        if hosted <> []
+        then
+          let relroot =
+            Option.value ~default:base (List.assoc_opt "relroot" flags)
+          in
+          let side = Option.value ~default:"" (List.assoc_opt "side" flags) in
+          let self = Option.value ~default:"" (List.assoc_opt "self" flags) in
+          Wodoc.Resolve.deps ~hosted ~relroot ~side ~self
+        else
+          let siblings =
+            List.filter_map
+              (fun (k, v) ->
+                 if k <> "sibling"
+                 then None
+                 else
+                   match String.index_opt v '=' with
+                   | None -> None
+                   | Some i ->
+                       let m = String.sub v 0 i in
+                       let segs =
+                         List.filter (fun s -> s <> "")
+                           (String.split_on_char '/'
+                              (String.sub v (i + 1) (String.length v - i - 1)))
+                       in
+                       Some (m, segs))
+              flags
+          in
+          Wodoc.Resolve.html ~siblings ~base
       in
       List.iter
         (fun f ->
            let src = read_file f in
-           let out = Wodoc.Resolve.html ~siblings ~base src in
+           let out = transform src in
            if out <> src
            then (
              let oc = open_out_bin f in

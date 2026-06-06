@@ -23,3 +23,18 @@ val html : siblings:(string * string list) list -> base:string -> string -> stri
 (** [html ~siblings ~base page] rewrites every sibling reference in [page]
     (both [xref-unresolved] spans and bare [<code>] qualified names), outside
     [<pre>] blocks, and returns the new HTML. *)
+
+val deps :
+   hosted:(string * (string * bool * string)) list
+  -> relroot:string
+  -> side:string
+  -> self:string
+  -> string
+  -> string
+(** [deps ~hosted ~relroot ~side ~self page] rewrites cross-PROJECT references
+    to a hosted Ocsigen project into relative links: both resolved ocaml.org
+    dep links and [xref-unresolved] spans. [hosted] maps a package to
+    [(dir, multilib, wrapper)]; [relroot] is the path from the page to the
+    shared root holding every project; [side] is ["server"]/["client"]/[""];
+    [self] is the package being documented (its own leftover refs are kept as
+    text). The OCaml port of [resolve-deps.py]. *)

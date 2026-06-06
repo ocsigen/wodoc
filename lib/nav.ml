@@ -110,3 +110,131 @@ let manual ?(pkg = "") ?(heading = "Manual") ?(api_map = []) ~base menu =
   close ();
   add "</nav>";
   Buffer.contents buf
+
+(* ---- API module navigation, from a curated .indexdoc (gen-nav.py) ---- *)
+
+(* Tokenise an .indexdoc into (section-title option, modules) pairs, matching
+   the Python finditer over [{N <title>}] and [{!modules: …}] (the latter
+   non-greedy, i.e. up to the FIRST closing brace — replicated exactly so the
+   output matches, including the truncation when a [{!indexlist}] appears). *)
+let index_sections text =
+  let len = String.length text in
+  let sections = ref [] and pending = ref None in
+  let i = ref 0 in
+  let is_ws c = c = ' ' || c = '\t' || c = '\n' || c = '\r' in
+  while !i < len do
+    if text.[!i] = '{'
+       && !i + 1 < len
+       && text.[!i + 1] >= '1'
+       && text.[!i + 1] <= '9'
+       && !i + 2 < len
+       && is_ws text.[!i + 2]
+    then (
+      (* {N <title>} heading: title is everything up to the next '}' *)
+      match String.index_from_opt text !i '}' with
+      | None -> i := len
+      | Some e ->
+          let s = !i + 2 in
+          pending := Some (String.trim (String.sub text s (e - s)));
+          i := e + 1)
+    else if !i + 10 <= len && String.sub text !i 10 = "{!modules:"
+    then (
+      match String.index_from_opt text (!i + 10) '}' with
+      | None -> i := len
+      | Some e ->
+          let content = String.sub text (!i + 10) (e - (!i + 10)) in
+          let mods =
+            List.filter (fun s -> s <> "")
+              (String.split_on_char ' '
+                 (String.map (fun c -> if is_ws c then ' ' else c) content))
+          in
+          sections := (!pending, mods) :: !sections;
+          pending := None;
+          i := e + 1)
+    else incr i
+  done;
+  List.rev !sections
+
+let api ?(wrapper = "") ?(heading = "Modules") ?(skip = []) ~base ~lib indexdoc =
+  let buf = Buffer.create 1024 in
+  let add s = Buffer.add_string buf s; Buffer.add_char buf '\n' in
+  let esc = Resolve.html_escape in
+  add "<nav class=\"api-nav\">";
+  add (Printf.sprintf "<h3>%s</h3>" (esc heading));
+  let prefix = if wrapper = "" then "" else wrapper ^ "/" in
+  let page_url m =
+    base ^ "/" ^ lib ^ "/" ^ prefix
+    ^ String.concat "/" (String.split_on_char '.' m)
+    ^ "/index.html"
+  in
+  List.iter
+    (fun (title, mods) ->
+       (* drop odoc directives like {!indexlist} that may sit in a module list *)
+       let mods =
+         List.filter
+           (fun m -> not (String.length m >= 2 && m.[0] = '{' && m.[1] = '!'))
+           mods
+       in
+       if mods <> []
+       then begin
+         (match title with
+          | Some t when t <> "" && not (List.mem t skip) ->
+              add (Printf.sprintf "<h4>%s</h4>" (esc t))
+          | _ -> ());
+         add "<ul class=\"api-section\">";
+         List.iter
+           (fun m ->
+              add (Printf.sprintf
+                     "<li data-wodoc-page=\"%s\"><a href=\"%s\">%s</a></li>"
+                     (esc m) (page_url m) (esc m)))
+           mods;
+         add "</ul>"
+       end)
+    (index_sections indexdoc);
+  add "</nav>";
+  Buffer.contents buf
+
+(* ---- Single-page anchor navigation (gen-anchor-nav.py) ---- *)
+
+let braces_re = Str.regexp "{{{\\([^}]*\\)}}}"
+let mono_re = Str.regexp "##\\([^#]*\\)##"
+let anchor_link_re = Str.regexp "^\\[\\[#\\([^|]+\\)|\\([^]]+\\)\\]\\]"
+
+let clean t =
+  let t = Str.global_replace braces_re "\\1" t in
+  let t = Str.global_replace mono_re "\\1" t in
+  String.trim t
+
+let anchors ?(heading = "Manual") ~base menu =
+  let buf = Buffer.create 1024 in
+  let add s = Buffer.add_string buf s; Buffer.add_char buf '\n' in
+  let esc = Resolve.html_escape in
+  add "<nav class=\"api-nav manual-nav\">";
+  add (Printf.sprintf "<h3>%s</h3>" (esc heading));
+  let open_ul = ref false in
+  let close () = if !open_ul then (add "</ul>"; open_ul := false) in
+  List.iter
+    (fun line ->
+       if Str.string_match head_re line 0
+       then begin
+         let level = String.length (Str.matched_group 1 line) in
+         let text = String.trim (Str.matched_group 2 line) in
+         if Str.string_match anchor_link_re text 0
+         then begin
+           let anchor = String.trim (Str.matched_group 1 text) in
+           let title = clean (Str.matched_group 2 text) in
+           if not !open_ul then (add "<ul class=\"api-section\">"; open_ul := true);
+           add (Printf.sprintf
+                  "<li class=\"ml%d\"><a href=\"%s/index.html#%s\">%s</a></li>"
+                  level base anchor (esc title))
+         end
+         else begin
+           let title = clean text in
+           if title <> "" && not (contains text "[[") && not (contains text "<<")
+           then (close (); add (Printf.sprintf "<h4 class=\"ml%d\">%s</h4>" level (esc title)))
+         end
+       end)
+    (String.split_on_char '\n' menu);
+  close ();
+  add "</nav>";
+  Buffer.contents buf

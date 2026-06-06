@@ -47,26 +47,36 @@ doc root). See {!Wodoc.Assemble}.
 {1 [wodoc nav]}
 
 {@text[
-wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]
-          [--api-map <sub=path;..>]
+wodoc nav --menu <menu.wiki>  --base <b> [--pkg <p>] [--heading <h>] [--api-map <sub=path;..>]
+wodoc nav --api <indexdoc>    --base <b> --lib <l> [--wrapper <W>] [--heading <h>] [--skip-title <t>]..
+wodoc nav --anchors <menu.wiki> --base <b> [--heading <h>]
 ]}
 
-Build a manual's left-column navigation from its wikicréole menu ([==]/[===]
-headings and [\[\[page|Title\]\]] / [<<mod>>] / [<<a_api>>] / [<<a_file>>] link
-forms), writing the [<nav>] fragment to stdout (feed it to [assemble --leftnav]).
-The per-project differences are options — [--pkg] (where the manual pages live),
-[--heading], [--api-map] (the [<<a_api>>] landing map). See {!Wodoc.Nav}.
+Build a left-column navigation [<nav>] fragment (write to stdout, feed to
+[assemble --leftnav]). Three sources:
+- [--menu]: a wikicréole manual menu ([==]/[===] headings and
+  [\[\[page|Title\]\]] / [<<mod>>] / [<<a_api>>] / [<<a_file>>] links); options
+  [--pkg] (where pages live), [--api-map] (the [<<a_api>>] landing map).
+- [--api]: a curated odoc index ([{N title}] + [{!modules: …}]); [--lib] /
+  [--wrapper] place the module pages, [--skip-title] drops page-title sections.
+- [--anchors]: a single-page manual whose menu links to in-page anchors.
+
+See {!Wodoc.Nav}.
 
 {1 [wodoc resolve-refs]}
 
 {@text[
 wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..
+wodoc resolve-refs --relroot <r> --side <s> [--self <pkg>]
+                   --hosted <pkg=dir:multilib:wrapper> [--hosted ..] <file>..
 ]}
 
-Link cross-package "sibling" references that odoc left unresolved (a package does
-not depend on its siblings, so [{!Sibling.M}] is rendered dead). Each [--sibling]
-maps a top module to the path segments of its own directory under the version
-root. The given files are rewritten {e in place}. See {!Wodoc.Resolve}.
+Link references odoc left dead, rewriting the given files {e in place}. With
+[--sibling], cross-PACKAGE references to a sibling built in the same tree (the
+sibling table maps a top module to its directory path). With [--hosted],
+cross-PROJECT references to another hosted Ocsigen project (both resolved
+ocaml.org dep links and unresolved spans), relative to [--relroot]; [--self]
+keeps the project's own leftover refs as text. See {!Wodoc.Resolve}.
 
 {1 [wodoc convert]}
 
