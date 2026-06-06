@@ -122,8 +122,20 @@ let mark_current ?(attr = "data-wodoc-page") ?(class_ = "current") ~current s =
           | Some gt ->
               Buffer.add_substring out s !i (tagstart - !i);
               let tag = String.sub s tagstart (gt - tagstart + 1) in
+              let has_class =
+                try
+                  ignore
+                    (Str.search_forward
+                       (Str.regexp ("class=\"\\([^\"]*\\b\\)?" ^ Str.quote class_
+                                   ^ "\\b"))
+                       tag 0);
+                  true
+                with Not_found -> false
+              in
               let tag =
-                if Str.string_match (Str.regexp ".*class=\"") tag 0
+                if has_class (* already marked: idempotent, leave as-is *)
+                then tag
+                else if Str.string_match (Str.regexp ".*class=\"") tag 0
                 then
                   Str.replace_first
                     (Str.regexp "class=\"\\([^\"]*\\)\"")
@@ -223,6 +235,10 @@ let page
       ?(flat = false)
       ?(strip_anchors = true)
       ?(base = "")
+      ?(menu = "")
+      ?(subproject = "")
+      ?(menu_current = "")
+      ?(leftnav = "")
       ~template
       ~current
       odoc_html
@@ -237,9 +253,22 @@ let page
     if flat then inner p.preamble ^ "\n" ^ inner p.content else p.content
   in
   let content = Render.html ~strip_anchors fragment in
+  (* Highlight the current project in the shared menu, scoped to the menu
+     fragment so it cannot also hit a left-nav entry that happens to share the
+     id (a project id like "ocsipersist" equals its main package id). *)
+  let menu =
+    if menu_current = "" then menu else mark_current ~current:menu_current menu
+  in
   let filled =
     fill ~template
-      [ "base", base
+      [ (* The shared menu fragment goes in first: it may itself contain holes
+           ([{{subproject}}], [{{base}}]) that the later bindings then fill. *)
+        "menu", menu
+      ; (* both slots of the left navigation (drawer + left column), wherever
+           [{{leftnav}}] appears in the menu fragment or the template *)
+        "leftnav", leftnav
+      ; "subproject", subproject
+      ; "base", base
       ; "title", p.title
       ; ( "preamble"
         , if flat || not preamble
@@ -250,4 +279,8 @@ let page
       ; "toc", local_toc content
       ; "content", content ]
   in
+  (* [current] marks the in-page nav entry: the menu page id on the vitrine, or
+     the API package / module in a project's left column. The menu was already
+     marked above (scoped), and [mark_current] is idempotent, so re-touching a
+     menu entry whose id equals [current] is harmless. *)
   mark_current ~current filled
