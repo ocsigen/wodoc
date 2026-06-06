@@ -345,10 +345,18 @@ let wrappers ?(default_side = "") ?(odoc_refs = false) s =
                 emit_char s.[!i];
                 incr i)
           else begin
-            if starts_with "header" opener || starts_with "webonly" opener
+            if starts_with "header" opener
+            then (
+              (* <<header|==X==>> wraps a section heading; reproduce the <header>
+                 element html_of_wiki emits, so e.g. section.docblock > header
+                 CSS (sticky title) applies. Newlines around the body keep the
+                 inner ==X== on its own line so it still becomes a heading. *)
+              emit "{%wodoc:header%}\n";
+              stack := Close "\n{%wodoc:end%}" :: !stack)
+            else if starts_with "webonly" opener
             then
-              (* <<header|..>> wraps a heading; <<webonly|..>> shows its body on
-                 the web (which is us). Both: keep the body, drop the wrapper. *)
+              (* <<webonly|..>> shows its body on the web (which is us): keep the
+                 body, drop the wrapper. *)
               stack := Close "" :: !stack
             else if starts_with "div" opener
             then (

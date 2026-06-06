@@ -313,13 +313,17 @@ let fuse_attrs s =
   Buffer.contents out
 
 (* Pass 3: hoist structural tags out of odoc's forced <p> wrappers. *)
+let containers = "div\\|a\\|span\\|section\\|header\\|footer\\|aside\\|nav\\|article"
+
 let lead_re =
   Str.regexp
-    "^[ \t\r\n]*\\(</?\\(div\\|a\\|span\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)"
+    (Printf.sprintf "^[ \t\r\n]*\\(</?\\(%s\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)"
+       containers)
 
 let tail_re =
   Str.regexp
-    "\\(</?\\(div\\|a\\|span\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)[ \t\r\n]*$"
+    (Printf.sprintf "\\(</?\\(%s\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)[ \t\r\n]*$"
+       containers)
 
 let contains s sub = find s sub 0 <> None
 let is_close g = String.length g >= 2 && g.[1] = '/'

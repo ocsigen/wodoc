@@ -117,7 +117,8 @@ fragment references resolve. The closing @@ is optional.
   {1:foo Section foo}
   {2:bar Subsection bar}
 
-A title carried inside a <<header|...>> wrapper still becomes {0}, and the
+A <<header|...>> wrapper becomes a <header> element (so e.g. section.docblock >
+header CSS applies); the heading inside still becomes a heading, and the
 <<outline>> extension is dropped.
 
   $ cat > header.wiki <<'EOF'
@@ -129,12 +130,18 @@ A title carried inside a <<header|...>> wrapper still becomes {0}, and the
   > Body text.
   > EOF
   $ wodoc convert header.wiki
+  {%wodoc:header%}
   
   {0 Configuration file}
     
   
+  {%wodoc:end%}
   
   Body text.
+
+
+
+
 
 
 
