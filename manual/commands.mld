@@ -28,13 +28,45 @@ images, and the [<p>]-hoisting that makes block containers possible. See
 
 {@text[
 wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
-               [--keep-anchors] <odoc.html>
+               [--keep-anchors] [--base <b>] [--menu <f>] [--subproject <s>]
+               [--menu-current <id>] [--leftnav <f>] <odoc.html>
 ]}
 
 Wrap rendered odoc HTML in a site template, filling the [{{title}}],
 [{{preamble}}], [{{toc}}] and [{{content}}] holes and marking the current
 navigation entry. [assemble] runs [render] internally, so a typical per-page
-build is just [preprocess] → odoc → [assemble]. See {!Wodoc.Assemble}.
+build is just [preprocess] → odoc → [assemble].
+
+A site usually shares one menu across every page and project: [--menu <f>] fills
+a [{{menu}}] hole with that fragment, [--subproject <s>] its [{{subproject}}]
+label, [--menu-current <id>] highlights the current project in it (scoped to the
+menu), and [--leftnav <f>] fills every [{{leftnav}}] hole (left column and mobile
+drawer) from one source. [--base <b>] fills [{{base}}] (the relative path to the
+doc root). See {!Wodoc.Assemble}.
+
+{1 [wodoc nav]}
+
+{@text[
+wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]
+          [--api-map <sub=path;..>]
+]}
+
+Build a manual's left-column navigation from its wikicréole menu ([==]/[===]
+headings and [\[\[page|Title\]\]] / [<<mod>>] / [<<a_api>>] / [<<a_file>>] link
+forms), writing the [<nav>] fragment to stdout (feed it to [assemble --leftnav]).
+The per-project differences are options — [--pkg] (where the manual pages live),
+[--heading], [--api-map] (the [<<a_api>>] landing map). See {!Wodoc.Nav}.
+
+{1 [wodoc resolve-refs]}
+
+{@text[
+wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..
+]}
+
+Link cross-package "sibling" references that odoc left unresolved (a package does
+not depend on its siblings, so [{!Sibling.M}] is rendered dead). Each [--sibling]
+maps a top module to the path segments of its own directory under the version
+root. The given files are rewritten {e in place}. See {!Wodoc.Resolve}.
 
 {1 [wodoc convert]}
 
@@ -49,8 +81,9 @@ meant to be reviewed by hand. See {!Wodoc.Convert}.
 
 {1 Putting it together}
 
-A full website build chains [preprocess | odoc | assemble] per page, using
-[convert] once up front to bring a legacy wiki manual over to [.mld]. This very
+A full website build chains [preprocess | odoc | assemble] per page (with
+[nav]/[resolve-refs] as needed for the left navigation and cross-package links),
+using [convert] once up front to bring a legacy wiki manual over to [.mld]. This very
 site is built that way; see
 {{:https://github.com/ocsigen/wodoc/blob/master/doc/build.sh}[doc/build.sh]} in
 the repository for a complete, working example.

@@ -20,13 +20,14 @@ dialect to learn.
 - {{!page-"overview"}How it works} — the pipeline and the one-source/two-outputs trick
 - {{!page-"directives"}Directives} — the [{%wodoc:…%}] reference (classes, containers, tables)
 - {{!page-"authoring"}Authoring} — what survives on ocaml.org, what is wodoc-only
-- {{!page-"commands"}Commands} — [preprocess], [render], [assemble], [convert]
+- {{!page-"commands"}Commands} — [preprocess], [render], [assemble], [nav], [resolve-refs], [convert]
 
 {1 API reference}
 
 wodoc is also an OCaml library: the same passes the [wodoc] command-line tool
 chains are exposed as modules. See the {{!page-"api"}API overview}, or jump to
-{!Wodoc.Preprocess}, {!Wodoc.Render}, {!Wodoc.Assemble} and {!Wodoc.Convert}.
+{!Wodoc.Preprocess}, {!Wodoc.Render}, {!Wodoc.Assemble}, {!Wodoc.Nav},
+{!Wodoc.Resolve} and {!Wodoc.Convert}.
 
 {1 Status}
 
