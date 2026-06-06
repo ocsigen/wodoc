@@ -13,6 +13,8 @@ Wodoc.Assemble
 Wodoc.Nav
 Wodoc.Resolve
 Wodoc.Convert
+Wodoc.Config
+Wodoc.Build
 }
 
 {1 Where to start}
