@@ -6,7 +6,7 @@ let read_file f =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\nEach command writes the result to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\nExcept resolve-refs (in place), each command writes the result to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -80,4 +80,61 @@ let () =
                ~strip_anchors:(not keep_anchors) ~base ~menu ~subproject
                ~menu_current ~leftnav ~template ~current (read_file file))
       | _ -> usage ())
+  | _ :: "nav" :: args -> (
+      let flags, _ = parse_args args in
+      match List.assoc_opt "menu" flags, List.assoc_opt "base" flags with
+      | Some menu_f, Some base ->
+          let pkg = Option.value ~default:"" (List.assoc_opt "pkg" flags) in
+          let heading =
+            Option.value ~default:"Manual" (List.assoc_opt "heading" flags)
+          in
+          let api_map =
+            match List.assoc_opt "api-map" flags with
+            | None -> []
+            | Some s ->
+                List.filter_map
+                  (fun kv ->
+                     match String.index_opt kv '=' with
+                     | Some i ->
+                         Some
+                           ( String.sub kv 0 i
+                           , String.sub kv (i + 1) (String.length kv - i - 1) )
+                     | None -> None)
+                  (String.split_on_char ';' s)
+          in
+          print_string
+            (Wodoc.Nav.manual ~pkg ~heading ~api_map ~base (read_file menu_f))
+      | _ -> usage ())
+  | _ :: "resolve-refs" :: args ->
+      (* rewrites the given files IN PLACE (like the resolve-*.py scripts) *)
+      let flags, files = parse_args args in
+      let base = Option.value ~default:"" (List.assoc_opt "base" flags) in
+      let siblings =
+        List.filter_map
+          (fun (k, v) ->
+             if k <> "sibling"
+             then None
+             else
+               match String.index_opt v '=' with
+               | None -> None
+               | Some i ->
+                   let m = String.sub v 0 i in
+                   let segs =
+                     List.filter (fun s -> s <> "")
+                       (String.split_on_char '/'
+                          (String.sub v (i + 1) (String.length v - i - 1)))
+                   in
+                   Some (m, segs))
+          flags
+      in
+      List.iter
+        (fun f ->
+           let src = read_file f in
+           let out = Wodoc.Resolve.html ~siblings ~base src in
+           if out <> src
+           then (
+             let oc = open_out_bin f in
+             output_string oc out;
+             close_out oc))
+        files
   | _ -> usage ()
