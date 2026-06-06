@@ -1,0 +1,35 @@
+{0 Wodoc}
+
+{e wodoc} (web + odoc) is an {{:https://github.com/ocaml/odoc}odoc} driver that
+builds complete, styled {b websites} from [.mld] and [.mli] sources — not just
+API documentation.
+
+It extends odoc with {b backward-compatible presentational markers} for
+arbitrary CSS classes, containers and layout, and adds a templating layer to
+assemble a full site (header, menus, version selector). Any OCaml project can
+use it — this very website is built by wodoc from its own sources.
+
+Because wodoc's markers use a custom raw-markup target that stock odoc ignores,
+{b the same sources render as plain semantic documentation} with a stock odoc
+(for example on {{:https://ocaml.org}ocaml.org}) and as the {b full themed
+website} when built with wodoc. There is no fork of odoc and no separate
+dialect to learn.
+
+{1 Manual}
+
+- {{!page-"overview"}How it works} — the pipeline and the one-source/two-outputs trick
+- {{!page-"directives"}Directives} — the [{%wodoc:…%}] reference (classes, containers, tables)
+- {{!page-"authoring"}Authoring} — what survives on ocaml.org, what is wodoc-only
+- {{!page-"commands"}Commands} — [preprocess], [render], [assemble], [convert]
+
+{1 API reference}
+
+wodoc is also an OCaml library: the same passes the [wodoc] command-line tool
+chains are exposed as modules. See the {{!page-"api"}API overview}, or jump to
+{!Wodoc.Preprocess}, {!Wodoc.Render}, {!Wodoc.Assemble} and {!Wodoc.Convert}.
+
+{1 Status}
+
+Early work in progress. wodoc is developed in the
+{{:https://github.com/ocsigen/wodoc}ocsigen/wodoc} repository and distributed
+under the MIT license.

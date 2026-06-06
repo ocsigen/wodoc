@@ -1,3 +1,4 @@
 (library
  (name wodoc)
+ (public_name wodoc)
  (libraries str))

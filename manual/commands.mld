@@ -1,0 +1,56 @@
+{0 Commands}
+
+The [wodoc] command-line tool exposes one subcommand per pass of the
+{{!page-"overview"}pipeline}. Each subcommand corresponds to a library module of
+the same name (see the {{!page-"api"}API overview}).
+
+{1 [wodoc preprocess]}
+
+{@text[
+wodoc preprocess <file.mld>
+]}
+
+Rewrite [{%wodoc:..%}] markers into [{%html:<!--wodoc:..-->%}] so stock odoc
+keeps them as HTML comments. Run this on each source before odoc. See
+{!Wodoc.Preprocess}.
+
+{1 [wodoc render]}
+
+{@text[
+wodoc render [--strip-anchors] <odoc.html>
+]}
+
+Turn the markers in odoc's HTML into real, nested HTML: containers, classes,
+images, and the [<p>]-hoisting that makes block containers possible. See
+{!Wodoc.Render}.
+
+{1 [wodoc assemble]}
+
+{@text[
+wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
+               [--keep-anchors] <odoc.html>
+]}
+
+Wrap rendered odoc HTML in a site template, filling the [{{title}}],
+[{{preamble}}], [{{toc}}] and [{{content}}] holes and marking the current
+navigation entry. [assemble] runs [render] internally, so a typical per-page
+build is just [preprocess] → odoc → [assemble]. See {!Wodoc.Assemble}.
+
+{1 [wodoc convert]}
+
+{@text[
+wodoc convert <file.wiki>
+]}
+
+A best-effort wikicréole → [.mld] converter to migrate an existing manual:
+headings, lists, links, code blocks, [{%wodoc:%}] markers for classes and
+containers, and odoc references from [<<a_api>>]/[<<a_manual>>]. The output is
+meant to be reviewed by hand. See {!Wodoc.Convert}.
+
+{1 Putting it together}
+
+A full website build chains [preprocess | odoc | assemble] per page, using
+[convert] once up front to bring a legacy wiki manual over to [.mld]. This very
+site is built that way; see
+{{:https://github.com/ocsigen/wodoc/blob/master/doc/build.sh}[doc/build.sh]} in
+the repository for a complete, working example.

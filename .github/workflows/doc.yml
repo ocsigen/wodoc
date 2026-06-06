@@ -1,0 +1,81 @@
+# Build the wodoc documentation (manual + API) with odoc, theme it with the
+# Ocsigen chrome using wodoc ITSELF (dogfooding), and publish it on the project's
+# gh-pages branch, served at https://ocsigen.org/wodoc/. See doc/README.md.
+#
+# - push to master  -> rebuild and deploy the "dev" docs.
+# - manual dispatch  -> build any version (e.g. a release tag) and optionally make
+#                       it the "latest".
+#
+# Historical version directories already on gh-pages are PRESERVED: each run only
+# replaces its own <label>/ directory (deploy clean is scoped to the target folder).
+name: Documentation
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      label:
+        description: "Version label / output directory (e.g. dev, 0.1.0)"
+        required: true
+        default: dev
+      ref:
+        description: "Git ref to build (branch or tag). Defaults to the label."
+        required: false
+        default: ""
+      set_latest:
+        description: "Also repoint 'latest' at this build"
+        type: boolean
+        default: false
+
+# Don't run on forks: deployment targets ocsigen/wodoc's gh-pages.
+jobs:
+  build-deploy:
+    if: github.repository == 'ocsigen/wodoc'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      LABEL: ${{ github.event.inputs.label || 'dev' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.event.inputs.label || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.4.0"
+
+      - name: Install dependencies
+        run: |
+          opam install . --deps-only --with-doc
+          # odoc: the documentation backend wodoc drives.
+          opam install odoc
+          # No wodoc pin: build.sh builds wodoc from this checkout and themes its
+          # own documentation with it (dogfooding).
+
+      - name: Build documentation
+        run: opam exec -- bash doc/build.sh "$LABEL" "$PWD/_doc-site"
+
+      - name: Deploy to gh-pages (replace only this version, keep the rest)
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: _doc-site/${{ env.LABEL }}
+          target-folder: ${{ env.LABEL }}
+          clean: true
+
+      - name: Repoint 'latest' (releases)
+        if: ${{ github.event.inputs.set_latest == 'true' }}
+        run: |
+          tmp="$(mktemp -d)"
+          git clone --depth 1 --branch gh-pages \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$tmp"
+          ln -sfn "$LABEL" "$tmp/latest"
+          git -C "$tmp" add latest
+          git -C "$tmp" -c user.email=ci@ocsigen.org -c user.name="Ocsigen CI" \
+            commit -m "doc: latest -> $LABEL" || true
+          git -C "$tmp" push
