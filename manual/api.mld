@@ -1,0 +1,22 @@
+{0 API reference}
+
+wodoc is both a command-line tool and an OCaml library. The library exposes one
+module per pass of the {{!page-"overview"}pipeline}; the [wodoc] command-line
+subcommands ({{!page-"commands"}Commands}) are thin wrappers over them.
+
+{1 Modules}
+
+{!modules:
+Wodoc.Preprocess
+Wodoc.Render
+Wodoc.Assemble
+Wodoc.Convert
+}
+
+{1 Where to start}
+
+- {!Wodoc.Preprocess} — rewrite [{%wodoc:…%}] markers to HTML-comment sentinels
+  before odoc runs.
+- {!Wodoc.Render} — turn those sentinels in odoc's HTML into real nested HTML.
+- {!Wodoc.Assemble} — wrap the rendered HTML in a project's site template.
+- {!Wodoc.Convert} — the wikicréole → [.mld] migration aid.

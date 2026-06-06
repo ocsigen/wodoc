@@ -1,0 +1,98 @@
+{0 Directives}
+
+Every wodoc extension is written as a raw-markup target, [{%wodoc:DIRECTIVE%}].
+The directives below are all wodoc understands; everything else in your sources
+is plain odoc.
+
+{t
+  | Directive | Effect |
+  |----------|--------|
+  | [div class=…] / [a class=… href=…] / [span class=…] … [end] | open / close a container |
+  | [@ key=val …] | add attributes to the {b next element} (the [@@] equivalent; [class] is merged) |
+  | [@ S0 \| S1 \| S2 …] | add attributes at successive nesting levels (see below) |
+  | [img src=… class=… alt=…] | a self-contained [<img>] |
+}
+
+{b Several classes}, HTML-style, are written space-separated inside quotes —
+[{%wodoc:@ class="card big shadow"%}]. The quotes are required: without them the
+space ends the value, so [class=card big shadow] would keep only [card]. The
+classes are merged with any class odoc already put on the element (e.g.
+[{%wodoc:@ class="pricing wide"%}] on a table yields
+[class="odoc-table pricing wide"]).
+
+{1 Containers}
+
+[{%wodoc:div class=card%}] … [{%wodoc:end%}] wraps everything between the two
+markers in a [<div class="card">]. The same form works for [span] (inline) and
+[a] (a link around a whole block, which native odoc cannot express):
+
+{@text[
+{%wodoc:a class=main-page-project-link href=../eliom/%}
+{%wodoc:div class=main-page-project%}
+  {2 Eliom}
+  Write client and server as one program.
+{%wodoc:end%}{%wodoc:end%}
+]}
+
+wodoc re-nests these into correctly balanced HTML, hoisting them out of the
+[<p>] wrappers odoc forces around inline raw markup (the limitation that makes
+[{%html:<div>%}] alone unusable for blocks).
+
+{1 The [@] directive}
+
+[{%wodoc:@ key=val …%}] adds attributes to the {b next element} without wrapping
+it in a container — it is wodoc's equivalent of html_of_wiki's [@@…@@]. Put it on
+its own line just before the element. Typical use: tag a code block so the theme
+can colour it.
+
+{@text[
+{%wodoc:@ class=server-code%}
+{@ocaml[ let () = run () ]}
+]}
+
+{1 Attributes on nested elements ([@ S0 | S1 | S2])}
+
+A single element rarely needs more than [@ class=…], but some structures have no
+outer element to hang a class on — a table being the typical case: odoc emits the
+[<table>], [<tr>] and [<td>] together, with no marker slot before the row or the
+cell. The multi-section form solves this, mirroring html_of_wiki's [@@a@b@c@@].
+
+Sections are separated by [|]. Section [S0] styles the next element, [S1] the
+element reached by descending once into its first child, [S2] by descending
+again, and so on. An {b empty} section descends a level without styling it. So,
+before a table:
+
+{@text[
+{%wodoc:@ class=pricing | class=headrow | class=firstcell%}
+{t
+  | Plan | Price |
+  ...
+}
+]}
+
+puts [class="pricing"] on the [<table>], [class="headrow"] on the first [<tr>],
+and [class="firstcell"] on its first [<th>] — exactly html_of_wiki's "class on
+the table / on a row / on a cell". Use empty sections to reach a deeper level
+without touching the ones above, e.g. [@ | | class=firstcell].
+
+A section may start with a {b 1-based index} to select the {e N}th sibling at
+that level instead of the first (the default). So [@ class=pricing | 2 class=highlight]
+styles the table and its {b second} row, and [@ | 2 | 3 class=hot] reaches the
+{b third cell of the second row}. Sibling skipping respects nesting (a table
+inside a cell is skipped as a whole). Each [@] marker descends independently, so
+stacking several before one table styles several rows:
+
+{@text[
+{%wodoc:@ class=pricing%}
+{%wodoc:@ | 2 class=highlight%}
+{%wodoc:@ | 4 class=total%}
+{t … }
+]}
+
+{1 Images}
+
+[{%wodoc:img src=… class=… alt=…%}] emits a self-contained [<img>]. Use it only
+for {b chrome} (logos, decorative images that need not appear on ocaml.org). For
+{b content} images that must survive on ocaml.org, use native odoc [{image:url}]
+and, if you need a class, wrap it with [{%wodoc:@ …%}] — see
+{{!page-"authoring"}Authoring}.

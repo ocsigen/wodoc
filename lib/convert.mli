@@ -4,7 +4,7 @@
     This is a migration aid, not a full wikicréole parser: it handles the common
     constructs (headings, bold/italic/monospace, links, lists, code blocks,
     [<<div class="...">>] / [<<span>>] / [<<header>>] wrappers, [<<|...>>]
-    comments, [@@class@@] attributes, images, [\\] line breaks). Converted pages
+    comments, [@@class@@] attributes, images, line breaks). Converted pages
     are expected to be reviewed by hand. *)
 
 val wiki_to_mld : ?default_side:string -> ?odoc_refs:bool -> string -> string

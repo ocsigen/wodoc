@@ -1,0 +1,6 @@
+; The wodoc manual is a set of odoc pages (manual/*.mld), built into the wodoc
+; package documentation by `dune build @doc` alongside the API of the wodoc
+; library, and rendered with the Ocsigen site chrome by doc/build.sh (see
+; doc/README.md). wodoc dogfoods itself: this manual is built by wodoc.
+(documentation
+ (package wodoc))
