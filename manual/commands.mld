@@ -120,6 +120,20 @@ HTML itself: [dune build @doc] by default, or — when the config has
 [<pkg>.server]/[<pkg>.client] libraries share module names and would collide
 under [dune build @doc].
 
+{2 Client/server projects}
+
+A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a
+[(client-server …)] block: one [(server …)]/[(client …)]/[(ppx …)] side per
+library, each with its [(lib <pkg>.<side>)], a curated [(indexdoc <file>)] (turned
+into a section-grouped module nav), a [(heading …)] and the [(wrapper <Module>)]
+the modules sit under. wodoc then gives every page its side's API nav, a body
+colour ([wodoc-server] / [wodoc-client] / …) and a client/server switch button,
+and shares one manual nav across the sides (from [(manual-menu <menu.wiki>)]). The
+[(hosted …)] block lists the sibling Ocsigen projects whose cross-references odoc
+points at [ocaml.org]: wodoc rewrites those to relative links into their wodoc
+docs (other dependencies stay on [ocaml.org]). The whole client/server build is
+still ONE declarative [doc/wodoc] and a single [wodoc build] — no [build.sh].
+
 The syntax-highlight starter is shipped automatically as [wodoc-highlight.js]: a
 plain-OCaml default built into wodoc, or — for a project whose code blocks use
 extra syntax (a ppx, a client/server split) — the file given by [(highlight …)]

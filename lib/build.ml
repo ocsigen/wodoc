@@ -118,7 +118,7 @@ let default_highlight =
 
 (* the per-page template (chrome around the odoc content); {{menu}}, {{leftnav}},
    {{base}}, {{title}}, {{preamble}}, {{content}} are filled by Assemble. *)
-let template (c : Config.t) =
+let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
   (* the highlight starter is always shipped under the same name (the default,
      or the project's (highlight …) override), so the template is project-agnostic *)
   let hl = "  <script src=\"{{base}}/wodoc-highlight.js\"></script>\n" in
@@ -133,7 +133,7 @@ let template (c : Config.t) =
   <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
   <script src="{{base}}/highlight.pack.js"></script>
 %s</head>
-<body class="wodoc-page wodoc-doc">
+<body class="wodoc-page wodoc-doc%s">
   {{menu}}
 
   <div class="project-page">
@@ -149,7 +149,7 @@ let template (c : Config.t) =
   </div>
 
   <script>
-    function wodocVersion(v) {
+%s    function wodocVersion(v) {
       if (!v) return;
       var re = new RegExp('^(%s/)[^/]+');
       var p = location.pathname;
@@ -173,12 +173,11 @@ let template (c : Config.t) =
 </body>
 </html>
 |}
-    (esc c.title) hl c.pub c.pub c.pub
+    (esc c.title) hl body_extra extra_script c.pub c.pub c.pub
 
-(* the left column: version selector + on-this-page + the config-driven nav.
-   {{base}} and {{toc}} stay as holes, filled per page by Assemble. *)
-let leftnav (c : Config.t) versions =
-  let b = Buffer.create 1024 in
+(* the version <select> block (shared by the normal and per-side left columns) *)
+let docversion versions =
+  let b = Buffer.create 256 in
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
   add "<div class=\"docversion\">";
   add "  <label>Version:";
@@ -187,10 +186,17 @@ let leftnav (c : Config.t) versions =
   add "    </select>";
   add "  </label>";
   add "</div>";
-  add "<div class=\"page-toc\">";
-  add "  <h3>On this page</h3>";
-  add "  {{toc}}";
-  add "</div>";
+  Buffer.contents b
+
+let page_toc = "<div class=\"page-toc\">\n  <h3>On this page</h3>\n  {{toc}}\n</div>\n"
+
+(* the left column: version selector + on-this-page + the config-driven nav.
+   {{base}} and {{toc}} stay as holes, filled per page by Assemble. *)
+let leftnav (c : Config.t) versions =
+  let b = Buffer.create 1024 in
+  let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
+  Buffer.add_string b (docversion versions);
+  Buffer.add_string b page_toc;
   let entry cls (e : Config.entry) =
     let dwp = if e.current = "" then "" else Printf.sprintf " data-wodoc-page=\"%s\"" e.current in
     add (Printf.sprintf "<li class=\"%s\"%s><a href=\"{{base}}/%s\">%s</a></li>" cls dwp e.path (esc e.label))
@@ -285,14 +291,107 @@ let local_assets ~menu ~out =
         \  preview:  (cd %s && python3 -m http.server)  then open  http://localhost:8000/%s/\n"
         (Hashtbl.length paths) root (Filename.quote root) (Filename.basename out)
 
+(* ---- client/server projects (eliom, ocsigen-toolkit, ocsigen-start) ----
+   The API is two (or three) libraries of the same package sharing module names
+   ([<pkg>.server]/[<pkg>.client]/[<pkg>.ppx]); built with odoc_driver --remap.
+   Each side gets its own API nav (from a curated index), a body colour class and
+   a switch button; the manual nav is shared. *)
+
+(* the client/server switch buttons (one per side), shown above the api nav *)
+let cs_switch (sides : Config.cs_side list) =
+  let b = Buffer.create 256 in
+  let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
+  add "<div class=\"cs-switch\">";
+  List.iter
+    (fun (s : Config.cs_side) ->
+       add (Printf.sprintf
+              "  <button type=\"button\" class=\"cs-%s\" onclick=\"wodocSwitch('%s')\">%s</button>"
+              s.side s.side (esc s.heading)))
+    sides;
+  add "</div>";
+  Buffer.contents b
+
+(* the wodocSwitch() helper, injected into the page script: jump to the same
+   module's page on another side by swapping the [<pkg>.<side>] path segment;
+   fall back to that side's wrapper-module index. *)
+let cs_switch_script (c : Config.t) (sides : Config.cs_side list) =
+  let alt = String.concat "|" (List.map (fun (s : Config.cs_side) -> s.side) sides) in
+  let wmap =
+    String.concat ", "
+      (List.map
+         (fun (s : Config.cs_side) ->
+            Printf.sprintf "%s: '%s'" s.side
+              (if s.wrapper = "" then "" else s.wrapper ^ "/"))
+         sides)
+  in
+  Printf.sprintf
+    "    // Toggle between the %s API of the same module.\n\
+    \    function wodocSwitch(side) {\n\
+    \      var w = { %s };\n\
+    \      var p = location.pathname;\n\
+    \      var np = p.replace(/\\/%s\\.(%s)\\//, '/%s.' + side + '/');\n\
+    \      location.href = np !== p ? np\n\
+    \        : '{{base}}/%s.' + side + '/' + (w[side] || '') + 'index.html';\n\
+    \    }\n"
+    (String.concat " / " (List.map (fun (s : Config.cs_side) -> s.side) sides))
+    wmap c.project alt c.project c.project
+
+(* the per-side left column: version selector + switch + on-this-page + the
+   shared manual nav + this side's API nav ({{base}}/{{toc}} filled per page). *)
+let cs_leftnav ~versions ~switch ~manual_nav ~api_nav =
+  String.concat ""
+    [ docversion versions; switch; page_toc; manual_nav; "\n"; api_nav ]
+
+(* a page's top directory ([<pkg>.<side>…/…]); None for a root manual page *)
+let topdir rel =
+  match String.index_opt rel '/' with
+  | Some i -> Some (String.sub rel 0 i)
+  | None -> None
+
+(* the side a top dir belongs to: the side whose lib it is, or a sub-library of
+   ([eliom.server] but also [eliom.server.monitor] → server). *)
+let side_for (sides : Config.cs_side list) td =
+  List.find_opt
+    (fun (s : Config.cs_side) ->
+       td = s.lib || String.starts_with ~prefix:(s.lib ^ ".") td)
+    sides
+
+(* the side a page belongs to (by its top dir), "" for the manual / other libs *)
+let side_of sides rel =
+  match topdir rel with
+  | None -> ""
+  | Some td -> ( match side_for sides td with Some s -> s.side | None -> "")
+
+let drop_prefix p str =
+  if String.starts_with ~prefix:p str
+  then String.sub str (String.length p) (String.length str - String.length p)
+  else str
+
+(* the nav id to highlight: an API page's module path (under <topdir>/<wrapper>/,
+   dotted), or a root manual page's own name (matching Nav.manual / Nav.api). *)
+let cs_current sides rel =
+  match topdir rel with
+  | None -> Filename.remove_extension rel
+  | Some td ->
+      let wrapper =
+        match side_for sides td with Some s -> s.wrapper | None -> ""
+      in
+      let rest = drop_prefix (td ^ "/") rel in
+      let rest = if wrapper = "" then rest else drop_prefix (wrapper ^ "/") rest in
+      let rest =
+        if Filename.check_suffix rest "/index.html"
+        then Filename.chop_suffix rest "/index.html"
+        else rest
+      in
+      String.map (fun c -> if c = '/' then '.' else c) rest
+
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
 let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   mkdir_p out;
-  let tmpl = replace_hole (template c) "pub" c.pub in
   let menu_html = read_menu menu in
-  let nav = leftnav c (versions ~out ~label) in
   let subproject = Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title) in
+  let vs = versions ~out ~label in
   (* the pages to assemble: the explicit (packages …) subtrees, or — by default —
      every .html odoc produced (recursively), skipping its support assets and the
      top-level package-list index (replaced by the redirect below). Default covers
@@ -317,27 +416,98 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
       walk "";
       List.sort compare !acc)
   in
+  (* the per-page assembler: one shared nav (normal projects), or a per-side
+     template + nav for client/server projects (eliom/toolkit/start). *)
+  let assemble_page =
+    match c.client_server with
+    | [] ->
+        let tmpl = replace_hole (template c) "pub" c.pub in
+        let nav = leftnav c vs in
+        fun rel ->
+          let base = base_of rel in
+          (* current nav id: an API page's top package dir, or a root manual
+             page's own name (so the matching left-nav entry is highlighted) *)
+          let current =
+            match String.index_opt rel '/' with
+            | Some i -> String.sub rel 0 i
+            | None -> Filename.remove_extension rel
+          in
+          let page =
+            Assemble.page ~base ~menu:menu_html ~subproject
+              ~menu_current:c.menu_current ~leftnav:nav ~template:tmpl ~current
+              (read_file (Filename.concat src rel))
+          in
+          if c.siblings = [] then page
+          else Resolve.html ~siblings:c.siblings ~base page
+    | sides ->
+        let script = cs_switch_script c sides in
+        let switch = cs_switch sides in
+        let manual_nav =
+          match c.manual_menu with
+          | Some f when Sys.file_exists f -> Nav.manual ~base:"{{base}}" (read_file f)
+          | _ -> ""
+        in
+        let default_side = match sides with s :: _ -> s.side | [] -> "" in
+        let api_nav =
+          List.map
+            (fun (s : Config.cs_side) ->
+               ( s.side
+               , if Sys.file_exists s.indexdoc
+                 then
+                   Nav.api ~wrapper:s.wrapper ~heading:s.heading ~skip:s.skip
+                     ~base:"{{base}}" ~lib:s.lib (read_file s.indexdoc)
+                 else "" ))
+            sides
+        in
+        let api_of side =
+          match List.assoc_opt side api_nav with
+          | Some n -> n
+          | None -> Option.value ~default:"" (List.assoc_opt default_side api_nav)
+        in
+        (* template (by body side class) and left column (by api side) cached:
+           there are at most a handful of distinct sides *)
+        let tcache = Hashtbl.create 4 and ncache = Hashtbl.create 4 in
+        let tmpl_of side =
+          match Hashtbl.find_opt tcache side with
+          | Some t -> t
+          | None ->
+              let body_extra = if side = "" then "" else " wodoc-" ^ side in
+              let t =
+                replace_hole
+                  (template ~body_extra ~extra_script:script c) "pub" c.pub
+              in
+              Hashtbl.add tcache side t; t
+        in
+        let leftnav_of side =
+          match Hashtbl.find_opt ncache side with
+          | Some n -> n
+          | None ->
+              let n =
+                cs_leftnav ~versions:vs ~switch ~manual_nav ~api_nav:(api_of side)
+              in
+              Hashtbl.add ncache side n; n
+        in
+        fun rel ->
+          let base = base_of rel in
+          let side = side_of sides rel in
+          (* manual/other pages have no side colour but show the default api nav *)
+          let nav_side = if side = "" then default_side else side in
+          let page =
+            Assemble.page ~base ~menu:menu_html ~subproject
+              ~menu_current:c.menu_current ~leftnav:(leftnav_of nav_side)
+              ~template:(tmpl_of side) ~current:(cs_current sides rel)
+              (read_file (Filename.concat src rel))
+          in
+          if c.hosted = [] then page
+          else
+            Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..") ~side
+              ~self:c.project page
+  in
   List.iter
     (fun rel ->
-       let base = base_of rel in
-       (* current nav id: an API page's top package dir, or a root manual page's
-          own name (so the matching left-nav entry is highlighted) *)
-       let current =
-         match String.index_opt rel '/' with
-         | Some i -> String.sub rel 0 i
-         | None -> Filename.remove_extension rel
-       in
-       let page =
-         Assemble.page ~base ~menu:menu_html ~subproject ~menu_current:c.menu_current
-           ~leftnav:nav ~template:tmpl ~current (read_file (Filename.concat src rel))
-       in
-       let page =
-         if c.siblings = [] then page
-         else Resolve.html ~siblings:c.siblings ~base page
-       in
        let dst = Filename.concat out rel in
        mkdir_p (Filename.dirname dst);
-       write_file dst page)
+       write_file dst (assemble_page rel))
     rels;
   (* version root index.html: redirect to the landing page *)
   write_file (Filename.concat out "index.html")
