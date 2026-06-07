@@ -40,14 +40,27 @@ let replace_hole template key value =
 
 let esc = Resolve.html_escape
 
+(* The default highlight starter wodoc ships: just start odoc's bundled
+   highlight.js on the code blocks. Projects with extra syntax (a ppx, a
+   client/server split, …) override it with their own file via (highlight …). *)
+let default_highlight =
+  {js|// Start odoc's bundled highlight.js on the code blocks (odoc emits them as
+// <pre class="language-...">). This is wodoc's default starter (plain OCaml);
+// a project with extra syntax overrides it via (highlight <file>) in doc/wodoc.
+(function () {
+  if (!window.hljs) return;
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", function () { hljs.highlightAll(); });
+  else hljs.highlightAll();
+})();
+|js}
+
 (* the per-page template (chrome around the odoc content); {{menu}}, {{leftnav}},
    {{base}}, {{title}}, {{preamble}}, {{content}} are filled by Assemble. *)
 let template (c : Config.t) =
-  let hl =
-    match c.highlight with
-    | Some h -> Printf.sprintf "  <script src=\"{{base}}/%s\"></script>\n" h
-    | None -> ""
-  in
+  (* the highlight starter is always shipped under the same name (the default,
+     or the project's (highlight …) override), so the template is project-agnostic *)
+  let hl = "  <script src=\"{{base}}/wodoc-highlight.js\"></script>\n" in
   Printf.sprintf
     {|<!DOCTYPE html>
 <html>
@@ -208,11 +221,15 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~set_latest =
    then
      let pack = Filename.concat sf "highlight.pack.js" in
      if Sys.file_exists pack then write_file (Filename.concat out "highlight.pack.js") (read_file pack));
-  (match c.highlight with
-   | Some h ->
-       let srcf = Filename.concat assets_dir h in
-       if Sys.file_exists srcf then write_file (Filename.concat out h) (read_file srcf)
-   | None -> ());
+  (* the highlight starter, always shipped as wodoc-highlight.js: the project's
+     (highlight <file>) override if any, else wodoc's built-in default *)
+  let hl_js =
+    match c.highlight with
+    | Some h when Sys.file_exists (Filename.concat assets_dir h) ->
+        read_file (Filename.concat assets_dir h)
+    | _ -> default_highlight
+  in
+  write_file (Filename.concat out "wodoc-highlight.js") hl_js;
   (* manual assets (examples, images): odoc puts them under <dune>/manual/files,
      a sibling of the _doc/_html tree given as [src] *)
   (match c.manual_files with
