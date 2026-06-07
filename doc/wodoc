@@ -1,0 +1,29 @@
+; Declarative wodoc build configuration for wodoc's own documentation site.
+; Read by `wodoc build`; replaces doc/build.sh, doc/menu.wiki and the
+; doc/gen-manual-nav.py left-navigation script. wodoc dogfoods its own
+; turn-key command:
+;
+;   wodoc build --config doc/wodoc --out _doc-site/<label> \
+;               --menu doc/menu.html --label <label> [--latest] [--local]
+;
+; `wodoc build` runs `dune build @doc`, assembles every page of the `wodoc`
+; package into the Ocsigen site chrome (the shared header from --menu, the
+; left navigation generated from (nav ...) below, the version selector) and
+; ships the assets. wodoc is a single package with no siblings, so the manual
+; here is pure native odoc and no cross-package reference resolution is needed.
+
+(project wodoc)
+(title Wodoc)
+(pub /wodoc)
+(packages wodoc)
+(landing wodoc/index.html)
+
+(nav
+ (section "Manual"
+  (link "Overview" wodoc/index.html index)
+  (link "How it works" wodoc/overview.html overview)
+  (link "Directives" wodoc/directives.html directives)
+  (link "Authoring" wodoc/authoring.html authoring)
+  (link "Commands" wodoc/commands.html commands))
+ (api-section "API"
+  (link "API overview" wodoc/api.html api)))

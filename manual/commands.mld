@@ -129,5 +129,7 @@ Under the hood that chains [preprocess | odoc | assemble] per page (with
 [nav]/[resolve-refs] for the left navigation and cross-package links), using
 [convert] once up front to bring a legacy wiki manual over to [.mld]. This very
 site is built that way; see
-{{:https://github.com/ocsigen/wodoc/blob/master/doc/build.sh}[doc/build.sh]} in
-the repository for a complete, working example.
+{{:https://github.com/ocsigen/wodoc/blob/master/doc/wodoc}[doc/wodoc]} (the
+config) and
+{{:https://github.com/ocsigen/wodoc/blob/master/doc/menu.html}[doc/menu.html]}
+(the shared menu) in the repository for a complete, working example.
