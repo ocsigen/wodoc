@@ -293,35 +293,52 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   let menu_html = read_menu menu in
   let nav = leftnav c (versions ~out ~label) in
   let subproject = Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title) in
-  (* with no explicit (packages ...), assemble every top-level subtree odoc
-     produced (skipping its support assets and the top package-list index) *)
-  let pkgs =
+  (* the pages to assemble: the explicit (packages …) subtrees, or — by default —
+     every .html odoc produced (recursively), skipping its support assets and the
+     top-level package-list index (replaced by the redirect below). Default covers
+     both API under package dirs AND manual pages that odoc emits at the root. *)
+  let rels =
     if c.packages <> []
-    then c.packages
-    else
-      Array.to_list (Sys.readdir src)
-      |> List.filter (fun e -> e <> "odoc.support" && Sys.is_directory (Filename.concat src e))
-      |> List.sort compare
+    then List.concat_map (html_files src) c.packages
+    else (
+      let acc = ref [] in
+      let rec walk rel =
+        let abs = if rel = "" then src else Filename.concat src rel in
+        if Sys.is_directory abs
+        then
+          Array.iter
+            (fun e ->
+               if not (rel = "" && e = "odoc.support")
+               then walk (if rel = "" then e else Filename.concat rel e))
+            (Sys.readdir abs)
+        else if Filename.check_suffix rel ".html" && rel <> "index.html"
+        then acc := rel :: !acc
+      in
+      walk "";
+      List.sort compare !acc)
   in
   List.iter
-    (fun pkg ->
-       List.iter
-         (fun rel ->
-            let base = base_of rel in
-            let current = match String.index_opt rel '/' with Some i -> String.sub rel 0 i | None -> "" in
-            let page =
-              Assemble.page ~base ~menu:menu_html ~subproject ~menu_current:c.menu_current
-                ~leftnav:nav ~template:tmpl ~current (read_file (Filename.concat src rel))
-            in
-            let page =
-              if c.siblings = [] then page
-              else Resolve.html ~siblings:c.siblings ~base page
-            in
-            let dst = Filename.concat out rel in
-            mkdir_p (Filename.dirname dst);
-            write_file dst page)
-         (html_files src pkg))
-    pkgs;
+    (fun rel ->
+       let base = base_of rel in
+       (* current nav id: an API page's top package dir, or a root manual page's
+          own name (so the matching left-nav entry is highlighted) *)
+       let current =
+         match String.index_opt rel '/' with
+         | Some i -> String.sub rel 0 i
+         | None -> Filename.remove_extension rel
+       in
+       let page =
+         Assemble.page ~base ~menu:menu_html ~subproject ~menu_current:c.menu_current
+           ~leftnav:nav ~template:tmpl ~current (read_file (Filename.concat src rel))
+       in
+       let page =
+         if c.siblings = [] then page
+         else Resolve.html ~siblings:c.siblings ~base page
+       in
+       let dst = Filename.concat out rel in
+       mkdir_p (Filename.dirname dst);
+       write_file dst page)
+    rels;
   (* version root index.html: redirect to the landing page *)
   write_file (Filename.concat out "index.html")
     (Printf.sprintf
