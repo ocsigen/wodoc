@@ -92,9 +92,13 @@ meant to be reviewed by hand. See {!Wodoc.Convert}.
 {1 [wodoc build]}
 
 {@text[
-wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html> [--label <v>]
+wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]
             [--src <odoc _html>] [--latest]
 ]}
+
+[--menu] takes the shared site menu as a local file {e or} an [http(s)] URL
+(fetched with curl) — so a project's CI can point straight at the one canonical
+copy, with no wrapper script to download it first.
 
 The turn-key command: assemble a whole odoc HTML tree into the themed site from
 ONE per-project {{!Wodoc.Config}config file} (a dune-style S-expression
