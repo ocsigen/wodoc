@@ -104,7 +104,13 @@ generates the page template and the left navigation (version selector,
 on-this-page, the config-declared nav), then fills the shared menu, marks the
 current project/package, resolves sibling references and ships the assets, the
 version redirect and the [latest] symlink. Without [--src] it runs
-[dune build @doc] itself. See {!Wodoc.Build}.
+[dune build @doc] itself.
+
+The syntax-highlight starter is shipped automatically as [wodoc-highlight.js]: a
+plain-OCaml default built into wodoc, or — for a project whose code blocks use
+extra syntax (a ppx, a client/server split) — the file given by [(highlight …)]
+in the config. So a project without special syntax ships no JavaScript at all.
+See {!Wodoc.Build}.
 
 {1 Putting it together}
 
