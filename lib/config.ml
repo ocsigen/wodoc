@@ -20,6 +20,12 @@ type t =
   ; landing : string  (** index.html redirect target, e.g. "ocsipersist/index.html" *)
   ; highlight : string option  (** project highlight.js to ship, if any *)
   ; profile : string option  (** dune build profile (e.g. "release") *)
+  ; odoc_driver : string option
+      (** when set, build the API with [odoc_driver <pkg> --remap] (the engine
+          ocaml.org uses) instead of [dune build @doc]: needed for a client/server
+          package whose [<pkg>.server]/[<pkg>.client] libraries share module names
+          and would collide under [dune build @doc] (eliom, ocsigen-toolkit,
+          ocsigen-start). *)
   ; doc_manual : bool  (** also build the [@doc-manual] alias (examples) *)
   ; manual_files : string option  (** package dir to receive manual/files (examples, images) *)
   ; siblings : (string * string list) list  (** resolve-refs sibling table *)
@@ -76,6 +82,7 @@ let of_string s =
   ; landing = Sexp.field_atom_default "landing" (project ^ "/index.html") stanzas
   ; highlight = Sexp.field_atom "highlight" stanzas
   ; profile = Sexp.field_atom "profile" stanzas
+  ; odoc_driver = Sexp.field_atom "odoc-driver" stanzas
   ; doc_manual = Sexp.field_atom "doc-manual" stanzas = Some "true"
   ; manual_files = Sexp.field_atom "manual-files" stanzas
   ; siblings = parse_siblings stanzas

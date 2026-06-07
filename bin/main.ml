@@ -197,19 +197,30 @@ let () =
       let cfg = req "config" in
       let c = Wodoc.Config.of_string (read_file cfg) in
       let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in
-      (* --src points at a prebuilt odoc _html tree; without it, build it here
-         with dune in the current checkout (the common dev case). *)
+      (* --src points at a prebuilt odoc _html tree; without it, build it here.
+         The build method comes from the config: odoc_driver on the installed
+         package for a client/server project (server/client share module names,
+         so `dune build @doc` collides), else plain `dune build @doc`. *)
       let src =
         match List.assoc_opt "src" flags with
         | Some s -> s
-        | None ->
-            let profile =
-              match c.profile with Some p -> " --profile " ^ p | None -> ""
-            in
-            let manual = if c.doc_manual then " @doc-manual" else "" in
-            if Sys.command ("dune build @doc" ^ manual ^ profile) <> 0
-            then (prerr_endline "wodoc build: dune build @doc failed"; exit 1);
-            "_build/default/_doc/_html"
+        | None -> (
+            match c.odoc_driver with
+            | Some pkg ->
+                let work = "_wodoc-html" in
+                if Sys.command
+                     (Printf.sprintf "odoc_driver %s --remap --html-dir %s"
+                        (Filename.quote pkg) (Filename.quote work)) <> 0
+                then (prerr_endline "wodoc build: odoc_driver failed"; exit 1);
+                Filename.concat work pkg
+            | None ->
+                let profile =
+                  match c.profile with Some p -> " --profile " ^ p | None -> ""
+                in
+                let manual = if c.doc_manual then " @doc-manual" else "" in
+                if Sys.command ("dune build @doc" ^ manual ^ profile) <> 0
+                then (prerr_endline "wodoc build: dune build @doc failed"; exit 1);
+                "_build/default/_doc/_html")
       in
       Wodoc.Build.run c ~src ~out:(req "out") ~label ~menu:(req "menu")
         ~assets_dir:(Filename.dirname cfg) ~local ~set_latest

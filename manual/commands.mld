@@ -113,8 +113,12 @@ navigation ([menu.wiki] / [nav.html] / [leftnav.html] / [template.html]). It
 generates the page template and the left navigation (version selector,
 on-this-page, the config-declared nav), then fills the shared menu, marks the
 current project/package, resolves sibling references and ships the assets, the
-version redirect and the [latest] symlink. Without [--src] it runs
-[dune build @doc] itself.
+version redirect and the [latest] symlink. Without [--src] it builds the odoc
+HTML itself: [dune build @doc] by default, or — when the config has
+[(odoc-driver <pkg>)] — [odoc_driver <pkg> --remap] on the {e installed} package
+(the engine ocaml.org uses), needed for a client/server package whose
+[<pkg>.server]/[<pkg>.client] libraries share module names and would collide
+under [dune build @doc].
 
 The syntax-highlight starter is shipped automatically as [wodoc-highlight.js]: a
 plain-OCaml default built into wodoc, or — for a project whose code blocks use
