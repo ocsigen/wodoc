@@ -20,7 +20,7 @@ type t =
   ; landing : string  (** index.html redirect target, e.g. "ocsipersist/index.html" *)
   ; highlight : string option  (** project highlight.js to ship, if any *)
   ; profile : string option  (** dune build profile (e.g. "release") *)
-  ; doc_manual : bool  (** also build the @doc-manual alias (examples) *)
+  ; doc_manual : bool  (** also build the [@doc-manual] alias (examples) *)
   ; manual_files : string option  (** package dir to receive manual/files (examples, images) *)
   ; siblings : (string * string list) list  (** resolve-refs sibling table *)
   ; nav : section list }
