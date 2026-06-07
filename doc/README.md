@@ -2,8 +2,8 @@
 
 The wodoc documentation published at <https://ocsigen.org/wodoc/> is built
 entirely with **odoc** and themed with the Ocsigen site chrome by **wodoc
-itself** — wodoc dogfoods its own driver. The same odoc sources are also what
-ocaml.org renders.
+itself** — wodoc dogfoods its own turn-key `wodoc build` command. The same odoc
+sources are also what ocaml.org renders.
 
 ## Sources
 
@@ -12,35 +12,45 @@ ocaml.org renders.
 | Manual | [`manual/*.mld`](../manual) | odoc pages |
 | Manual home / API overview | `manual/index.mld`, `manual/api.mld` | odoc pages |
 | API | the `.mli` of the `wodoc` library | odoc comments (native `{!…}` refs) |
-| Left-column navigation | [`doc/menu.wiki`](menu.wiki) | wikicreole (nav only) |
-| Theme / chrome | [`doc/template.html`](template.html), [`doc/leftnav.html`](leftnav.html) | HTML with `{{holes}}` |
+| Build configuration | [`doc/wodoc`](wodoc) | declarative S-expression (read by `Wodoc.Config`) |
+| Shared site menu | [`doc/menu.html`](menu.html) | HTML fragment with holes (header, top menu, drawer) |
 
-The manual is pure native odoc (no `{%wodoc:…%}` content markers): the per-project
+The manual is pure native odoc (no `{%wodoc:…%}` content markers): the
 documentation is built by `dune build @doc`, which compiles the sources with a
 stock odoc and so would drop any wodoc marker. wodoc here only adds the **chrome**
 (the `assemble` pass). The `{%wodoc:…%}` examples that appear in the manual are
 shown verbatim inside code blocks, as documentation.
 
+The page template and the left-column navigation are **not** files here: `wodoc
+build` generates them — the template from `Wodoc.Build`, the left navigation
+(version selector, on-this-page, manual + API sections) from the `(nav …)`
+stanza of [`doc/wodoc`](wodoc). The only HTML kept in this directory is the
+shared menu ([`doc/menu.html`](menu.html)), reused by every project.
+
 ## Build
 
 ```
-doc/build.sh <label> [outdir]   # e.g. doc/build.sh dev
+dune build bin/main.exe
+_build/default/bin/main.exe build \
+  --config doc/wodoc --out _doc-site/<label> --menu doc/menu.html --label <label>
 ```
 
-`doc/build.sh` dogfoods wodoc: unless `$WODOC` points at a prebuilt binary, it
-builds wodoc from this checkout (`dune build`) and uses it to theme wodoc's own
-documentation. It then:
+e.g. `--label dev`. `wodoc build` runs `dune build @doc` itself (odoc HTML for
+the manual `manual/*.mld` and the API of the `wodoc` library, in one run) and
+then assembles every page of the `wodoc` package into the Ocsigen chrome
+(header/menu/drawer from `doc/menu.html`, version `<select>`, left navigation
+from `doc/wodoc`), shipping the highlight starter and the version redirect.
 
-1. `dune build @doc` — odoc HTML for the manual (`manual/*.mld`) and the API of
-   the `wodoc` library, in one run, into `_build/default/_doc/_html/`.
-2. `wodoc assemble` — wraps every page in the Ocsigen chrome (header, menu,
-   drawer, version `<select>`, left navigation from `doc/menu.wiki`).
+Output goes to `_doc-site/<label>/`, laid out to match
+`https://ocsigen.org/wodoc/<label>/`. Internal links are version-relative (a
+per-page relative `base`); only the version `<select>` is absolute (`pub` =
+`/wodoc`, from the config). The themed stylesheet is served centrally at
+`/css/ocsigen-odoc.css` by ocsigen.org.
 
-Output goes to `<outdir>/<label>/` (default `_doc-site/<label>/`), laid out to
-match `https://ocsigen.org/wodoc/<label>/`. Internal links are version-relative
-(the `{{base}}` token); only the version `<select>` is absolute (`{{pub}}` =
-`/wodoc`). The themed stylesheet is served centrally at `/css/ocsigen-odoc.css`
-by ocsigen.org.
+To preview the themed pages locally (the chrome references the site's shared
+`/css//img/` assets by absolute path), add `--local` with an http(s) `--menu`
+URL: it fetches those assets next to the output so a static server can serve
+them. See `wodoc build --help` / the [Commands](../manual/commands.mld) manual.
 
 ## Deployment (CI)
 
