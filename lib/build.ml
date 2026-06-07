@@ -226,14 +226,20 @@ let leftnav (c : Config.t) versions =
   Buffer.contents b
 
 (* version directories already present next to [out] (its siblings), plus the
-   one being built, "latest" first — for the version <select>. *)
+   one being built, "latest" first — for the version <select>. A sibling counts
+   as a version only if it is itself a wodoc build (it carries wodoc-highlight.js):
+   this skips source/asset dirs that may sit alongside the versions (e.g. a
+   project whose mld/ or api-snapshot/ live next to its built versions). *)
 let versions ~out ~label =
   let parent = Filename.dirname out in
   let dirs =
     if Sys.file_exists parent
     then
       Array.to_list (Sys.readdir parent)
-      |> List.filter (fun d -> d <> "latest" && Sys.is_directory (Filename.concat parent d))
+      |> List.filter (fun d ->
+           d <> "latest"
+           && Sys.is_directory (Filename.concat parent d)
+           && Sys.file_exists (Filename.concat (Filename.concat parent d) "wodoc-highlight.js"))
     else []
   in
   let all = "latest" :: List.sort compare (label :: dirs) in
@@ -392,6 +398,9 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   let menu_html = read_menu menu in
   let subproject = Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title) in
   let vs = versions ~out ~label in
+  (* direct-mld build (manual-only/archived): the pages ARE the manual and the
+     landing index.html is a real page, so keep it and write no redirect. *)
+  let mld_mode = c.mld_dir <> None in
   (* the pages to assemble: the explicit (packages …) subtrees, or — by default —
      every .html odoc produced (recursively), skipping its support assets and the
      top-level package-list index (replaced by the redirect below). Default covers
@@ -410,7 +419,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
                if not (rel = "" && e = "odoc.support")
                then walk (if rel = "" then e else Filename.concat rel e))
             (Sys.readdir abs)
-        else if Filename.check_suffix rel ".html" && rel <> "index.html"
+        else if Filename.check_suffix rel ".html" && (mld_mode || rel <> "index.html")
         then acc := rel :: !acc
       in
       walk "";
@@ -422,7 +431,16 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     match c.client_server with
     | [] ->
         let tmpl = replace_hole (template c) "pub" c.pub in
-        let nav = leftnav c vs in
+        (* left nav: a single page's in-page anchors, a wiki manual menu, or — by
+           default — the config-declared sections. *)
+        let nav =
+          match c.anchor_menu, c.manual_menu with
+          | Some f, _ when Sys.file_exists f ->
+              docversion vs ^ page_toc ^ Nav.anchors ~base:"{{base}}" (read_file f)
+          | _, Some f when Sys.file_exists f ->
+              docversion vs ^ page_toc ^ Nav.manual ~base:"{{base}}" (read_file f)
+          | _ -> leftnav c vs
+        in
         fun rel ->
           let base = base_of rel in
           (* current nav id: an API page's top package dir, or a root manual
@@ -433,7 +451,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
             | None -> Filename.remove_extension rel
           in
           let page =
-            Assemble.page ~base ~menu:menu_html ~subproject
+            Assemble.page ~flat:c.flat ~base ~menu:menu_html ~subproject
               ~menu_current:c.menu_current ~leftnav:nav ~template:tmpl ~current
               (read_file (Filename.concat src rel))
           in
@@ -509,11 +527,22 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
        mkdir_p (Filename.dirname dst);
        write_file dst (assemble_page rel))
     rels;
-  (* version root index.html: redirect to the landing page *)
-  write_file (Filename.concat out "index.html")
-    (Printf.sprintf
-       "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=%s\"/>\n<link rel=\"canonical\" href=\"%s\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"%s\">%s documentation</a>.</p></body>\n</html>\n"
-       c.landing c.landing (esc c.title) c.landing (esc c.title));
+  (* version root index.html: redirect to the landing page — UNLESS this is a
+     direct-mld build, whose index.html is a real manual page already written. *)
+  if not mld_mode then
+    write_file (Filename.concat out "index.html")
+      (Printf.sprintf
+         "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=%s\"/>\n<link rel=\"canonical\" href=\"%s\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"%s\">%s documentation</a>.</p></body>\n</html>\n"
+         c.landing c.landing (esc c.title) c.landing (esc c.title));
+  (* verbatim copies (frozen API snapshot, manual images, …) *)
+  List.iter
+    (fun (csrc, dest) ->
+       if Sys.file_exists csrc
+       then (
+         let d = Filename.concat out dest in
+         mkdir_p (Filename.dirname d);
+         ignore (Sys.command (Printf.sprintf "cp -a %s %s" (Filename.quote csrc) (Filename.quote d)))))
+    c.static_copy;
   (* assets: odoc's bundled highlighter + the project's highlight starter *)
   let sf = Filename.temp_file "wodoc-sf" "" in
   Sys.remove sf;

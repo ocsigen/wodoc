@@ -134,6 +134,20 @@ points at [ocaml.org]: wodoc rewrites those to relative links into their wodoc
 docs (other dependencies stay on [ocaml.org]). The whole client/server build is
 still ONE declarative [doc/wodoc] and a single [wodoc build] — no [build.sh].
 
+{2 Manual-only / archived projects (no [dune build @doc])}
+
+A project with no buildable library API — an archived project (ocsimore) or a
+tool whose libraries are internal (html_of_wiki) — has nothing for [dune build
+@doc] to render. Point [(mld-dir <dir>)] at a directory of [.mld] pages and wodoc
+builds them straight with odoc (preprocess → compile → link → html-generate, no
+dune), [(mld-package <pkg>)] giving the odoc package. The pages {e are} the
+manual: the landing [index.html] is a real page (no redirect). The left nav comes
+from [(anchor-menu <menu.wiki>)] (a one-page manual's in-page [#anchor] links) or
+[(manual-menu <menu.wiki>)] (a multi-page wiki menu); add [(flat)] if the first
+content straddles odoc's preamble boundary. [(static-copy <src> <dest>)…] copies
+trees in verbatim — e.g. a frozen API snapshot that can no longer be recompiled,
+or a manual image.
+
 The syntax-highlight starter is shipped automatically as [wodoc-highlight.js]: a
 plain-OCaml default built into wodoc, or — for a project whose code blocks use
 extra syntax (a ppx, a client/server split) — the file given by [(highlight …)]

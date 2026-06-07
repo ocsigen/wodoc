@@ -53,7 +53,20 @@ type t =
   ; hosted : (string * (string * bool * string)) list
       (** cross-project resolve-refs table (resolve-refs --hosted): package ->
           (deploy dir, multi-library?, wrapper module). Rewrites sibling Ocsigen
-          projects' [ocaml.org] xrefs to relative links into their wodoc docs. *) }
+          projects' [ocaml.org] xrefs to relative links into their wodoc docs. *)
+  ; mld_dir : string option
+      (** direct-mld build (a manual-only / archived project with no [dune build
+          @doc]): compile every [.mld] in this dir straight with odoc (preprocess
+          -> compile -> link -> html-generate). The pages are the manual; the
+          landing [index.html] is a real page (no redirect). *)
+  ; mld_package : string  (** odoc [--package] for the direct-mld compile (the src subtree) *)
+  ; flat : bool  (** assemble [--flat] (content straddling odoc's preamble boundary) *)
+  ; anchor_menu : string option
+      (** left nav from a single page's in-page anchors (Nav.anchors), e.g. a
+          one-page manual whose menu links to [#section] anchors *)
+  ; static_copy : (string * string) list
+      (** verbatim copies into the output: (source path, dest under <out>) — e.g.
+          a frozen API snapshot, or a manual image *) }
 
 let parse_entry = function
   | Sexp.List [ Atom label; Atom path; Atom current ] -> { label; path; current }
@@ -127,6 +140,15 @@ let parse_hosted stanzas =
         block
   | [] -> []
 
+(* (static-copy <src> <dest>) ...  — repeatable *)
+let parse_static_copy stanzas =
+  List.filter_map
+    (function
+      | [ Sexp.Atom src; Sexp.Atom dest ] -> Some (src, dest)
+      | [ Sexp.Atom src ] -> Some (src, Filename.basename src)
+      | _ -> None)
+    (Sexp.fields "static-copy" stanzas)
+
 let of_string s =
   let stanzas = Sexp.parse s in
   let project =
@@ -150,4 +172,9 @@ let of_string s =
   ; nav = parse_nav stanzas
   ; client_server = parse_client_server stanzas
   ; manual_menu = Sexp.field_atom "manual-menu" stanzas
-  ; hosted = parse_hosted stanzas }
+  ; hosted = parse_hosted stanzas
+  ; mld_dir = Sexp.field_atom "mld-dir" stanzas
+  ; mld_package = Sexp.field_atom_default "mld-package" "" stanzas
+  ; flat = Sexp.field_atom "flat" stanzas = Some "true" || Sexp.fields "flat" stanzas <> []
+  ; anchor_menu = Sexp.field_atom "anchor-menu" stanzas
+  ; static_copy = parse_static_copy stanzas }
