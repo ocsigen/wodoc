@@ -40,20 +40,56 @@ let replace_hole template key value =
 
 let esc = Resolve.html_escape
 
-(* The default highlight starter wodoc ships: just start odoc's bundled
-   highlight.js on the code blocks. Projects with extra syntax (a ppx, a
-   client/server split, …) override it with their own file via (highlight …). *)
+(* The default highlight starter wodoc ships. It teaches odoc's bundled
+   highlight.js the OCaml syntax extensions used across the Ocsigen projects, so
+   ANY project's manual can show eliom, lwt or js_of_ocaml code with the right
+   colours — no per-project file needed. A project with yet another syntax can
+   still override the whole starter via (highlight <file>) in its config. *)
 let default_highlight =
-  {js|// Start odoc's bundled highlight.js on the code blocks (odoc emits them as
-// <pre class="language-...">). This is wodoc's default starter (plain OCaml);
-// a project with extra syntax overrides it via (highlight <file>) in doc/wodoc.
+  {hl|// wodoc default syntax-highlight starter: start odoc's bundled highlight.js and
+// teach it the OCaml extensions used across Ocsigen, so any doc can colour them:
+//   - eliom:       let%client / %server / %shared (per-side colour), ~%x injection
+//   - lwt:         let%lwt / match%lwt / … and the let* / and* / let+ operators
+//   - js_of_ocaml: object%js / [%js] / … and the obj##meth / obj##.prop operators
+//   - the name bound by let / and (function names)
 (function () {
-  if (!window.hljs) return;
-  if (document.readyState === "loading")
-    document.addEventListener("DOMContentLoaded", function () { hljs.highlightAll(); });
-  else hljs.highlightAll();
+  var oc = window.hljs && hljs.getLanguage && hljs.getLanguage("ocaml");
+  if (oc && oc.contains) {
+    var rules = [];
+    var lead = "(?:let|and|val|module|open|include|method|class|type|exception|fun)";
+    // eliom: whole `let%client` (etc.) and bare `%client` -> per-side colour
+    ["client", "server", "shared"].forEach(function (s) {
+      rules.push({ className: "eliom-" + s, begin: new RegExp("\\b" + lead + "%" + s + "\\b") });
+    });
+    ["client", "server", "shared"].forEach(function (s) {
+      rules.push({ className: "eliom-" + s, begin: new RegExp("%" + s + "\\b") });
+    });
+    // lwt: let*, and*, let+, and+ binding operators
+    rules.push({ className: "keyword", begin: /\b(let|and)[*+]/ });
+    // js_of_ocaml: obj##meth, obj##.prop
+    rules.push({ className: "operator", begin: /##\.?/ });
+    // eliom: ~%x client-value injection
+    rules.push({ className: "subst", begin: /~%[A-Za-z_][\w']*/ });
+    // any other ppx extension (%lwt, %js, %rpc, …) -- LAST so the specific rules win
+    rules.push({ className: "keyword", begin: /%[a-z]+/ });
+    oc.contains.unshift.apply(oc.contains, rules);
+    // the name bound by let / let%x / let* / and -> a function/title (lookbehind
+    // may be unsupported on old browsers; guard so the rest still applies)
+    try {
+      oc.contains.unshift({
+        className: "title",
+        begin: new RegExp("(?<=\\b(?:let|and)(?:%[a-z]+|[*+])?\\s+)[a-z_][\\w']*"),
+      });
+    } catch (e) { /* lookbehind unsupported: skip function-name highlighting */ }
+    hljs.registerLanguage("ocaml", function () { return oc; });
+  }
+  if (window.hljs) {
+    if (document.readyState === "loading")
+      document.addEventListener("DOMContentLoaded", function () { hljs.highlightAll(); });
+    else hljs.highlightAll();
+  }
 })();
-|js}
+|hl}
 
 (* the per-page template (chrome around the odoc content); {{menu}}, {{leftnav}},
    {{base}}, {{title}}, {{preamble}}, {{content}} are filled by Assemble. *)
