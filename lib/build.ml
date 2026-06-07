@@ -14,6 +14,22 @@ let write_file f s =
   output_string oc s;
   close_out oc
 
+(* the shared menu is given either as a local file or an http(s) URL (the single
+   canonical copy lives in ocsigen.github.io); fetch the URL with curl. *)
+let read_menu m =
+  let is_url p =
+    String.starts_with ~prefix:"http://" p || String.starts_with ~prefix:"https://" p
+  in
+  if not (is_url m)
+  then read_file m
+  else (
+    let tmp = Filename.temp_file "wodoc-menu" ".html" in
+    let rc = Sys.command (Printf.sprintf "curl -fsSL %s -o %s" (Filename.quote m) (Filename.quote tmp)) in
+    if rc <> 0 then (Sys.remove tmp; failwith ("wodoc build: cannot fetch menu " ^ m));
+    let s = read_file tmp in
+    Sys.remove tmp;
+    s)
+
 let rec mkdir_p dir =
   if dir <> "" && dir <> "." && dir <> "/" && not (Sys.file_exists dir)
   then (mkdir_p (Filename.dirname dir); (try Sys.mkdir dir 0o755 with Sys_error _ -> ()))
@@ -213,7 +229,7 @@ let versions ~out ~label =
 let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~set_latest =
   mkdir_p out;
   let tmpl = replace_hole (template c) "pub" c.pub in
-  let menu_html = read_file menu in
+  let menu_html = read_menu menu in
   let nav = leftnav c (versions ~out ~label) in
   let subproject = Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title) in
   (* with no explicit (packages ...), assemble every top-level subtree odoc
