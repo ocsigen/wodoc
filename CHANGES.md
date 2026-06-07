@@ -49,6 +49,16 @@ and `.mli` sources. It provides:
   `?flat` concatenates the inner preamble and content for full-width pages whose
   containers span the odoc preamble/content boundary. The chrome stays in the
   project, wodoc stays generic.
+- `Nav`: build a left-column navigation fragment from a manual's wikicréole menu,
+  a curated API module index, or a single page's in-page anchors.
+- `Resolve`: link references odoc left dead — cross-package "sibling" references
+  built in the same tree, and cross-project references to other hosted projects —
+  rewriting the HTML in place.
+- `Config` / `Build` / `wodoc build`: the turn-key command. From one declarative
+  `doc/wodoc` config it runs `dune build @doc` and assembles a project's whole
+  site (shared menu, generated left navigation and version selector, sibling
+  reference resolution, assets and version redirect), replacing a hand-written
+  build script and its navigation HTML.
 - Tests: cram suites for the converter and the renderer.
 - Documentation: a README describing the approach, the pipeline and the
   authoring rules.
