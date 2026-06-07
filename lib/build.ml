@@ -14,12 +14,21 @@ let write_file f s =
   output_string oc s;
   close_out oc
 
+let is_url p =
+  String.starts_with ~prefix:"http://" p || String.starts_with ~prefix:"https://" p
+
+(* "https://host" from "https://host/path…" (the site origin of a URL) *)
+let origin_of url =
+  match Str.search_forward (Str.regexp "://") url 0 with
+  | exception Not_found -> None
+  | i -> (
+      match String.index_from_opt url (i + 3) '/' with
+      | Some j -> Some (String.sub url 0 j)
+      | None -> Some url)
+
 (* the shared menu is given either as a local file or an http(s) URL (the single
    canonical copy lives in ocsigen.github.io); fetch the URL with curl. *)
 let read_menu m =
-  let is_url p =
-    String.starts_with ~prefix:"http://" p || String.starts_with ~prefix:"https://" p
-  in
   if not (is_url m)
   then read_file m
   else (
@@ -224,9 +233,57 @@ let versions ~out ~label =
   let all = "latest" :: List.sort compare (label :: dirs) in
   List.fold_left (fun acc v -> if List.mem v acc then acc else acc @ [ v ]) [] all
 
+(* Fetch the root-absolute assets the built pages reference (/css/…, /img/…, …)
+   from the menu URL's site, into the parent of [out], so the result is viewable
+   with a static server rooted there (the pages use absolute /css//img/ paths
+   that are served by the real site but 404 on a bare local build). *)
+let asset_re =
+  Str.regexp
+    "\\(href\\|src\\)=\"\\(/[^\"]+\\.\\(css\\|js\\|svg\\|png\\|jpe?g\\|gif\\|ico\\|woff2?\\|ttf\\)\\)\""
+
+let local_assets ~menu ~out =
+  match if is_url menu then origin_of menu else None with
+  | None ->
+      prerr_endline
+        "wodoc build --local: --menu must be an http(s) URL to fetch assets; skipped"
+  | Some origin ->
+      let root = Filename.dirname out in
+      let paths = Hashtbl.create 64 in
+      let rec scan dir =
+        Array.iter
+          (fun e ->
+             let p = Filename.concat dir e in
+             if Sys.is_directory p
+             then scan p
+             else if Filename.check_suffix p ".html"
+             then (
+               let s = read_file p in
+               let i = ref 0 in
+               try
+                 while true do
+                   ignore (Str.search_forward asset_re s !i);
+                   Hashtbl.replace paths (Str.matched_group 2 s) ();
+                   i := Str.match_end ()
+                 done
+               with Not_found -> ()))
+          (Sys.readdir dir)
+      in
+      scan out;
+      Hashtbl.iter
+        (fun path () ->
+           let dst = root ^ path in
+           mkdir_p (Filename.dirname dst);
+           ignore
+             (Sys.command
+                (Printf.sprintf "curl -fsSL %s -o %s 2>/dev/null"
+                   (Filename.quote (origin ^ path)) (Filename.quote dst))))
+        paths;
+      Printf.eprintf "wodoc build --local: fetched %d shared assets into %s\n"
+        (Hashtbl.length paths) root
+
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
-let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~set_latest =
+let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   mkdir_p out;
   let tmpl = replace_hole (template c) "pub" c.pub in
   let menu_html = read_menu menu in
@@ -298,4 +355,5 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~set_latest =
   if set_latest then
     ignore (Sys.command (Printf.sprintf "ln -sfn %s %s"
                            (Filename.quote label)
-                           (Filename.quote (Filename.concat (Filename.dirname out) "latest"))))
+                           (Filename.quote (Filename.concat (Filename.dirname out) "latest"))));
+  if local then local_assets ~menu ~out
