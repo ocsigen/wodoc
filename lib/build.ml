@@ -278,8 +278,12 @@ let local_assets ~menu ~out =
                 (Printf.sprintf "curl -fsSL %s -o %s 2>/dev/null"
                    (Filename.quote (origin ^ path)) (Filename.quote dst))))
         paths;
-      Printf.eprintf "wodoc build --local: fetched %d shared assets into %s\n"
-        (Hashtbl.length paths) root
+      (* the pages use absolute /css//img/ paths, so the server must be rooted at
+         [root] (the parent of <out>), not at <out> itself — spell it out. *)
+      Printf.eprintf
+        "wodoc build --local: fetched %d shared assets into %s\n\
+        \  preview:  (cd %s && python3 -m http.server)  then open  http://localhost:8000/%s/\n"
+        (Hashtbl.length paths) root (Filename.quote root) (Filename.basename out)
 
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
