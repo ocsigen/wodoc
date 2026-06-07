@@ -207,6 +207,33 @@ let () =
         | None -> (
             match c.odoc_driver with
             | Some pkg ->
+                (* The installed manual .mld carry {%wodoc:%} markers; rewrite
+                   them in place to HTML comments (idempotent) so odoc keeps them
+                   for Assemble's render pass. Best-effort: skip if the package
+                   has no installed odoc-pages. *)
+                (let tmp = Filename.temp_file "wodoc-doc" "" in
+                 let doc_root =
+                   if Sys.command
+                        (Printf.sprintf "opam var doc > %s 2>/dev/null"
+                           (Filename.quote tmp)) = 0
+                   then String.trim (read_file tmp)
+                   else ""
+                 in
+                 (try Sys.remove tmp with _ -> ());
+                 let pages =
+                   Filename.concat (Filename.concat doc_root pkg) "odoc-pages"
+                 in
+                 if doc_root <> "" && Sys.file_exists pages
+                 then
+                   Array.iter
+                     (fun e ->
+                        if Filename.check_suffix e ".mld"
+                        then (
+                          let f = Filename.concat pages e in
+                          let out = Wodoc.Preprocess.string (read_file f) in
+                          let oc = open_out_bin f in
+                          output_string oc out; close_out oc))
+                     (Sys.readdir pages));
                 let work = "_wodoc-html" in
                 if Sys.command
                      (Printf.sprintf "odoc_driver %s --remap --html-dir %s"
