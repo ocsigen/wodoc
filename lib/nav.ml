@@ -18,11 +18,16 @@ let head_re = Str.regexp "^\\(=+\\)[ \t]*\\(.*\\)$"
 let link_re = Str.regexp "^\\[\\[\\([^|]+\\)|\\([^]]+\\)\\]\\]"
 let mod_re = Str.regexp "^<<mod[ \t]+\\([^|>]+\\)|\\([^>]+\\)>>"
 let a_api_re = Str.regexp "<<a_api\\([^|>]*\\)|\\([^>]*\\)>>"
-let a_file_re = Str.regexp "<<a_file[^>]*src=\"\\([^\"]+\\)\"[^|>]*|\\([^>]*\\)>>"
+
+let a_file_re =
+  Str.regexp "<<a_file[^>]*src=\"\\([^\"]+\\)\"[^|>]*|\\([^>]*\\)>>"
+
 let attr_re name = Str.regexp (name ^ "=\"\\([^\"]+\\)\"")
 
 let attr name s =
-  try ignore (Str.search_forward (attr_re name) s 0); Some (Str.matched_group 1 s)
+  try
+    ignore (Str.search_forward (attr_re name) s 0);
+    Some (Str.matched_group 1 s)
   with Not_found -> None
 
 let contains s sub =
@@ -41,10 +46,24 @@ let manual ?(pkg = "") ?(heading = "Manual") ?(api_map = []) ~base menu =
   add "<nav class=\"api-nav manual-nav\">";
   add (Printf.sprintf "<h3>%s</h3>" (Resolve.html_escape heading));
   let open_ul = ref false in
-  let close () = if !open_ul then (add "</ul>"; open_ul := false) in
-  let open_section () = if not !open_ul then (add "<ul class=\"api-section\">"; open_ul := true) in
+  let close () =
+    if !open_ul
+    then (
+      add "</ul>";
+      open_ul := false)
+  in
+  let open_section () =
+    if not !open_ul
+    then (
+      add "<ul class=\"api-section\">";
+      open_ul := true)
+  in
   let esc = Resolve.html_escape in
-  let page_url page = if pkg = "" then base ^ "/" ^ page ^ ".html" else base ^ "/" ^ pkg ^ "/" ^ page ^ ".html" in
+  let page_url page =
+    if pkg = ""
+    then base ^ "/" ^ page ^ ".html"
+    else base ^ "/" ^ pkg ^ "/" ^ page ^ ".html"
+  in
   let api_href sub =
     match List.assoc_opt sub api_map with
     | Some p -> base ^ "/" ^ p
@@ -62,9 +81,10 @@ let manual ?(pkg = "") ?(heading = "Manual") ?(api_map = []) ~base menu =
            let page = String.trim (Str.matched_group 1 text) in
            let title = String.trim (Str.matched_group 2 text) in
            open_section ();
-           add (Printf.sprintf
-                  "<li class=\"ml%d\" data-wodoc-page=\"%s\"><a href=\"%s\">%s</a></li>"
-                  level page (page_url page) (esc title))
+           add
+             (Printf.sprintf
+                "<li class=\"ml%d\" data-wodoc-page=\"%s\"><a href=\"%s\">%s</a></li>"
+                level page (page_url page) (esc title))
          end
          else if Str.string_match mod_re text 0
          then begin
@@ -73,34 +93,58 @@ let manual ?(pkg = "") ?(heading = "Manual") ?(api_map = []) ~base menu =
              (* strip surrounding '/' like Python .strip("/") *)
              let n = String.length p in
              let i = ref 0 and j = ref (n - 1) in
-             while !i < n && p.[!i] = '/' do incr i done;
-             while !j >= !i && p.[!j] = '/' do decr j done;
+             while !i < n && p.[!i] = '/' do
+               incr i
+             done;
+             while !j >= !i && p.[!j] = '/' do
+               decr j
+             done;
              if !j < !i then "" else String.sub p !i (!j - !i + 1)
            in
            let title = String.trim (Str.matched_group 2 text) in
            open_section ();
-           add (Printf.sprintf "<li class=\"ml%d\"><a href=\"%s/%s/index.html\">%s</a></li>"
-                  level base path (esc title))
+           add
+             (Printf.sprintf
+                "<li class=\"ml%d\"><a href=\"%s/%s/index.html\">%s</a></li>"
+                level base path (esc title))
          end
-         else if (try ignore (Str.search_forward a_api_re text 0); true with Not_found -> false)
+         else if
+           try
+             ignore (Str.search_forward a_api_re text 0);
+             true
+           with Not_found -> false
          then begin
            let attrs = Str.matched_group 1 text in
            let body = String.trim (Str.matched_group 2 text) in
-           let sub = match attr "subproject" attrs with Some s -> s | None -> (if pkg = "" then "" else pkg) in
-           let title = match attr "text" attrs with Some t -> t | None -> body in
+           let sub =
+             match attr "subproject" attrs with
+             | Some s -> s
+             | None -> if pkg = "" then "" else pkg
+           in
+           let title =
+             match attr "text" attrs with Some t -> t | None -> body
+           in
            open_section ();
-           add (Printf.sprintf "<li class=\"ml%d\"><a href=\"%s\">%s</a></li>"
-                  level (api_href sub) (esc title))
+           add
+             (Printf.sprintf "<li class=\"ml%d\"><a href=\"%s\">%s</a></li>"
+                level (api_href sub) (esc title))
          end
-         else if (try ignore (Str.search_forward a_file_re text 0); true with Not_found -> false)
+         else if
+           try
+             ignore (Str.search_forward a_file_re text 0);
+             true
+           with Not_found -> false
          then begin
            let src = Str.matched_group 1 text in
            let title = String.trim (Str.matched_group 2 text) in
            open_section ();
-           add (Printf.sprintf "<li class=\"ml%d\"><a href=\"%s/%s/files/%s\">%s</a></li>"
-                  level base pkg src (esc title))
+           add
+             (Printf.sprintf
+                "<li class=\"ml%d\"><a href=\"%s/%s/files/%s\">%s</a></li>"
+                level base pkg src (esc title))
          end
-         else if text <> "" && not (contains text "<<") && not (contains text "[[")
+         else if
+           text <> "" && (not (contains text "<<")) && not (contains text "[[")
          then begin
            close ();
            add (Printf.sprintf "<h4 class=\"ml%d\">%s</h4>" level (esc text))
@@ -123,12 +167,13 @@ let index_sections text =
   let i = ref 0 in
   let is_ws c = c = ' ' || c = '\t' || c = '\n' || c = '\r' in
   while !i < len do
-    if text.[!i] = '{'
-       && !i + 1 < len
-       && text.[!i + 1] >= '1'
-       && text.[!i + 1] <= '9'
-       && !i + 2 < len
-       && is_ws text.[!i + 2]
+    if
+      text.[!i] = '{'
+      && !i + 1 < len
+      && text.[!i + 1] >= '1'
+      && text.[!i + 1] <= '9'
+      && !i + 2 < len
+      && is_ws text.[!i + 2]
     then (
       (* {N <title>} heading: title is everything up to the next '}' *)
       match String.index_from_opt text !i '}' with
@@ -144,7 +189,8 @@ let index_sections text =
       | Some e ->
           let content = String.sub text (!i + 10) (e - (!i + 10)) in
           let mods =
-            List.filter (fun s -> s <> "")
+            List.filter
+              (fun s -> s <> "")
               (String.split_on_char ' '
                  (String.map (fun c -> if is_ws c then ' ' else c) content))
           in
@@ -178,15 +224,16 @@ let api ?(wrapper = "") ?(heading = "Modules") ?(skip = []) ~base ~lib indexdoc 
        if mods <> []
        then begin
          (match title with
-          | Some t when t <> "" && not (List.mem t skip) ->
-              add (Printf.sprintf "<h4>%s</h4>" (esc t))
-          | _ -> ());
+         | Some t when t <> "" && not (List.mem t skip) ->
+             add (Printf.sprintf "<h4>%s</h4>" (esc t))
+         | _ -> ());
          add "<ul class=\"api-section\">";
          List.iter
            (fun m ->
-              add (Printf.sprintf
-                     "<li data-wodoc-page=\"%s\"><a href=\"%s\">%s</a></li>"
-                     (esc m) (page_url m) (esc m)))
+              add
+                (Printf.sprintf
+                   "<li data-wodoc-page=\"%s\"><a href=\"%s\">%s</a></li>"
+                   (esc m) (page_url m) (esc m)))
            mods;
          add "</ul>"
        end)
@@ -212,7 +259,12 @@ let anchors ?(heading = "Manual") ~base menu =
   add "<nav class=\"api-nav manual-nav\">";
   add (Printf.sprintf "<h3>%s</h3>" (esc heading));
   let open_ul = ref false in
-  let close () = if !open_ul then (add "</ul>"; open_ul := false) in
+  let close () =
+    if !open_ul
+    then (
+      add "</ul>";
+      open_ul := false)
+  in
   List.iter
     (fun line ->
        if Str.string_match head_re line 0
@@ -223,15 +275,24 @@ let anchors ?(heading = "Manual") ~base menu =
          then begin
            let anchor = String.trim (Str.matched_group 1 text) in
            let title = clean (Str.matched_group 2 text) in
-           if not !open_ul then (add "<ul class=\"api-section\">"; open_ul := true);
-           add (Printf.sprintf
-                  "<li class=\"ml%d\"><a href=\"%s/index.html#%s\">%s</a></li>"
-                  level base anchor (esc title))
+           if not !open_ul
+           then (
+             add "<ul class=\"api-section\">";
+             open_ul := true);
+           add
+             (Printf.sprintf
+                "<li class=\"ml%d\"><a href=\"%s/index.html#%s\">%s</a></li>"
+                level base anchor (esc title))
          end
          else begin
            let title = clean text in
-           if title <> "" && not (contains text "[[") && not (contains text "<<")
-           then (close (); add (Printf.sprintf "<h4 class=\"ml%d\">%s</h4>" level (esc title)))
+           if
+             title <> ""
+             && (not (contains text "[["))
+             && not (contains text "<<")
+           then (
+             close ();
+             add (Printf.sprintf "<h4 class=\"ml%d\">%s</h4>" level (esc title)))
          end
        end)
     (String.split_on_char '\n' menu);

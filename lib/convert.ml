@@ -439,7 +439,7 @@ let deabbrev url =
   else if starts_with "site:" url
   then "../" ^ String.sub url 5 (String.length url - 5)
   else if starts_with "wiki:" url
-  then (
+  then
     (* html_of_wiki "wiki:" abbreviation = a page of the current manual. In the
        flattened wodoc layout every manual page is a sibling <page>.html; drop
        the optional "manual/" prefix the old tutorial used, and keep any
@@ -452,12 +452,64 @@ let deabbrev url =
     in
     let page, anchor =
       match String.index_opt rest '#' with
-      | Some i -> (String.sub rest 0 i, String.sub rest i (String.length rest - i))
-      | None -> (rest, "")
+      | Some i -> String.sub rest 0 i, String.sub rest i (String.length rest - i)
+      | None -> rest, ""
     in
-    (if page = "" || Filename.check_suffix page ".html" then page else page ^ ".html")
-    ^ anchor)
+    (if page = "" || Filename.check_suffix page ".html"
+     then page
+     else page ^ ".html")
+    ^ anchor
   else url
+
+(* Convert wiki image syntax (double-brace "url | alt", but not the "{{!" odoc
+   refs) to wodoc img markers, in a standalone string. Used for an image nested
+   inside a link text (a clickable thumbnail): the link scan below stashes its
+   text verbatim, so such an image would otherwise survive unconverted. *)
+let convert_images s =
+  let n = String.length s in
+  let buf = Buffer.create n in
+  let i = ref 0 in
+  while !i < n do
+    if
+      !i + 2 <= n
+      && s.[!i] = '{'
+      && s.[!i + 1] = '{'
+      && (!i + 2 >= n || s.[!i + 2] <> '!')
+    then (
+      match find s "}}" (!i + 2) with
+      | Some e ->
+          let inner = String.sub s (!i + 2) (e - (!i + 2)) in
+          let cls, inner =
+            match
+              Str.search_forward
+                (Str.regexp "^@@class=\"\\([^\"]*\\)\"@@")
+                inner 0
+            with
+            | exception Not_found -> "", inner
+            | _ ->
+                ( Printf.sprintf " class=\"%s\"" (Str.matched_group 1 inner)
+                , Str.string_after inner (Str.match_end ()) )
+          in
+          let url, alt =
+            match String.index_opt inner '|' with
+            | Some b ->
+                ( String.sub inner 0 b
+                , String.sub inner (b + 1) (String.length inner - b - 1) )
+            | None -> inner, ""
+          in
+          Buffer.add_string buf
+            (Printf.sprintf "{%%wodoc:img%s src=\"%s\" alt=\"%s\"%%}" cls
+               (deabbrev (String.trim url))
+               (String.trim alt));
+          i := e + 2
+      | None ->
+          Buffer.add_char buf s.[!i];
+          incr i)
+    else (
+      Buffer.add_char buf s.[!i];
+      incr i)
+  done;
+  Buffer.contents buf
 
 (* extract [[...]] links and {{...}} images into placeholders (already converted
    to mld), so later inline passes don't touch their URLs *)
@@ -486,7 +538,10 @@ let protect_links s =
                 , String.sub inner (b + 1) (String.length inner - b - 1) )
             | None -> inner, inner
           in
-          stash (Printf.sprintf "{{:%s}%s}" (deabbrev (String.trim url)) text);
+          stash
+            (Printf.sprintf "{{:%s}%s}"
+               (deabbrev (String.trim url))
+               (convert_images text));
           i := e + 2
       | None ->
           Buffer.add_char buf s.[!i];

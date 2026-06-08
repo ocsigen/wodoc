@@ -41,8 +41,12 @@ let strip_parens s =
   let is_p c = c = '(' || c = ')' || c = ' ' in
   let n = String.length s in
   let i = ref 0 and j = ref (n - 1) in
-  while !i < n && is_p s.[!i] do incr i done;
-  while !j >= !i && is_p s.[!j] do decr j done;
+  while !i < n && is_p s.[!i] do
+    incr i
+  done;
+  while !j >= !i && is_p s.[!j] do
+    decr j
+  done;
   if !j < !i then "" else String.sub s !i (!j - !i + 1)
 
 let is_lower c = c >= 'a' && c <= 'z'
@@ -57,7 +61,7 @@ let global_sub re f s =
   let buf = Buffer.create len in
   let pos = ref 0 and continue = ref true in
   while !continue do
-    match (try Some (Str.search_forward re s !pos) with Not_found -> None) with
+    match try Some (Str.search_forward re s !pos) with Not_found -> None with
     | None -> continue := false
     | Some start ->
         let e = Str.match_end () in
@@ -88,12 +92,19 @@ let link_for siblings base raw =
   match toks with
   | top :: rest when List.mem_assoc top siblings ->
       let base_segs = List.assoc top siblings in
-      let last = match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1) in
-      let but_last l = match l with [] -> [] | _ -> List.filteri (fun i _ -> i < List.length l - 1) l in
+      let last =
+        match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1)
+      in
+      let but_last l =
+        match l with
+        | [] -> []
+        | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
+      in
       let dirs, anchor =
-        if rest <> []
-           && (kind = "val" || kind = "method"
-              || (kind = "" && String.length last > 0 && is_lower last.[0]))
+        if
+          rest <> []
+          && (kind = "val" || kind = "method"
+             || (kind = "" && String.length last > 0 && is_lower last.[0]))
         then but_last rest, "#val-" ^ last
         else if rest <> [] && kind = "type"
         then but_last rest, "#type-" ^ last
@@ -118,7 +129,8 @@ let fix_spans siblings base s =
        let trailing = Str.matched_group 4 whole in
        let label = visible ^ trailing in
        match link_for siblings base (if title <> "" then title else label) with
-       | Some url -> Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
+       | Some url ->
+           Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
        | None -> m0)
     s
 
@@ -159,8 +171,10 @@ let outside_pre f s =
   let find sub from =
     let sl = String.length sub in
     let rec go j =
-      if j + sl > len then None
-      else if String.sub s j sl = sub then Some j
+      if j + sl > len
+      then None
+      else if String.sub s j sl = sub
+      then Some j
       else go (j + 1)
     in
     go from
@@ -200,10 +214,14 @@ let html ~siblings ~base s = outside_pre (process siblings base) s
 
 let flat_module wrapper comp =
   let pre = wrapper ^ "_" in
-  if String.starts_with ~prefix:pre comp then comp else pre ^ String.lowercase_ascii comp
+  if String.starts_with ~prefix:pre comp
+  then comp
+  else pre ^ String.lowercase_ascii comp
 
 let flat_path wrapper path =
-  let re = Str.regexp (Str.quote wrapper ^ "/\\([A-Z][A-Za-z0-9_']*\\)\\(/.*\\)?$") in
+  let re =
+    Str.regexp (Str.quote wrapper ^ "/\\([A-Z][A-Za-z0-9_']*\\)\\(/.*\\)?$")
+  in
   if Str.string_match re path 0
   then
     let comp = Str.matched_group 1 path in
@@ -217,7 +235,8 @@ let dep_base hosted relroot side pkg =
   if multilib then b ^ "/" ^ dir ^ "." ^ side else b
 
 let resolved_re =
-  Str.regexp "href=\"https://ocaml\\.org/p/\\([^/\"]+\\)/[^/\"]+/doc/\\([^\"]+\\)\""
+  Str.regexp
+    "href=\"https://ocaml\\.org/p/\\([^/\"]+\\)/[^/\"]+/doc/\\([^\"]+\\)\""
 
 let fix_resolved hosted relroot side s =
   global_sub resolved_re
@@ -226,8 +245,10 @@ let fix_resolved hosted relroot side s =
        let pkg = Str.matched_group 1 whole in
        let path = Str.matched_group 2 whole in
        match List.assoc_opt pkg hosted with
-       | Some (_, _, wrapper) when not (String.starts_with ~prefix:"src/" path) ->
-           Printf.sprintf "href=\"%s/%s\"" (dep_base hosted relroot side pkg)
+       | Some (_, _, wrapper) when not (String.starts_with ~prefix:"src/" path)
+         ->
+           Printf.sprintf "href=\"%s/%s\""
+             (dep_base hosted relroot side pkg)
              (flat_path wrapper path)
        | _ -> m0)
     s
@@ -243,42 +264,71 @@ let fix_dep_spans hosted relroot side self s =
        let label = visible ^ trailing in
        let raw = String.trim (if title <> "" then title else label) in
        let kind, after =
-         if Str.string_match kind_re raw 0 then Str.matched_group 1 raw, Str.match_end () else "", 0
+         if Str.string_match kind_re raw 0
+         then Str.matched_group 1 raw, Str.match_end ()
+         else "", 0
        in
-       let name = strip_parens (String.sub raw after (String.length raw - after)) in
-       let toks = List.filter (fun t -> t <> "") (String.split_on_char '.' name) in
+       let name =
+         strip_parens (String.sub raw after (String.length raw - after))
+       in
+       let toks =
+         List.filter (fun t -> t <> "") (String.split_on_char '.' name)
+       in
        match toks with
        | [] -> m0
        | head :: _ -> (
-           match List.find_opt (fun (w, _) -> head = w || String.starts_with ~prefix:(w ^ "_") head) wrappers with
-           | None -> m0 (* dep we do not host: leave as text *)
-           | Some (wrapper, pkg) ->
-               if pkg = self then m0 (* self ref: keep text *)
-               else
-                 let modhead, rest =
-                   if head = wrapper
-                   then (match toks with _ :: m :: tl -> flat_module wrapper m, tl | _ -> "", [])
-                   else head, List.tl toks
+         match
+           List.find_opt
+             (fun (w, _) ->
+                head = w || String.starts_with ~prefix:(w ^ "_") head)
+             wrappers
+         with
+         | None -> m0 (* dep we do not host: leave as text *)
+         | Some (wrapper, pkg) ->
+             if pkg = self
+             then m0 (* self ref: keep text *)
+             else
+               let modhead, rest =
+                 if head = wrapper
+                 then
+                   match toks with
+                   | _ :: m :: tl -> flat_module wrapper m, tl
+                   | _ -> "", []
+                 else head, List.tl toks
+               in
+               if modhead = ""
+               then m0
+               else begin
+                 let last =
+                   match rest with
+                   | [] -> ""
+                   | _ -> List.nth rest (List.length rest - 1)
                  in
-                 if modhead = ""
-                 then m0
-                 else begin
-                   let last = match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1) in
-                   let but_last l = match l with [] -> [] | _ -> List.filteri (fun i _ -> i < List.length l - 1) l in
-                   let dirs, anchor =
-                     if rest <> [] && (kind = "val" || kind = "method" || (kind = "" && String.length last > 0 && is_lower last.[0]))
-                     then but_last rest, "#val-" ^ last
-                     else if rest <> [] && kind = "type"
-                     then but_last rest, "#type-" ^ last
-                     else rest, ""
-                   in
-                   let url =
-                     dep_base hosted relroot side pkg ^ "/" ^ modhead
-                     ^ String.concat "" (List.map (fun d -> "/" ^ d) dirs)
-                     ^ "/index.html" ^ anchor
-                   in
-                   Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
-                 end))
+                 let but_last l =
+                   match l with
+                   | [] -> []
+                   | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
+                 in
+                 let dirs, anchor =
+                   if
+                     rest <> []
+                     && (kind = "val" || kind = "method"
+                        || kind = ""
+                           && String.length last > 0
+                           && is_lower last.[0])
+                   then but_last rest, "#val-" ^ last
+                   else if rest <> [] && kind = "type"
+                   then but_last rest, "#type-" ^ last
+                   else rest, ""
+                 in
+                 let url =
+                   dep_base hosted relroot side pkg
+                   ^ "/" ^ modhead
+                   ^ String.concat "" (List.map (fun d -> "/" ^ d) dirs)
+                   ^ "/index.html" ^ anchor
+                 in
+                 Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
+               end))
     s
 
 let deps ~hosted ~relroot ~side ~self s =

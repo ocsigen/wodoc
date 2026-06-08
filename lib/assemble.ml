@@ -126,8 +126,8 @@ let mark_current ?(attr = "data-wodoc-page") ?(class_ = "current") ~current s =
                 try
                   ignore
                     (Str.search_forward
-                       (Str.regexp ("class=\"\\([^\"]*\\b\\)?" ^ Str.quote class_
-                                   ^ "\\b"))
+                       (Str.regexp
+                          ("class=\"\\([^\"]*\\b\\)?" ^ Str.quote class_ ^ "\\b"))
                        tag 0);
                   true
                 with Not_found -> false
