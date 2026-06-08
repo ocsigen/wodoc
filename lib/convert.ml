@@ -438,6 +438,25 @@ let deabbrev url =
   then "../" ^ String.sub url 6 (String.length url - 6)
   else if starts_with "site:" url
   then "../" ^ String.sub url 5 (String.length url - 5)
+  else if starts_with "wiki:" url
+  then (
+    (* html_of_wiki "wiki:" abbreviation = a page of the current manual. In the
+       flattened wodoc layout every manual page is a sibling <page>.html; drop
+       the optional "manual/" prefix the old tutorial used, and keep any
+       #anchor. *)
+    let rest = String.sub url 5 (String.length url - 5) in
+    let rest =
+      if starts_with "manual/" rest
+      then String.sub rest 7 (String.length rest - 7)
+      else rest
+    in
+    let page, anchor =
+      match String.index_opt rest '#' with
+      | Some i -> (String.sub rest 0 i, String.sub rest i (String.length rest - i))
+      | None -> (rest, "")
+    in
+    (if page = "" || Filename.check_suffix page ".html" then page else page ^ ".html")
+    ^ anchor)
   else url
 
 (* extract [[...]] links and {{...}} images into placeholders (already converted

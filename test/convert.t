@@ -55,6 +55,18 @@ project's manual still gets an external link.
   c {{!page-"clientserver-html".syntax}the manual}
   t {{:https://ocsigen.org/tuto/basics.html}tuto}
 
+The wikicreole "wiki:" abbreviation (a page of the current manual) maps to the
+flattened sibling <page>.html, dropping the optional "manual/" prefix and
+keeping any #anchor.
+
+  $ cat > wikiabbr.wiki <<'EOF'
+  > See [[wiki:manual/basics|the basics]] and [[wiki:pictures|pictures]].
+  > Anchored: [[wiki:manual/config#upload|upload]].
+  > EOF
+  $ wodoc convert wikiabbr.wiki
+  See {{:basics.html}the basics} and {{:pictures.html}pictures}.
+  Anchored: {{:config.html#upload}upload}.
+
 Single page title: a second top-level (=) heading is demoted to {1}, so a page
 never emits two {0} headings.
 
