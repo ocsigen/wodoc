@@ -67,6 +67,15 @@ keeping any #anchor.
   See {{:basics.html}the basics} and {{:pictures.html}pictures}.
   Anchored: {{:config.html#upload}upload}.
 
+An image nested inside a link (a clickable thumbnail) is converted too, not left
+as raw double-brace markup.
+
+  $ cat > thumb.wiki <<'EOF'
+  > [[files/shot.png|{{files/shot.png|Screenshot}}]]
+  > EOF
+  $ wodoc convert thumb.wiki
+  {{:files/shot.png}{%wodoc:img src="files/shot.png" alt="Screenshot"%}}
+
 Single page title: a second top-level (=) heading is demoted to {1}, so a page
 never emits two {0} headings.
 
