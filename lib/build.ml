@@ -572,8 +572,16 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
                                 (Filename.quote files) (Filename.quote dst)))
        end
    | None -> ());
-  if set_latest then
+  if set_latest then begin
     ignore (Sys.command (Printf.sprintf "ln -sfn %s %s"
                            (Filename.quote label)
                            (Filename.quote (Filename.concat (Filename.dirname out) "latest"))));
+    (* project-root redirect: <project>/index.html -> latest/index.html. Stable
+       target (always the `latest` symlink), so the project is reachable from
+       ocsigen.org/wodoc/<project>/ regardless of which version was just built. *)
+    write_file (Filename.concat (Filename.dirname out) "index.html")
+      (Printf.sprintf
+         "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"latest/index.html\">%s documentation</a>.</p></body>\n</html>\n"
+         (esc c.title) (esc c.title))
+  end;
   if local then local_assets ~menu ~out
