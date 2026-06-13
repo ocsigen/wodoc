@@ -753,6 +753,20 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
                 (Filename.quote files) (Filename.quote dst)))
       end
   | None -> ());
+  (* direct-mld mode: pages live at the version root and reference their assets
+     as [files/...] (relative to that root), so copy [<mld-dir>/files] verbatim
+     to [<out>/files] when present *)
+  (match c.mld_dir with
+  | Some d when Sys.file_exists (Filename.concat d "files") ->
+      let files = Filename.concat d "files" in
+      let dst = Filename.concat out "files" in
+      ignore
+        (Sys.command
+           (Printf.sprintf
+              "rm -rf %s && { cp -RL %s %s 2>/dev/null || cp -R %s %s; }"
+              (Filename.quote dst) (Filename.quote files) (Filename.quote dst)
+              (Filename.quote files) (Filename.quote dst)))
+  | _ -> ());
   if set_latest
   then begin
     ignore
