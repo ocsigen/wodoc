@@ -169,7 +169,7 @@ let api_path_anchor kind name =
    link into the themed wodoc tree so it is clickable even from a standalone
    manual build:
    - side server|client (this project) -> ../eliom.<side>/<path>/index.html[#a]
-   - project=P (another Ocsigen project) -> /wodoc/<P>/latest/<path>/index.html[#a]
+   - project=P (another Ocsigen project) -> /<P>/latest/<path>/index.html[#a]
    [default_side] makes a plain <<a_api|...>> behave as that side (the manual's
    bare references are server-side). Links to other projects may 404 until their
    doc is deployed — an intentional, visible reminder rather than a dropped link.
@@ -199,7 +199,7 @@ let a_api_ref ?(default_side = "") ?(odoc_refs = false) opener body =
     match project, side with
     | Some proj, _ when proj <> "eliom" ->
         Printf.sprintf
-          "[[https://ocsigen.org/wodoc/%s/latest/%s/index.html%s|%s]]" proj path
+          "[[https://ocsigen.org/%s/latest/%s/index.html%s|%s]]" proj path
           anchor text
     | _, Some side ->
         Printf.sprintf "[[../eliom.%s/%s/index.html%s|%s]]" side path anchor
@@ -222,8 +222,8 @@ let a_manual_ref ?(odoc_refs = false) opener body =
   let anchor = match frag with Some f -> "#" ^ f | None -> "" in
   match attr_val "project" opener with
   | Some proj ->
-      Printf.sprintf "[[https://ocsigen.org/%s/%s.html%s|%s]]" proj page anchor
-        text
+      Printf.sprintf "[[https://ocsigen.org/%s/latest/%s.html%s|%s]]" proj page
+        anchor text
   | None when odoc_refs ->
       (* in-package build: an odoc page reference (resolves in the same run) *)
       let target =
