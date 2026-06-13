@@ -59,7 +59,10 @@ and `.mli` sources. It provides:
   site (shared menu, generated left navigation and version selector, sibling
   reference resolution, assets and version redirect), replacing a hand-written
   build script and its navigation HTML.
-- Tests: cram suites for the converter and the renderer.
+- `wodoc release`: the stable-version release procedure — freeze the CI-built
+  `dev/` as `<version>/` and repoint the `latest` symlink (the CI only rebuilds
+  `dev/`; releases are frozen snapshots of it).
+- Tests: cram suites for the converter, the renderer and the release procedure.
 - Documentation: a README describing the approach, the pipeline and the
   authoring rules.
 - Distributed under the MIT license.

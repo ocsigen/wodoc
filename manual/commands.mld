@@ -120,6 +120,20 @@ HTML itself: [dune build @doc] by default, or — when the config has
 [<pkg>.server]/[<pkg>.client] libraries share module names and would collide
 under [dune build @doc].
 
+{2 Releasing a stable version}
+
+{@text[
+wodoc release --site <gh-pages-dir> --version <v> [--from dev]
+]}
+
+The CI only ever (re)builds [<site>/dev]. A stable version is a {e frozen
+snapshot} of it: [release] copies [<site>/<from>] (default [dev]) to
+[<site>/<version>], repoints the [latest] symlink at it, and writes the
+project-root redirect to [latest/] if missing. Older version directories are left
+untouched. Run it on the [gh-pages] checkout at release time, then commit — the
+documented per-project release procedure (no rebuild: a release's docs are
+exactly the [dev] docs at that point).
+
 {2 Client/server projects}
 
 A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a
