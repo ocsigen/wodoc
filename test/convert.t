@@ -189,3 +189,17 @@ toggle state resets at each newline (per-line), so later ##spans## stay [spans].
   $ wodoc convert toggle.wiki
   A stray [path/that/never/closes
   Later, [dop] and [quickdop] must render as code.
+
+A cross-project manual reference (wikicréole [wiki("<proj>"):<page>]) and a site
+link [site:/<path>] become ABSOLUTE links into the final layout — depth-
+independent and correct on the deployed site:
+
+  $ cat > xproj.wiki <<'WIKI'
+  > See [[wiki("eliom"):server-services|the manual]] and
+  > [[wiki("eliom"):server-services.html#pathless|a section]].
+  > Install via [[site:/install|installation]].
+  > WIKI
+  $ wodoc convert xproj.wiki
+  See {{:/eliom/latest/server-services.html}the manual} and
+  {{:/eliom/latest/server-services.html#pathless}a section}.
+  Install via {{:/install}installation}.

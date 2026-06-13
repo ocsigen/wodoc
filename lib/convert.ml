@@ -432,12 +432,24 @@ let deabbrev url =
     with
     | exception Not_found -> url
     | _ ->
+        (* a page of ANOTHER project's manual: an absolute link into that
+           project's latest manual ([/<proj>/latest/<page>.html]), so it is
+           depth-independent and correct on the deployed site. *)
         let w = Str.matched_group 1 url and p = Str.matched_group 2 url in
-        "../" ^ w ^ "/" ^ p
+        let page, anchor =
+          match String.index_opt p '#' with
+          | Some i -> String.sub p 0 i, String.sub p i (String.length p - i)
+          | None -> p, ""
+        in
+        let page =
+          if page = "" || Filename.check_suffix page ".html" then page
+          else page ^ ".html"
+        in
+        Printf.sprintf "/%s/latest/%s%s" w page anchor
   else if starts_with "site:/" url
-  then "../" ^ String.sub url 6 (String.length url - 6)
+  then "/" ^ String.sub url 6 (String.length url - 6)
   else if starts_with "site:" url
-  then "../" ^ String.sub url 5 (String.length url - 5)
+  then "/" ^ String.sub url 5 (String.length url - 5)
   else if starts_with "wiki:" url
   then
     (* html_of_wiki "wiki:" abbreviation = a page of the current manual. In the
