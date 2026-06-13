@@ -13,7 +13,7 @@ sources are also what ocaml.org renders.
 | Manual home / API overview | `manual/index.mld`, `manual/api.mld` | odoc pages |
 | API | the `.mli` of the `wodoc` library | odoc comments (native `{!…}` refs) |
 | Build configuration | [`doc/wodoc`](wodoc) | declarative S-expression (read by `Wodoc.Config`) |
-| Shared site menu | [`doc/menu.html`](menu.html) | HTML fragment with holes (header, top menu, drawer) |
+| Shared site menu | fetched from <https://ocsigen.org/doc/menu.html> (canonical copy in `ocsigen.github.io`) | HTML fragment with holes (header, top menu, drawer) |
 
 The manual is pure native odoc (no `{%wodoc:…%}` content markers): the
 documentation is built by `dune build @doc`, which compiles the sources with a
@@ -24,22 +24,26 @@ shown verbatim inside code blocks, as documentation.
 The page template and the left-column navigation are **not** files here: `wodoc
 build` generates them — the template from `Wodoc.Build`, the left navigation
 (version selector, on-this-page, manual + API sections) from the `(nav …)`
-stanza of [`doc/wodoc`](wodoc). The only HTML kept in this directory is the
-shared menu ([`doc/menu.html`](menu.html)), reused by every project.
+stanza of [`doc/wodoc`](wodoc). The shared menu is not kept here either: `wodoc
+build` fetches the single canonical copy served at
+<https://ocsigen.org/doc/menu.html> (it lives in the `ocsigen.github.io` repo and
+is reused by every Ocsigen project), so there is no per-project copy to drift.
 
 ## Build
 
 ```
 dune build bin/main.exe
 _build/default/bin/main.exe build \
-  --config doc/wodoc --out _doc-site/<label> --menu doc/menu.html --label <label>
+  --config doc/wodoc --out _doc-site/<label> \
+  --menu https://ocsigen.org/doc/menu.html --label <label>
 ```
 
 e.g. `--label dev`. `wodoc build` runs `dune build @doc` itself (odoc HTML for
 the manual `manual/*.mld` and the API of the `wodoc` library, in one run) and
 then assembles every page of the `wodoc` package into the Ocsigen chrome
-(header/menu/drawer from `doc/menu.html`, version `<select>`, left navigation
-from `doc/wodoc`), shipping the highlight starter and the version redirect.
+(header/menu/drawer from the canonical `/doc/menu.html`, version `<select>`, left
+navigation from `doc/wodoc`), shipping the highlight starter and the version
+redirect.
 
 Output goes to `_doc-site/<label>/`, laid out to match
 `https://ocsigen.org/wodoc/<label>/`. Internal links are version-relative (a

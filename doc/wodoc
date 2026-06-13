@@ -4,7 +4,7 @@
 ; turn-key command:
 ;
 ;   wodoc build --config doc/wodoc --out _doc-site/<label> \
-;               --menu doc/menu.html --label <label> [--latest] [--local]
+;               --menu https://ocsigen.org/doc/menu.html --label <label> [--latest] [--local]
 ;
 ; `wodoc build` runs `dune build @doc`, assembles every page of the `wodoc`
 ; package into the Ocsigen site chrome (the shared header from --menu, the
