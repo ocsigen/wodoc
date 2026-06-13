@@ -19,7 +19,11 @@ val link_for : (string * string list) list -> string -> string -> string option
     ["Ppx_lwt"] -> [["lwt_ppx"; "Lwt_ppx"; "Ppx_lwt"]]); [base] is the relative
     path from the page to that root. *)
 
-val html : siblings:(string * string list) list -> base:string -> string -> string
+val html :
+   siblings:(string * string list) list
+  -> base:string
+  -> string
+  -> string
 (** [html ~siblings ~base page] rewrites every sibling reference in [page]
     (both [xref-unresolved] spans and bare [<code>] qualified names), outside
     [<pre>] blocks, and returns the new HTML. *)

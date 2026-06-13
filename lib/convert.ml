@@ -439,7 +439,7 @@ let deabbrev url =
   else if starts_with "site:" url
   then "../" ^ String.sub url 5 (String.length url - 5)
   else if starts_with "wiki:" url
-  then (
+  then
     (* html_of_wiki "wiki:" abbreviation = a page of the current manual. In the
        flattened wodoc layout every manual page is a sibling <page>.html; drop
        the optional "manual/" prefix the old tutorial used, and keep any
@@ -452,11 +452,13 @@ let deabbrev url =
     in
     let page, anchor =
       match String.index_opt rest '#' with
-      | Some i -> (String.sub rest 0 i, String.sub rest i (String.length rest - i))
-      | None -> (rest, "")
+      | Some i -> String.sub rest 0 i, String.sub rest i (String.length rest - i)
+      | None -> rest, ""
     in
-    (if page = "" || Filename.check_suffix page ".html" then page else page ^ ".html")
-    ^ anchor)
+    (if page = "" || Filename.check_suffix page ".html"
+     then page
+     else page ^ ".html")
+    ^ anchor
   else url
 
 (* Convert wiki image syntax (double-brace "url | alt", but not the "{{!" odoc
@@ -479,7 +481,9 @@ let convert_images s =
           let inner = String.sub s (!i + 2) (e - (!i + 2)) in
           let cls, inner =
             match
-              Str.search_forward (Str.regexp "^@@class=\"\\([^\"]*\\)\"@@") inner 0
+              Str.search_forward
+                (Str.regexp "^@@class=\"\\([^\"]*\\)\"@@")
+                inner 0
             with
             | exception Not_found -> "", inner
             | _ ->
@@ -535,7 +539,8 @@ let protect_links s =
             | None -> inner, inner
           in
           stash
-            (Printf.sprintf "{{:%s}%s}" (deabbrev (String.trim url))
+            (Printf.sprintf "{{:%s}%s}"
+               (deabbrev (String.trim url))
                (convert_images text));
           i := e + 2
       | None ->

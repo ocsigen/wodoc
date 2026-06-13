@@ -11,37 +11,45 @@ let read_file f =
 
 let write_file f s =
   let oc = open_out_bin f in
-  output_string oc s;
-  close_out oc
+  output_string oc s; close_out oc
 
 let is_url p =
-  String.starts_with ~prefix:"http://" p || String.starts_with ~prefix:"https://" p
+  String.starts_with ~prefix:"http://" p
+  || String.starts_with ~prefix:"https://" p
 
 (* "https://host" from "https://host/path…" (the site origin of a URL) *)
 let origin_of url =
   match Str.search_forward (Str.regexp "://") url 0 with
   | exception Not_found -> None
   | i -> (
-      match String.index_from_opt url (i + 3) '/' with
-      | Some j -> Some (String.sub url 0 j)
-      | None -> Some url)
+    match String.index_from_opt url (i + 3) '/' with
+    | Some j -> Some (String.sub url 0 j)
+    | None -> Some url)
 
 (* the shared menu is given either as a local file or an http(s) URL (the single
    canonical copy lives in ocsigen.github.io); fetch the URL with curl. *)
 let read_menu m =
   if not (is_url m)
   then read_file m
-  else (
+  else
     let tmp = Filename.temp_file "wodoc-menu" ".html" in
-    let rc = Sys.command (Printf.sprintf "curl -fsSL %s -o %s" (Filename.quote m) (Filename.quote tmp)) in
-    if rc <> 0 then (Sys.remove tmp; failwith ("wodoc build: cannot fetch menu " ^ m));
+    let rc =
+      Sys.command
+        (Printf.sprintf "curl -fsSL %s -o %s" (Filename.quote m)
+           (Filename.quote tmp))
+    in
+    if rc <> 0
+    then (
+      Sys.remove tmp;
+      failwith ("wodoc build: cannot fetch menu " ^ m));
     let s = read_file tmp in
-    Sys.remove tmp;
-    s)
+    Sys.remove tmp; s
 
 let rec mkdir_p dir =
   if dir <> "" && dir <> "." && dir <> "/" && not (Sys.file_exists dir)
-  then (mkdir_p (Filename.dirname dir); (try Sys.mkdir dir 0o755 with Sys_error _ -> ()))
+  then (
+    mkdir_p (Filename.dirname dir);
+    try Sys.mkdir dir 0o755 with Sys_error _ -> ())
 
 (* relative .html files under [root]/[sub], as "sub/...": odoc's page tree *)
 let html_files root sub =
@@ -50,7 +58,8 @@ let html_files root sub =
     let abs = Filename.concat root rel in
     if Sys.is_directory abs
     then Array.iter (fun e -> walk (Filename.concat rel e)) (Sys.readdir abs)
-    else if Filename.check_suffix rel ".html" then acc := rel :: !acc
+    else if Filename.check_suffix rel ".html"
+    then acc := rel :: !acc
   in
   if Sys.file_exists (Filename.concat root sub) then walk sub;
   List.sort compare !acc
@@ -58,7 +67,9 @@ let html_files root sub =
 (* "." / ".." / "../.." … : relative path from a page at depth [d] to the root *)
 let base_of rel =
   let d = String.fold_left (fun n c -> if c = '/' then n + 1 else n) 0 rel in
-  if d = 0 then "." else String.concat "/" (List.init d (fun _ -> "..")) |> fun s -> s
+  if d = 0
+  then "."
+  else String.concat "/" (List.init d (fun _ -> "..")) |> fun s -> s
 
 let replace_hole template key value =
   Str.global_replace (Str.regexp_string ("{{" ^ key ^ "}}")) value template
@@ -181,14 +192,18 @@ let docversion versions =
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
   add "<div class=\"docversion\">";
   add "  <label>Version:";
-  add "    <select class=\"wodoc-version\" onchange=\"wodocVersion(this.value)\">";
-  List.iter (fun v -> add (Printf.sprintf "      <option value=\"%s\">%s</option>" v v)) versions;
+  add
+    "    <select class=\"wodoc-version\" onchange=\"wodocVersion(this.value)\">";
+  List.iter
+    (fun v -> add (Printf.sprintf "      <option value=\"%s\">%s</option>" v v))
+    versions;
   add "    </select>";
   add "  </label>";
   add "</div>";
   Buffer.contents b
 
-let page_toc = "<div class=\"page-toc\">\n  <h3>On this page</h3>\n  {{toc}}\n</div>\n"
+let page_toc =
+  "<div class=\"page-toc\">\n  <h3>On this page</h3>\n  {{toc}}\n</div>\n"
 
 (* the left column: version selector + on-this-page + the config-driven nav.
    {{base}} and {{toc}} stay as holes, filled per page by Assemble. *)
@@ -198,12 +213,19 @@ let leftnav (c : Config.t) versions =
   Buffer.add_string b (docversion versions);
   Buffer.add_string b page_toc;
   let entry cls (e : Config.entry) =
-    let dwp = if e.current = "" then "" else Printf.sprintf " data-wodoc-page=\"%s\"" e.current in
-    add (Printf.sprintf "<li class=\"%s\"%s><a href=\"{{base}}/%s\">%s</a></li>" cls dwp e.path (esc e.label))
+    let dwp =
+      if e.current = ""
+      then ""
+      else Printf.sprintf " data-wodoc-page=\"%s\"" e.current
+    in
+    add
+      (Printf.sprintf "<li class=\"%s\"%s><a href=\"{{base}}/%s\">%s</a></li>"
+         cls dwp e.path (esc e.label))
   in
   let manual = List.filter (fun (s : Config.section) -> not s.api) c.nav in
   let apis = List.filter (fun (s : Config.section) -> s.api) c.nav in
-  if manual <> [] then begin
+  if manual <> []
+  then begin
     add "<nav class=\"api-nav manual-nav\">";
     List.iter
       (fun (s : Config.section) ->
@@ -237,13 +259,14 @@ let versions ~out ~label =
     then
       Array.to_list (Sys.readdir parent)
       |> List.filter (fun d ->
-           d <> "latest"
-           && Sys.is_directory (Filename.concat parent d)
-           && Sys.file_exists (Filename.concat (Filename.concat parent d) "wodoc-highlight.js"))
+        d <> "latest"
+        && Sys.is_directory (Filename.concat parent d)
+        && Sys.file_exists
+             (Filename.concat (Filename.concat parent d) "wodoc-highlight.js"))
     else []
   in
   let all = "latest" :: List.sort compare (label :: dirs) in
-  List.fold_left (fun acc v -> if List.mem v acc then acc else acc @ [ v ]) [] all
+  List.fold_left (fun acc v -> if List.mem v acc then acc else acc @ [v]) [] all
 
 (* Fetch the root-absolute assets the built pages reference (/css/…, /img/…, …)
    from the menu URL's site, into the parent of [out], so the result is viewable
@@ -268,7 +291,7 @@ let local_assets ~menu ~out =
              if Sys.is_directory p
              then scan p
              else if Filename.check_suffix p ".html"
-             then (
+             then
                let s = read_file p in
                let i = ref 0 in
                try
@@ -277,7 +300,7 @@ let local_assets ~menu ~out =
                    Hashtbl.replace paths (Str.matched_group 2 s) ();
                    i := Str.match_end ()
                  done
-               with Not_found -> ()))
+               with Not_found -> ())
           (Sys.readdir dir)
       in
       scan out;
@@ -288,14 +311,15 @@ let local_assets ~menu ~out =
            ignore
              (Sys.command
                 (Printf.sprintf "curl -fsSL %s -o %s 2>/dev/null"
-                   (Filename.quote (origin ^ path)) (Filename.quote dst))))
+                   (Filename.quote (origin ^ path))
+                   (Filename.quote dst))))
         paths;
       (* the pages use absolute /css//img/ paths, so the server must be rooted at
          [root] (the parent of <out>), not at <out> itself — spell it out. *)
       Printf.eprintf
-        "wodoc build --local: fetched %d shared assets into %s\n\
-        \  preview:  (cd %s && python3 -m http.server)  then open  http://localhost:8000/%s/\n"
-        (Hashtbl.length paths) root (Filename.quote root) (Filename.basename out)
+        "wodoc build --local: fetched %d shared assets into %s\n\  preview:  (cd %s && python3 -m http.server)  then open  http://localhost:8000/%s/\n"
+        (Hashtbl.length paths) root (Filename.quote root)
+        (Filename.basename out)
 
 (* ---- client/server projects (eliom, ocsigen-toolkit, ocsigen-start) ----
    The API is two (or three) libraries of the same package sharing module names
@@ -310,9 +334,10 @@ let cs_switch (sides : Config.cs_side list) =
   add "<div class=\"cs-switch\">";
   List.iter
     (fun (s : Config.cs_side) ->
-       add (Printf.sprintf
-              "  <button type=\"button\" class=\"cs-%s\" onclick=\"wodocSwitch('%s')\">%s</button>"
-              s.side s.side (esc s.heading)))
+       add
+         (Printf.sprintf
+            "  <button type=\"button\" class=\"cs-%s\" onclick=\"wodocSwitch('%s')\">%s</button>"
+            s.side s.side (esc s.heading)))
     sides;
   add "</div>";
   Buffer.contents b
@@ -321,7 +346,9 @@ let cs_switch (sides : Config.cs_side list) =
    module's page on another side by swapping the [<pkg>.<side>] path segment;
    fall back to that side's wrapper-module index. *)
 let cs_switch_script (c : Config.t) (sides : Config.cs_side list) =
-  let alt = String.concat "|" (List.map (fun (s : Config.cs_side) -> s.side) sides) in
+  let alt =
+    String.concat "|" (List.map (fun (s : Config.cs_side) -> s.side) sides)
+  in
   let wmap =
     String.concat ", "
       (List.map
@@ -331,14 +358,7 @@ let cs_switch_script (c : Config.t) (sides : Config.cs_side list) =
          sides)
   in
   Printf.sprintf
-    "    // Toggle between the %s API of the same module.\n\
-    \    function wodocSwitch(side) {\n\
-    \      var w = { %s };\n\
-    \      var p = location.pathname;\n\
-    \      var np = p.replace(/\\/%s\\.(%s)\\//, '/%s.' + side + '/');\n\
-    \      location.href = np !== p ? np\n\
-    \        : '{{base}}/%s.' + side + '/' + (w[side] || '') + 'index.html';\n\
-    \    }\n"
+    "    // Toggle between the %s API of the same module.\n\    function wodocSwitch(side) {\n\      var w = { %s };\n\      var p = location.pathname;\n\      var np = p.replace(/\\/%s\\.(%s)\\//, '/%s.' + side + '/');\n\      location.href = np !== p ? np\n\        : '{{base}}/%s.' + side + '/' + (w[side] || '') + 'index.html';\n\    }\n"
     (String.concat " / " (List.map (fun (s : Config.cs_side) -> s.side) sides))
     wmap c.project alt c.project c.project
 
@@ -346,7 +366,7 @@ let cs_switch_script (c : Config.t) (sides : Config.cs_side list) =
    shared manual nav + this side's API nav ({{base}}/{{toc}} filled per page). *)
 let cs_leftnav ~versions ~switch ~manual_nav ~api_nav =
   String.concat ""
-    [ docversion versions; switch; page_toc; manual_nav; "\n"; api_nav ]
+    [docversion versions; switch; page_toc; manual_nav; "\n"; api_nav]
 
 (* a page's top directory ([<pkg>.<side>…/…]); None for a root manual page *)
 let topdir rel =
@@ -383,7 +403,9 @@ let cs_current sides rel =
         match side_for sides td with Some s -> s.wrapper | None -> ""
       in
       let rest = drop_prefix (td ^ "/") rel in
-      let rest = if wrapper = "" then rest else drop_prefix (wrapper ^ "/") rest in
+      let rest =
+        if wrapper = "" then rest else drop_prefix (wrapper ^ "/") rest
+      in
       let rest =
         if Filename.check_suffix rest "/index.html"
         then Filename.chop_suffix rest "/index.html"
@@ -396,7 +418,9 @@ let cs_current sides rel =
 let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   mkdir_p out;
   let menu_html = read_menu menu in
-  let subproject = Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title) in
+  let subproject =
+    Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title)
+  in
   let vs = versions ~out ~label in
   (* direct-mld build (manual-only/archived): the pages ARE the manual and the
      landing index.html is a real page, so keep it and write no redirect. *)
@@ -408,7 +432,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   let rels =
     if c.packages <> []
     then List.concat_map (html_files src) c.packages
-    else (
+    else
       let acc = ref [] in
       let rec walk rel =
         let abs = if rel = "" then src else Filename.concat src rel in
@@ -419,11 +443,11 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
                if not (rel = "" && e = "odoc.support")
                then walk (if rel = "" then e else Filename.concat rel e))
             (Sys.readdir abs)
-        else if Filename.check_suffix rel ".html" && (mld_mode || rel <> "index.html")
+        else if
+          Filename.check_suffix rel ".html" && (mld_mode || rel <> "index.html")
         then acc := rel :: !acc
       in
-      walk "";
-      List.sort compare !acc)
+      walk ""; List.sort compare !acc
   in
   (* the per-page assembler: one shared nav (normal projects), or a per-side
      template + nav for client/server projects (eliom/toolkit/start). *)
@@ -436,9 +460,11 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
         let nav =
           match c.anchor_menu, c.manual_menu with
           | Some f, _ when Sys.file_exists f ->
-              docversion vs ^ page_toc ^ Nav.anchors ~base:"{{base}}" (read_file f)
+              docversion vs ^ page_toc
+              ^ Nav.anchors ~base:"{{base}}" (read_file f)
           | _, Some f when Sys.file_exists f ->
-              docversion vs ^ page_toc ^ Nav.manual ~base:"{{base}}" (read_file f)
+              docversion vs ^ page_toc
+              ^ Nav.manual ~base:"{{base}}" (read_file f)
           | _ -> leftnav c vs
         in
         fun rel ->
@@ -455,14 +481,16 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
               ~menu_current:c.menu_current ~leftnav:nav ~template:tmpl ~current
               (read_file (Filename.concat src rel))
           in
-          if c.siblings = [] then page
+          if c.siblings = []
+          then page
           else Resolve.html ~siblings:c.siblings ~base page
     | sides ->
         let script = cs_switch_script c sides in
         let switch = cs_switch sides in
         let manual_nav =
           match c.manual_menu with
-          | Some f when Sys.file_exists f -> Nav.manual ~base:"{{base}}" (read_file f)
+          | Some f when Sys.file_exists f ->
+              Nav.manual ~base:"{{base}}" (read_file f)
           | _ -> ""
         in
         let default_side = match sides with s :: _ -> s.side | [] -> "" in
@@ -480,7 +508,8 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
         let api_of side =
           match List.assoc_opt side api_nav with
           | Some n -> n
-          | None -> Option.value ~default:"" (List.assoc_opt default_side api_nav)
+          | None ->
+              Option.value ~default:"" (List.assoc_opt default_side api_nav)
         in
         (* template (by body side class) and left column (by api side) cached:
            there are at most a handful of distinct sides *)
@@ -492,7 +521,8 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
               let body_extra = if side = "" then "" else " wodoc-" ^ side in
               let t =
                 replace_hole
-                  (template ~body_extra ~extra_script:script c) "pub" c.pub
+                  (template ~body_extra ~extra_script:script c)
+                  "pub" c.pub
               in
               Hashtbl.add tcache side t; t
         in
@@ -501,7 +531,8 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
           | Some n -> n
           | None ->
               let n =
-                cs_leftnav ~versions:vs ~switch ~manual_nav ~api_nav:(api_of side)
+                cs_leftnav ~versions:vs ~switch ~manual_nav
+                  ~api_nav:(api_of side)
               in
               Hashtbl.add ncache side n; n
         in
@@ -516,7 +547,8 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
               ~template:(tmpl_of side) ~current:(cs_current sides rel)
               (read_file (Filename.concat src rel))
           in
-          if c.hosted = [] then page
+          if c.hosted = []
+          then page
           else
             Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..") ~side
               ~self:c.project page
@@ -529,8 +561,10 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     rels;
   (* version root index.html: redirect to the landing page — UNLESS this is a
      direct-mld build, whose index.html is a real manual page already written. *)
-  if not mld_mode then
-    write_file (Filename.concat out "index.html")
+  if not mld_mode
+  then
+    write_file
+      (Filename.concat out "index.html")
       (Printf.sprintf
          "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=%s\"/>\n<link rel=\"canonical\" href=\"%s\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"%s\">%s documentation</a>.</p></body>\n</html>\n"
          c.landing c.landing (esc c.title) c.landing (esc c.title));
@@ -541,15 +575,23 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
        then (
          let d = Filename.concat out dest in
          mkdir_p (Filename.dirname d);
-         ignore (Sys.command (Printf.sprintf "cp -a %s %s" (Filename.quote csrc) (Filename.quote d)))))
+         ignore
+           (Sys.command
+              (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
+                 (Filename.quote d)))))
     c.static_copy;
   (* assets: odoc's bundled highlighter + the project's highlight starter *)
   let sf = Filename.temp_file "wodoc-sf" "" in
   Sys.remove sf;
-  (if Sys.command (Printf.sprintf "odoc support-files -o %s >/dev/null 2>&1" (Filename.quote sf)) = 0
+  (if
+     Sys.command
+       (Printf.sprintf "odoc support-files -o %s >/dev/null 2>&1"
+          (Filename.quote sf))
+     = 0
    then
      let pack = Filename.concat sf "highlight.pack.js" in
-     if Sys.file_exists pack then write_file (Filename.concat out "highlight.pack.js") (read_file pack));
+     if Sys.file_exists pack
+     then write_file (Filename.concat out "highlight.pack.js") (read_file pack));
   (* the highlight starter, always shipped as wodoc-highlight.js: the project's
      (highlight <file>) override if any, else wodoc's built-in default *)
   let hl_js =
@@ -562,24 +604,32 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   (* manual assets (examples, images): odoc puts them under <dune>/manual/files,
      a sibling of the _doc/_html tree given as [src] *)
   (match c.manual_files with
-   | Some pkg ->
-       let files = Filename.concat (Filename.dirname (Filename.dirname src)) "manual/files" in
-       if Sys.file_exists files then begin
-         let dst = Filename.concat out pkg in
-         mkdir_p dst;
-         ignore (Sys.command (Printf.sprintf "cp -RL %s %s 2>/dev/null || cp -R %s %s"
-                                (Filename.quote files) (Filename.quote dst)
-                                (Filename.quote files) (Filename.quote dst)))
-       end
-   | None -> ());
-  if set_latest then begin
-    ignore (Sys.command (Printf.sprintf "ln -sfn %s %s"
-                           (Filename.quote label)
-                           (Filename.quote (Filename.concat (Filename.dirname out) "latest"))));
+  | Some pkg ->
+      let files =
+        Filename.concat (Filename.dirname (Filename.dirname src)) "manual/files"
+      in
+      if Sys.file_exists files
+      then begin
+        let dst = Filename.concat out pkg in
+        mkdir_p dst;
+        ignore
+          (Sys.command
+             (Printf.sprintf "cp -RL %s %s 2>/dev/null || cp -R %s %s"
+                (Filename.quote files) (Filename.quote dst)
+                (Filename.quote files) (Filename.quote dst)))
+      end
+  | None -> ());
+  if set_latest
+  then begin
+    ignore
+      (Sys.command
+         (Printf.sprintf "ln -sfn %s %s" (Filename.quote label)
+            (Filename.quote (Filename.concat (Filename.dirname out) "latest"))));
     (* project-root redirect: <project>/index.html -> latest/index.html. Stable
        target (always the `latest` symlink), so the project is reachable from
        ocsigen.org/wodoc/<project>/ regardless of which version was just built. *)
-    write_file (Filename.concat (Filename.dirname out) "index.html")
+    write_file
+      (Filename.concat (Filename.dirname out) "index.html")
       (Printf.sprintf
          "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"latest/index.html\">%s documentation</a>.</p></body>\n</html>\n"
          (esc c.title) (esc c.title))

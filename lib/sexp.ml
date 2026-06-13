@@ -14,18 +14,24 @@ let parse s =
   let is_space c = c = ' ' || c = '\t' || c = '\n' || c = '\r' in
   let is_delim c = is_space c || c = '(' || c = ')' || c = ';' in
   let rec skip_ws () =
-    if !i < n then
-      if is_space s.[!i] then (incr i; skip_ws ())
+    if !i < n
+    then
+      if is_space s.[!i]
+      then (incr i; skip_ws ())
       else if s.[!i] = ';'
       then (
-        while !i < n && s.[!i] <> '\n' do incr i done;
+        while !i < n && s.[!i] <> '\n' do
+          incr i
+        done;
         skip_ws ())
   in
   let read_string () =
-    incr i; (* opening quote *)
+    incr i;
+    (* opening quote *)
     let b = Buffer.create 16 in
     let rec go () =
-      if !i >= n then error "unterminated string"
+      if !i >= n
+      then error "unterminated string"
       else
         match s.[!i] with
         | '"' -> incr i
@@ -35,17 +41,19 @@ let parse s =
             go ()
         | c -> Buffer.add_char b c; incr i; go ()
     in
-    go ();
-    Buffer.contents b
+    go (); Buffer.contents b
   in
   let read_atom () =
     let start = !i in
-    while !i < n && not (is_delim s.[!i]) do incr i done;
+    while !i < n && not (is_delim s.[!i]) do
+      incr i
+    done;
     String.sub s start (!i - start)
   in
   let rec read_sexp () =
     skip_ws ();
-    if !i >= n then error "unexpected end of input"
+    if !i >= n
+    then error "unexpected end of input"
     else
       match s.[!i] with
       | '(' ->
@@ -57,7 +65,8 @@ let parse s =
       | _ -> Atom (read_atom ())
   and read_list () =
     skip_ws ();
-    if !i >= n then error "unterminated list"
+    if !i >= n
+    then error "unterminated list"
     else if s.[!i] = ')'
     then (incr i; [])
     else
@@ -78,14 +87,12 @@ let atom = function Atom a -> a | List _ -> raise (Error "expected atom")
 (* the stanzas named [key] at top level: each is [(key arg ...)] -> [arg ...] *)
 let fields key stanzas =
   List.filter_map
-    (function
-      | List (Atom k :: rest) when k = key -> Some rest
-      | _ -> None)
+    (function List (Atom k :: rest) when k = key -> Some rest | _ -> None)
     stanzas
 
 (* the single [(key v)] -> [v] (as raw sexp), or [None] *)
 let field key stanzas =
-  match fields key stanzas with [ v ] :: _ -> Some v | _ -> None
+  match fields key stanzas with [v] :: _ -> Some v | _ -> None
 
 let field_atom key stanzas = Option.map atom (field key stanzas)
 

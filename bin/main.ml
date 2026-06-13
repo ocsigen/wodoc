@@ -104,12 +104,14 @@ let () =
                          | Some i ->
                              Some
                                ( String.sub kv 0 i
-                               , String.sub kv (i + 1) (String.length kv - i - 1) )
+                               , String.sub kv (i + 1) (String.length kv - i - 1)
+                               )
                          | None -> None)
                       (String.split_on_char ';' s)
               in
               print_string
-                (Wodoc.Nav.manual ~pkg ~heading ~api_map ~base (read_file menu_f))
+                (Wodoc.Nav.manual ~pkg ~heading ~api_map ~base
+                   (read_file menu_f))
           | _, Some idx_f, _ ->
               let lib = Option.value ~default:"" (List.assoc_opt "lib" flags) in
               let wrapper =
@@ -141,10 +143,11 @@ let () =
              then None
              else
                match String.split_on_char '=' v with
-               | [ pkg; spec ] -> (
-                   match String.split_on_char ':' spec with
-                   | [ dir; multi; wrapper ] -> Some (pkg, (dir, multi = "true", wrapper))
-                   | _ -> None)
+               | [pkg; spec] -> (
+                 match String.split_on_char ':' spec with
+                 | [dir; multi; wrapper] ->
+                     Some (pkg, (dir, multi = "true", wrapper))
+                 | _ -> None)
                | _ -> None)
           flags
       in
@@ -169,7 +172,8 @@ let () =
                    | Some i ->
                        let m = String.sub v 0 i in
                        let segs =
-                         List.filter (fun s -> s <> "")
+                         List.filter
+                           (fun s -> s <> "")
                            (String.split_on_char '/'
                               (String.sub v (i + 1) (String.length v - i - 1)))
                        in
@@ -185,15 +189,18 @@ let () =
            if out <> src
            then (
              let oc = open_out_bin f in
-             output_string oc out;
-             close_out oc))
+             output_string oc out; close_out oc))
         files
   | _ :: "build" :: args ->
       let set_latest = List.mem "--latest" args in
       let local = List.mem "--local" args in
-      let args = List.filter (fun a -> a <> "--latest" && a <> "--local") args in
+      let args =
+        List.filter (fun a -> a <> "--latest" && a <> "--local") args
+      in
       let flags, _ = parse_args args in
-      let req k = match List.assoc_opt k flags with Some v -> v | None -> usage () in
+      let req k =
+        match List.assoc_opt k flags with Some v -> v | None -> usage ()
+      in
       let cfg = req "config" in
       let c = Wodoc.Config.of_string (read_file cfg) in
       let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in
@@ -205,46 +212,67 @@ let () =
         match List.assoc_opt "src" flags with
         | Some s -> s
         | None -> (
-            match c.mld_dir with
-            | Some dir ->
-                (* Direct-mld build (manual-only / archived project, no dune @doc):
+          match c.mld_dir with
+          | Some dir ->
+              (* Direct-mld build (manual-only / archived project, no dune @doc):
                    compile every .mld with odoc straight (preprocess -> compile ->
                    link -> html-generate). Output goes under <pkg>/ if a package is
                    set, else at the html root. *)
-                let work = "_wodoc-html" in
-                let odoc = Filename.concat work "odoc" in
-                let html = Filename.concat work "html" in
-                List.iter (fun d -> ignore (Sys.command (Printf.sprintf "mkdir -p %s" (Filename.quote d)))) [odoc; html];
-                let pkg_flag =
-                  if c.mld_package = "" then "" else " --package " ^ Filename.quote c.mld_package
-                in
-                let mlds =
-                  Sys.readdir dir |> Array.to_list
-                  |> List.filter (fun e -> Filename.check_suffix e ".mld")
-                  |> List.sort compare
-                in
-                if mlds = [] then (prerr_endline ("wodoc build: no .mld in " ^ dir); exit 1);
-                List.iter
-                  (fun e ->
-                     let name = Filename.remove_extension e in
-                     let pp = Filename.concat odoc ("pp-" ^ e) in
-                     (let oc = open_out_bin pp in
-                      output_string oc (Wodoc.Preprocess.string (read_file (Filename.concat dir e)));
-                      close_out oc);
-                     let odocf = Filename.concat odoc ("page-" ^ name ^ ".odoc") in
-                     let odoclf = Filename.concat odoc ("page-" ^ name ^ ".odocl") in
-                     let cmd =
-                       Printf.sprintf
-                         "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s"
-                         (Filename.quote pp) pkg_flag (Filename.quote odoc) (Filename.quote odocf)
-                         (Filename.quote odocf) (Filename.quote odoc) (Filename.quote odoclf)
-                         (Filename.quote odoclf) (Filename.quote html)
-                     in
-                     if Sys.command cmd <> 0
-                     then (prerr_endline ("wodoc build: odoc failed on " ^ e); exit 1))
-                  mlds;
-                if c.mld_package = "" then html else Filename.concat html c.mld_package
-            | None -> (
+              let work = "_wodoc-html" in
+              let odoc = Filename.concat work "odoc" in
+              let html = Filename.concat work "html" in
+              List.iter
+                (fun d ->
+                   ignore
+                     (Sys.command
+                        (Printf.sprintf "mkdir -p %s" (Filename.quote d))))
+                [odoc; html];
+              let pkg_flag =
+                if c.mld_package = ""
+                then ""
+                else " --package " ^ Filename.quote c.mld_package
+              in
+              let mlds =
+                Sys.readdir dir |> Array.to_list
+                |> List.filter (fun e -> Filename.check_suffix e ".mld")
+                |> List.sort compare
+              in
+              if mlds = []
+              then (
+                prerr_endline ("wodoc build: no .mld in " ^ dir);
+                exit 1);
+              List.iter
+                (fun e ->
+                   let name = Filename.remove_extension e in
+                   let pp = Filename.concat odoc ("pp-" ^ e) in
+                   (let oc = open_out_bin pp in
+                    output_string oc
+                      (Wodoc.Preprocess.string
+                         (read_file (Filename.concat dir e)));
+                    close_out oc);
+                   let odocf =
+                     Filename.concat odoc ("page-" ^ name ^ ".odoc")
+                   in
+                   let odoclf =
+                     Filename.concat odoc ("page-" ^ name ^ ".odocl")
+                   in
+                   let cmd =
+                     Printf.sprintf
+                       "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s"
+                       (Filename.quote pp) pkg_flag (Filename.quote odoc)
+                       (Filename.quote odocf) (Filename.quote odocf)
+                       (Filename.quote odoc) (Filename.quote odoclf)
+                       (Filename.quote odoclf) (Filename.quote html)
+                   in
+                   if Sys.command cmd <> 0
+                   then (
+                     prerr_endline ("wodoc build: odoc failed on " ^ e);
+                     exit 1))
+                mlds;
+              if c.mld_package = ""
+              then html
+              else Filename.concat html c.mld_package
+          | None -> (
             match c.odoc_driver with
             | Some pkg ->
                 (* The installed manual .mld carry {%wodoc:%} markers; rewrite
@@ -253,9 +281,11 @@ let () =
                    has no installed odoc-pages. *)
                 (let tmp = Filename.temp_file "wodoc-doc" "" in
                  let doc_root =
-                   if Sys.command
-                        (Printf.sprintf "opam var doc > %s 2>/dev/null"
-                           (Filename.quote tmp)) = 0
+                   if
+                     Sys.command
+                       (Printf.sprintf "opam var doc > %s 2>/dev/null"
+                          (Filename.quote tmp))
+                     = 0
                    then String.trim (read_file tmp)
                    else ""
                  in
@@ -275,18 +305,26 @@ let () =
                           output_string oc out; close_out oc))
                      (Sys.readdir pages));
                 let work = "_wodoc-html" in
-                if Sys.command
-                     (Printf.sprintf "odoc_driver %s --remap --html-dir %s"
-                        (Filename.quote pkg) (Filename.quote work)) <> 0
-                then (prerr_endline "wodoc build: odoc_driver failed"; exit 1);
+                if
+                  Sys.command
+                    (Printf.sprintf "odoc_driver %s --remap --html-dir %s"
+                       (Filename.quote pkg) (Filename.quote work))
+                  <> 0
+                then (
+                  prerr_endline "wodoc build: odoc_driver failed";
+                  exit 1);
                 Filename.concat work pkg
             | None ->
                 let profile =
-                  match c.profile with Some p -> " --profile " ^ p | None -> ""
+                  match c.profile with
+                  | Some p -> " --profile " ^ p
+                  | None -> ""
                 in
                 let manual = if c.doc_manual then " @doc-manual" else "" in
                 if Sys.command ("dune build @doc" ^ manual ^ profile) <> 0
-                then (prerr_endline "wodoc build: dune build @doc failed"; exit 1);
+                then (
+                  prerr_endline "wodoc build: dune build @doc failed";
+                  exit 1);
                 "_build/default/_doc/_html"))
       in
       Wodoc.Build.run c ~src ~out:(req "out") ~label ~menu:(req "menu")
