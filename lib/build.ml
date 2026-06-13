@@ -700,7 +700,9 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
      add a needless second hop. Body kept empty so the redirect flashes blank
      (instead of briefly showing "Redirecting…" text). *)
   let wrote_root_index =
-    mld_mode || List.exists (fun rel -> strip rel = "index.html") rels
+    mld_mode
+    || (c.landing = "index.html"
+        && List.exists (fun rel -> strip rel = "index.html") rels)
   in
   if not wrote_root_index
   then
