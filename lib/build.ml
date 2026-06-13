@@ -825,6 +825,11 @@ let release ~site ~from ~version =
   then
     write_file idx
       "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body></body>\n</html>\n";
+  (* GitHub Pages: serve the static odoc/wodoc site as-is. Without this, Pages runs
+     Jekyll, which is slow on large API sites and skips underscore-prefixed odoc
+     directories. Written once at the site root if missing. *)
+  let nj = Filename.concat site ".nojekyll" in
+  if not (Sys.file_exists nj) then write_file nj "";
   (* refresh the version manifest so the new version + [latest] target show up in
      every page's selector — this is the only file a release needs to rewrite. *)
   write_manifest ~root:site;
