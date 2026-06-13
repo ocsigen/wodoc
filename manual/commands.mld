@@ -120,6 +120,21 @@ HTML itself: [dune build @doc] by default, or — when the config has
 [<pkg>.server]/[<pkg>.client] libraries share module names and would collide
 under [dune build @doc].
 
+{2 Requalifying cross-project links}
+
+{@text[
+wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..
+]}
+
+[odoc_driver --remap] names a reference to a {e wrapped} library's module by a
+FLAT path ([Eliom_content]), but the qualified project deploys it under its
+wrapper — [Eliom/Content] for a renamed module, [Eliom/Eliom_react] for one that
+kept its name. Since that mapping is not uniform, this post-pass over a
+co-located multi-project [<root>] PROBES each wrapped project's tree: for a flat
+[<W>_<x>] segment after a [<dir>.<lib>/], it tries [<W>/<Cap x>] then [<W>/<W>_<x>]
+and keeps the link whose target exists. [--wrapped <dir>=<Wrapper>] (repeatable)
+lists the wrapped projects (e.g. [eliom=Eliom], [ocsigen-toolkit=Ot]).
+
 {2 Releasing a stable version}
 
 {@text[

@@ -333,3 +333,78 @@ let fix_dep_spans hosted relroot side self s =
 
 let deps ~hosted ~relroot ~side ~self s =
   fix_dep_spans hosted relroot side self (fix_resolved hosted relroot side s)
+
+(* --- requalify cross-project links to wrapped libraries (post-pass) ---
+   odoc_driver --remap names a reference to a wrapped library's module by a FLAT
+   path (e.g. [Eliom_content]) while the wrapped project deploys it UNDER its
+   wrapper: [Eliom/Content] for a renamed module, or [Eliom/Eliom_react] for one
+   that kept its name. The mapping is therefore not uniform, so we PROBE: for a
+   flat top segment [<W>_<x>] right after a wrapped project's [<dir>.<lib>/], try
+   [<W>/<Cap x>] then [<W>/<W>_<x>] and keep the one whose target [exists]. *)
+let cap s =
+  if s = "" then s
+  else String.make 1 (Char.uppercase_ascii s.[0]) ^ String.sub s 1 (String.length s - 1)
+
+let requalify_url ~wrapped ~exists url =
+  List.fold_left
+    (fun url (dir, wrapper) ->
+       (* the flat module sits right after either a multi-library segment
+          ([<dir>.<lib>/], eliom/toolkit) or a version segment of a
+          single-package manual-root project ([<dir>/<version>/], ocsigenserver). *)
+       let res =
+         [ Printf.sprintf "\\(/%s\\.[a-z_]+/\\)%s_\\([A-Za-z0-9_]+\\)"
+             (Str.quote dir) (Str.quote wrapper)
+         ; Printf.sprintf "\\(/%s/[^/]+/\\)%s_\\([A-Za-z0-9_]+\\)"
+             (Str.quote dir) (Str.quote wrapper) ]
+       in
+       let try_re re =
+         match Str.search_forward (Str.regexp re) url 0 with
+         | exception Not_found -> None
+         | _ ->
+             let lib = Str.matched_group 1 url and rest = Str.matched_group 2 url in
+             let b = Str.match_beginning () and e = Str.match_end () in
+             let mk seg =
+               String.sub url 0 b ^ lib ^ wrapper ^ "/" ^ seg
+               ^ String.sub url e (String.length url - e)
+             in
+             let c1 = mk (cap rest) and c2 = mk (wrapper ^ "_" ^ rest) in
+             if exists c1 then Some c1 else if exists c2 then Some c2 else None
+       in
+       match List.find_map try_re res with Some u -> u | None -> url)
+    url wrapped
+
+(* A cross-project link that omits the version segment ([../../eliom/page.html]
+   instead of [../../eliom/latest/page.html]): insert [latest/] after the project
+   segment (the first one past any [../] / leading [/]). [None] if there is no
+   such segment or it is already a version. *)
+let latest_insert url =
+  let re = Str.regexp "^\\(\\(\\.\\./\\)*\\|/\\)\\([A-Za-z][A-Za-z0-9_-]*\\)/\\(.+\\)$" in
+  if Str.string_match re url 0 then (
+    let pre = Str.matched_group 1 url
+    and proj = Str.matched_group 3 url
+    and rest = Str.matched_group 4 url in
+    if String.length rest >= 7 && String.sub rest 0 7 = "latest/"
+    then None
+    else Some (pre ^ proj ^ "/latest/" ^ rest))
+  else None
+
+(* [requalify ~wrapped ~exists page] repairs BROKEN cross-project links in every
+   href/src of [page] by probing: a link that already resolves is left as is;
+   otherwise try the wrapped flat→qualified rewrite, then a missing-[latest/]
+   version-segment insertion, keeping the first candidate that [exists]. *)
+let requalify ~wrapped ~exists page =
+  let re = Str.regexp "\\(href\\|src\\)=\"\\([^\"]*\\)\"" in
+  global_sub re
+    (fun s ->
+       let attr = Str.matched_group 1 s and url = Str.matched_group 2 s in
+       let fixed =
+         if url = "" || exists url
+         then url
+         else
+           let w = requalify_url ~wrapped ~exists url in
+           if w <> url && exists w
+           then w
+           else match latest_insert url with Some v when exists v -> v | _ -> url
+       in
+       Printf.sprintf "%s=\"%s\"" attr fixed)
+    page
