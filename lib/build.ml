@@ -635,3 +635,35 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
          (esc c.title) (esc c.title))
   end;
   if local then local_assets ~menu ~out
+
+(* [release ~site ~from ~version]: the stable-version release procedure. The CI
+   only ever (re)builds [<site>/dev]; a stable version is a frozen snapshot of it.
+   Copy [<site>/<from>] (default "dev") to [<site>/<version>], repoint the
+   [latest] symlink at it, and ensure the project-root redirect exists. Older
+   version directories are left untouched. *)
+let release ~site ~from ~version =
+  let src = Filename.concat site from in
+  if not (Sys.file_exists src)
+  then (
+    Printf.eprintf "wodoc release: source %s does not exist\n" src;
+    exit 1);
+  let dst = Filename.concat site version in
+  ignore (Sys.command (Printf.sprintf "rm -rf %s" (Filename.quote dst)));
+  if
+    Sys.command (Printf.sprintf "cp -a %s %s" (Filename.quote src) (Filename.quote dst))
+    <> 0
+  then (
+    Printf.eprintf "wodoc release: copy %s -> %s failed\n" src dst;
+    exit 1);
+  ignore
+    (Sys.command
+       (Printf.sprintf "ln -sfn %s %s" (Filename.quote version)
+          (Filename.quote (Filename.concat site "latest"))));
+  (* the project-root redirect points at the stable [latest] symlink, so it does
+     not change between releases; write it once if missing. *)
+  let idx = Filename.concat site "index.html" in
+  if not (Sys.file_exists idx)
+  then
+    write_file idx
+      "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body><p>Redirecting to the <a href=\"latest/index.html\">latest documentation</a>.</p></body>\n</html>\n";
+  Printf.eprintf "wodoc release: froze %s -> %s, latest -> %s\n" from version version

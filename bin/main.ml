@@ -6,7 +6,7 @@ let read_file f =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\nExcept resolve-refs and build (which write files), each command writes to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -329,4 +329,11 @@ let () =
       in
       Wodoc.Build.run c ~src ~out:(req "out") ~label ~menu:(req "menu")
         ~assets_dir:(Filename.dirname cfg) ~local ~set_latest
+  | _ :: "release" :: args ->
+      let flags, _ = parse_args args in
+      let req k =
+        match List.assoc_opt k flags with Some v -> v | None -> usage ()
+      in
+      let from = Option.value ~default:"dev" (List.assoc_opt "from" flags) in
+      Wodoc.Build.release ~site:(req "site") ~from ~version:(req "version")
   | _ -> usage ()
