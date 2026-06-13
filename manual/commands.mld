@@ -163,6 +163,16 @@ points at [ocaml.org]: wodoc rewrites those to relative links into their wodoc
 docs (other dependencies stay on [ocaml.org]). The whole client/server build is
 still ONE declarative [doc/wodoc] and a single [wodoc build] — no [build.sh].
 
+{2 Manual at the version root}
+
+A single-package `dune build @doc` project puts BOTH its manual and its API
+under a `<package>/` subdirectory, unlike an odoc-driver project (eliom) whose
+manual sits at the version root. Add `(manual-root)` to deploy the package at the
+version root instead (strip the leading `<package>/` from output paths, the
+`(landing …)` and the `(nav …)` links) — so `ocsigen.org/<project>/<v>/page.html`
+is the manual URL and cross-project links resolve. Internal links are relative,
+so the uniform strip keeps them valid.
+
 {2 Manual-only / archived projects (no [dune build @doc])}
 
 A project with no buildable library API — an archived project (ocsimore) or a
