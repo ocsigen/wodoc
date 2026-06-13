@@ -6,7 +6,7 @@ let read_file f =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--manual-menu <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--manual-menu <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -342,6 +342,59 @@ let () =
       in
       Wodoc.Build.run c ~src ~out:(req "out") ~label ~menu:(req "menu")
         ~assets_dir:(Filename.dirname cfg) ~local ~set_latest
+  | _ :: "requalify-xrefs" :: args ->
+      (* Post-pass over a co-located multi-project site: rewrite flat
+         cross-project links to a wrapped library (Eliom_content) into the
+         qualified path the target deploys (Eliom/Content), probing the tree. *)
+      let flags, _ = parse_args args in
+      let site =
+        match List.assoc_opt "site" flags with Some s -> s | None -> usage ()
+      in
+      let wrapped =
+        List.filter_map
+          (fun (k, v) ->
+             if k = "wrapped"
+             then
+               match String.index_opt v '=' with
+               | Some i ->
+                   Some (String.sub v 0 i, String.sub v (i + 1) (String.length v - i - 1))
+               | None -> None
+             else None)
+          flags
+      in
+      let rec walk f dir =
+        Array.iter
+          (fun e ->
+             let p = Filename.concat dir e in
+             if (try Sys.is_directory p with _ -> false) then walk f p
+             else if Filename.check_suffix p ".html" then f p)
+          (try Sys.readdir dir with _ -> [||])
+      in
+      let count = ref 0 in
+      walk
+        (fun p ->
+           let dir = Filename.dirname p in
+           let exists href =
+             let href = match String.index_opt href '#' with
+               | Some i -> String.sub href 0 i | None -> href in
+             if href = "" then false
+             else
+               let tgt =
+                 if href.[0] = '/' then Filename.concat site (String.sub href 1 (String.length href - 1))
+                 else Filename.concat dir href
+               in
+               Sys.file_exists tgt
+               || Sys.file_exists (tgt ^ ".html")
+               || Sys.file_exists (Filename.concat tgt "index.html")
+           in
+           let s = read_file p in
+           let out = Wodoc.Resolve.requalify ~wrapped ~exists s in
+           if out <> s then (
+             let oc = open_out_bin p in
+             output_string oc out; close_out oc;
+             incr count))
+        site;
+      Printf.eprintf "wodoc requalify-xrefs: rewrote %d files\n" !count
   | _ :: "release" :: args ->
       let flags, _ = parse_args args in
       let req k =

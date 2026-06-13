@@ -42,3 +42,17 @@ val deps :
     shared root holding every project; [side] is ["server"]/["client"]/[""];
     [self] is the package being documented (its own leftover refs are kept as
     text). The OCaml port of [resolve-deps.py]. *)
+
+val requalify :
+   wrapped:(string * string) list
+  -> exists:(string -> bool)
+  -> string
+  -> string
+(** [requalify ~wrapped ~exists page] rewrites flat cross-project links to a
+    wrapped library's module (e.g. [.../eliom.server/Eliom_content/…], emitted by
+    [odoc_driver --remap]) into the qualified path the target deploys
+    ([.../eliom.server/Eliom/Content/…]). [wrapped] maps a project deploy-dir to
+    its wrapper module ([("eliom","Eliom")]). The flat→qualified mapping is not
+    uniform (renamed vs kept module names), so each candidate is probed with
+    [exists] (the caller resolves the candidate URL against the page's location
+    and stats the target). *)

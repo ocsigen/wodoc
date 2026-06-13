@@ -59,6 +59,11 @@ and `.mli` sources. It provides:
   site (shared menu, generated left navigation and version selector, sibling
   reference resolution, assets and version redirect), replacing a hand-written
   build script and its navigation HTML.
+- `wodoc requalify-xrefs`: post-pass over a co-located multi-project site that
+  fixes flat cross-project links to a wrapped library (`Eliom_content` →
+  `Eliom/Content`) — `odoc_driver --remap` names the reference by the flat path
+  while the qualified project deploys it under its wrapper; the non-uniform
+  mapping (renamed vs kept module names) is resolved by probing the target tree.
 - `wodoc release`: the stable-version release procedure — freeze the CI-built
   `dev/` as `<version>/` and repoint the `latest` symlink (the CI only rebuilds
   `dev/`; releases are frozen snapshots of it).

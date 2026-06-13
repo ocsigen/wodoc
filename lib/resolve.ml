@@ -333,3 +333,46 @@ let fix_dep_spans hosted relroot side self s =
 
 let deps ~hosted ~relroot ~side ~self s =
   fix_dep_spans hosted relroot side self (fix_resolved hosted relroot side s)
+
+(* --- requalify cross-project links to wrapped libraries (post-pass) ---
+   odoc_driver --remap names a reference to a wrapped library's module by a FLAT
+   path (e.g. [Eliom_content]) while the wrapped project deploys it UNDER its
+   wrapper: [Eliom/Content] for a renamed module, or [Eliom/Eliom_react] for one
+   that kept its name. The mapping is therefore not uniform, so we PROBE: for a
+   flat top segment [<W>_<x>] right after a wrapped project's [<dir>.<lib>/], try
+   [<W>/<Cap x>] then [<W>/<W>_<x>] and keep the one whose target [exists]. *)
+let cap s =
+  if s = "" then s
+  else String.make 1 (Char.uppercase_ascii s.[0]) ^ String.sub s 1 (String.length s - 1)
+
+let requalify_url ~wrapped ~exists url =
+  List.fold_left
+    (fun url (dir, wrapper) ->
+       let re =
+         Str.regexp
+           (Printf.sprintf "\\(/%s\\.[a-z_]+/\\)%s_\\([A-Za-z0-9_]+\\)"
+              (Str.quote dir) (Str.quote wrapper))
+       in
+       match Str.search_forward re url 0 with
+       | exception Not_found -> url
+       | _ ->
+           let lib = Str.matched_group 1 url and rest = Str.matched_group 2 url in
+           let b = Str.match_beginning () and e = Str.match_end () in
+           let mk seg =
+             String.sub url 0 b ^ lib ^ wrapper ^ "/" ^ seg
+             ^ String.sub url e (String.length url - e)
+           in
+           let c1 = mk (cap rest) and c2 = mk (wrapper ^ "_" ^ rest) in
+           if exists c1 then c1 else if exists c2 then c2 else url)
+    url wrapped
+
+(* [requalify ~wrapped ~exists page] rewrites the flat wrapped-library segments
+   in every href/src of [page]. [exists] probes a candidate URL (the caller
+   resolves it against the page's own location). *)
+let requalify ~wrapped ~exists page =
+  let re = Str.regexp "\\(href\\|src\\)=\"\\([^\"]*\\)\"" in
+  global_sub re
+    (fun s ->
+       let attr = Str.matched_group 1 s and url = Str.matched_group 2 s in
+       Printf.sprintf "%s=\"%s\"" attr (requalify_url ~wrapped ~exists url))
+    page
