@@ -24,9 +24,9 @@ protects the URL; plain ones stay odoc references.
   > EOF
   $ wodoc convert sides.wiki
   s {{:../eliom.server/Eliom/Service/index.html}Eliom.Service}
-  c {{:https://ocsigen.org/wodoc/lwt/latest/Lwt/index.html}Lwt}
+  c {{:https://ocsigen.org/lwt/latest/Lwt/index.html}Lwt}
   p {!Cors}
-  t {{:https://ocsigen.org/tuto/basics.html}Tutorial}
+  t {{:https://ocsigen.org/tuto/latest/basics.html}Tutorial}
 
 With --api-side, a plain <<a_api|...>> links into that side, and a val/type goes
 to its module's page with an odoc anchor (#val-x / #type-x).
@@ -53,7 +53,7 @@ project's manual still gets an external link.
   $ wodoc convert --odoc-refs inpkg.wiki
   a {!Eliom.Service}
   c {{!page-"clientserver-html".syntax}the manual}
-  t {{:https://ocsigen.org/tuto/basics.html}tuto}
+  t {{:https://ocsigen.org/tuto/latest/basics.html}tuto}
 
 The wikicreole "wiki:" abbreviation (a page of the current manual) maps to the
 flattened sibling <page>.html, dropping the optional "manual/" prefix and
