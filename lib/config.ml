@@ -3,15 +3,24 @@
 
 type entry =
   { label : string  (** visible text *)
-  ; path : string  (** href relative to the version root (filled with base) *)
+  ; path : string
+    (** href: relative to the version root (filled with base), unless it is
+          absolute ([/…]) or a URL ([http(s)://…]), which is emitted verbatim *)
   ; current : string  (** data-wodoc-page id (highlighted on its own pages) *)
   }
+
+type item =
+  | Link of entry
+  | Group of string * item list
+      (** a sub-heading ([<h4>]) and its nested items, one indent level deeper.
+          Lets a manual nav reproduce a multi-level menu (sections, subsections,
+          page links) — what the old wikicréole menu expressed with [==]/[===]. *)
 
 type section =
   { heading : string  (** the [<h3>] label of this left-nav block *)
   ; api : bool
     (** [api-section] -> class "api-nav"; else "api-nav manual-nav" *)
-  ; entries : entry list }
+  ; items : item list }
 
 type cs_side =
   { side : string
@@ -54,10 +63,7 @@ type t =
     (** when non-empty, the project is client/server: instead of one nav from
           [nav], wodoc builds a per-side API nav from each side's curated index,
           shows a client/server switch, and colours the body by side. The manual
-          nav is shared (from [manual_menu], else from [nav]'s manual sections). *)
-  ; manual_menu : string option
-    (** a wiki [menu.wiki] file driving the shared manual nav (Nav.manual);
-          used by client/server projects whose manual nav comes from wikidoc *)
+          nav is shared, taken from [nav]'s manual ([(section …)]) blocks. *)
   ; hosted : (string * (string * bool * string)) list
     (** cross-project resolve-refs table (resolve-refs --hosted): package ->
           (deploy dir, multi-library?, wrapper module). Rewrites sibling Ocsigen
@@ -80,9 +86,6 @@ type t =
     (** odoc [--package] for the direct-mld compile (the src subtree) *)
   ; flat : bool
     (** assemble [--flat] (content straddling odoc's preamble boundary) *)
-  ; anchor_menu : string option
-    (** left nav from a single page's in-page anchors (Nav.anchors), e.g. a
-          one-page manual whose menu links to [#section] anchors *)
   ; static_copy : (string * string) list
     (** verbatim copies into the output: (source path, dest under <out>) — e.g.
           a frozen API snapshot, or a manual image *)
@@ -93,31 +96,37 @@ let parse_entry = function
   | Sexp.List [Atom label; Atom path] -> {label; path; current = ""}
   | _ -> raise (Sexp.Error "bad (link <label> <path> [<current>]) entry")
 
+(* a nav section body: a flat list of [(link …)] and nested [(group …)] blocks.
+   Anything else is ignored, so comments and stray atoms are harmless. *)
+let rec parse_items items =
+  List.filter_map
+    (function
+      | Sexp.List (Atom "link" :: rest) -> Some (Link (parse_entry (List rest)))
+      | Sexp.List (Atom "group" :: Atom heading :: rest) ->
+          Some (Group (heading, parse_items rest))
+      | _ -> None)
+    items
+
 let parse_section api = function
-  | Sexp.List (Atom heading :: links) ->
-      { heading
-      ; api
-      ; entries =
-          List.filter_map
-            (function
-              | Sexp.List (Atom "link" :: rest) ->
-                  Some (parse_entry (List rest))
-              | _ -> None)
-            links }
+  | Sexp.List (Atom heading :: items) ->
+      { heading; api; items = parse_items items }
   | _ -> raise (Sexp.Error "bad nav section")
 
+let parse_nav_blocks blocks =
+  List.filter_map
+    (function
+      | Sexp.List (Atom "section" :: rest) -> Some (parse_section false (List rest))
+      | Sexp.List (Atom "api-section" :: rest) ->
+          Some (parse_section true (List rest))
+      | _ -> None)
+    blocks
+
 let parse_nav stanzas =
-  match Sexp.fields "nav" stanzas with
-  | blocks :: _ ->
-      List.filter_map
-        (function
-          | Sexp.List (Atom "section" :: rest) ->
-              Some (parse_section false (List rest))
-          | Sexp.List (Atom "api-section" :: rest) ->
-              Some (parse_section true (List rest))
-          | _ -> None)
-        blocks
-  | [] -> []
+  match Sexp.fields "nav" stanzas with blocks :: _ -> parse_nav_blocks blocks | [] -> []
+
+(* parse a standalone [(nav …)] file (the [--nav <file>] per-version override),
+   reusing the same syntax as the [(nav …)] stanza inside a [doc/wodoc] config. *)
+let nav_of_string s = parse_nav (Sexp.parse s)
 
 let parse_siblings stanzas =
   List.filter_map
@@ -198,7 +207,6 @@ let of_string s =
   ; siblings = parse_siblings stanzas
   ; nav = parse_nav stanzas
   ; client_server = parse_client_server stanzas
-  ; manual_menu = Sexp.field_atom "manual-menu" stanzas
   ; hosted = parse_hosted stanzas
   ; manual_root =
       Sexp.field_atom "manual-root" stanzas = Some "true"
@@ -208,5 +216,4 @@ let of_string s =
   ; flat =
       Sexp.field_atom "flat" stanzas = Some "true"
       || Sexp.fields "flat" stanzas <> []
-  ; anchor_menu = Sexp.field_atom "anchor-menu" stanzas
   ; static_copy = parse_static_copy stanzas }

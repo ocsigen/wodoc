@@ -194,9 +194,10 @@ wodoc assemble --template <tmpl.html> [--current <id>] [--base <b>] [--menu <f>]
     wrap rendered odoc HTML in a site template (fills {{title}}/{{preamble}}/
     {{toc}}/{{content}}/{{menu}}/{{leftnav}} and marks the current entry)
 
-wodoc nav  --menu <menu.wiki> --base <b> …   |   --api <indexdoc> …   |   --anchors …
-    build a left-column navigation fragment (manual menu, API module index, or
-    in-page anchors)
+wodoc nav  --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--skip-title <t>]..
+    render an API module navigation fragment from a curated odoc index (used by
+    `wodoc build` for client/server projects); the manual's navigation is
+    declared in the `doc/wodoc` config's `(nav ...)` stanza, not here
 
 wodoc resolve-refs --base <b> --sibling <Mod=seg/..> [..] <file>..
                    | --hosted <pkg=dir:multi:wrapper> --relroot <r> --side <s> [..]

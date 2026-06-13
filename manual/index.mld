@@ -20,6 +20,7 @@ dialect to learn.
 - {{!page-"overview"}How it works} — the pipeline and the one-source/two-outputs trick
 - {{!page-"directives"}Directives} — the [{%wodoc:…%}] reference (classes, containers, tables)
 - {{!page-"authoring"}Authoring} — what survives on ocaml.org, what is wodoc-only
+- {{!page-"config"}Configuration} — the [doc/wodoc] file: navigation, layout, versions.json
 - {{!page-"commands"}Commands} — [preprocess], [render], [assemble], [nav], [resolve-refs], [convert]
 
 {1 API reference}
