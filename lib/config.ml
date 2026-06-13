@@ -62,6 +62,15 @@ type t =
     (** cross-project resolve-refs table (resolve-refs --hosted): package ->
           (deploy dir, multi-library?, wrapper module). Rewrites sibling Ocsigen
           projects' [ocaml.org] xrefs to relative links into their wodoc docs. *)
+  ; manual_root : bool
+      (** deploy the package's pages at the version ROOT instead of under a
+          [<package>/] subdirectory: strip the leading [<package>/] segment from
+          output paths, the landing and the nav links. Makes a single-package
+          [dune build @doc] project (ocsigenserver, i18n) match the layout of
+          odoc-driver projects (eliom: manual at the version root, e.g.
+          [/ocsigenserver/latest/config.html]) so cross-project links resolve.
+          The package's internal relative links are preserved (the same prefix
+          is stripped from every page). *)
   ; mld_dir : string option
     (** direct-mld build (a manual-only / archived project with no [dune build
           @doc]): compile every [.mld] in this dir straight with odoc (preprocess
@@ -191,6 +200,9 @@ let of_string s =
   ; client_server = parse_client_server stanzas
   ; manual_menu = Sexp.field_atom "manual-menu" stanzas
   ; hosted = parse_hosted stanzas
+  ; manual_root =
+      Sexp.field_atom "manual-root" stanzas = Some "true"
+      || Sexp.fields "manual-root" stanzas <> []
   ; mld_dir = Sexp.field_atom "mld-dir" stanzas
   ; mld_package = Sexp.field_atom_default "mld-package" "" stanzas
   ; flat =

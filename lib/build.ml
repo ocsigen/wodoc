@@ -422,6 +422,37 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title)
   in
   let vs = versions ~out ~label in
+  (* manual-root: strip the leading <package>/ from output paths, nav links and
+     the landing so a single-package project deploys at the version ROOT (like
+     eliom's odoc-driver layout). The package's internal links are relative, so
+     stripping the same prefix from every page keeps them valid. *)
+  let strip_pfx =
+    if c.manual_root
+    then Some ((match c.packages with p :: _ -> p | [] -> c.project) ^ "/")
+    else None
+  in
+  let strip rel =
+    match strip_pfx with
+    | Some p when String.starts_with ~prefix:p rel ->
+        String.sub rel (String.length p) (String.length rel - String.length p)
+    | _ -> rel
+  in
+  let c =
+    match strip_pfx with
+    | None -> c
+    | Some _ ->
+        { c with
+          landing = strip c.landing
+        ; nav =
+            List.map
+              (fun (s : Config.section) ->
+                 { s with
+                   entries =
+                     List.map
+                       (fun (e : Config.entry) -> { e with path = strip e.path })
+                       s.entries })
+              c.nav }
+  in
   (* direct-mld build (manual-only/archived): the pages ARE the manual and the
      landing index.html is a real page, so keep it and write no redirect. *)
   let mld_mode = c.mld_dir <> None in
@@ -468,13 +499,15 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
           | _ -> leftnav c vs
         in
         fun rel ->
-          let base = base_of rel in
+          (* output position after manual-root stripping drives base/current *)
+          let orel = strip rel in
+          let base = base_of orel in
           (* current nav id: an API page's top package dir, or a root manual
              page's own name (so the matching left-nav entry is highlighted) *)
           let current =
-            match String.index_opt rel '/' with
-            | Some i -> String.sub rel 0 i
-            | None -> Filename.remove_extension rel
+            match String.index_opt orel '/' with
+            | Some i -> String.sub orel 0 i
+            | None -> Filename.remove_extension orel
           in
           let page =
             Assemble.page ~flat:c.flat ~base ~menu:menu_html ~subproject
@@ -555,7 +588,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
   in
   List.iter
     (fun rel ->
-       let dst = Filename.concat out rel in
+       let dst = Filename.concat out (strip rel) in
        mkdir_p (Filename.dirname dst);
        write_file dst (assemble_page rel))
     rels;
