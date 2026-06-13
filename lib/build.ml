@@ -693,15 +693,22 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
        mkdir_p (Filename.dirname dst);
        write_file dst (assemble_page rel))
     rels;
-  (* version root index.html: redirect to the landing page — UNLESS this is a
-     direct-mld build, whose index.html is a real manual page already written. *)
-  if not mld_mode
+  (* version root index.html: redirect to the landing page — UNLESS the landing
+     IS this version-root index.html, i.e. a real manual page already written here
+     (direct-mld builds, or manual-root single-package projects whose index.mld
+     lands at the root). Writing the redirect would then clobber the real page and
+     add a needless second hop. Body kept empty so the redirect flashes blank
+     (instead of briefly showing "Redirecting…" text). *)
+  let wrote_root_index =
+    mld_mode || List.exists (fun rel -> strip rel = "index.html") rels
+  in
+  if not wrote_root_index
   then
     write_file
       (Filename.concat out "index.html")
       (Printf.sprintf
-         "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=%s\"/>\n<link rel=\"canonical\" href=\"%s\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"%s\">%s documentation</a>.</p></body>\n</html>\n"
-         c.landing c.landing (esc c.title) c.landing (esc c.title));
+         "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=%s\"/>\n<link rel=\"canonical\" href=\"%s\"/>\n<title>%s documentation</title></head>\n<body></body>\n</html>\n"
+         c.landing c.landing (esc c.title));
   (* verbatim copies (frozen API snapshot, manual images, …) *)
   List.iter
     (fun (csrc, dest) ->
@@ -779,8 +786,8 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     write_file
       (Filename.concat (Filename.dirname out) "index.html")
       (Printf.sprintf
-         "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"latest/index.html\">%s documentation</a>.</p></body>\n</html>\n"
-         (esc c.title) (esc c.title))
+         "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>%s documentation</title></head>\n<body></body>\n</html>\n"
+         (esc c.title))
   end;
   (* refresh the version manifest the page script reads (now that this build's
      dir and any new [latest] symlink are in place) *)
@@ -817,7 +824,7 @@ let release ~site ~from ~version =
   if not (Sys.file_exists idx)
   then
     write_file idx
-      "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body><p>Redirecting to the <a href=\"latest/index.html\">latest documentation</a>.</p></body>\n</html>\n";
+      "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body></body>\n</html>\n";
   (* refresh the version manifest so the new version + [latest] target show up in
      every page's selector — this is the only file a release needs to rewrite. *)
   write_manifest ~root:site;
