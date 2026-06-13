@@ -82,7 +82,6 @@
       <nav class="how-doctree"><div class="docversion">
   <label>Version:
     <select class="wodoc-version" onchange="wodocVersion(this.value)">
-      <option value="latest">latest</option>
       <option value="dev">dev</option>
     </select>
   </label>
@@ -119,7 +118,6 @@
         <div class="docversion">
   <label>Version:
     <select class="wodoc-version" onchange="wodocVersion(this.value)">
-      <option value="latest">latest</option>
       <option value="dev">dev</option>
     </select>
   </label>
@@ -158,31 +156,59 @@
   <span><span class="label">side</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">self</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span>string <span class="arrow">&#45;&gt;</span></span>
-  string</span></code></div><div class="spec-doc"><p><code>deps ~hosted ~relroot ~side ~self page</code> rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and <code>xref-unresolved</code> spans. <code>hosted</code> maps a package to <code>(dir, multilib, wrapper)</code>; <code>relroot</code> is the path from the page to the shared root holding every project; <code>side</code> is <code>&quot;server&quot;</code>/<code>&quot;client&quot;</code>/<code>&quot;&quot;</code>; <code>self</code> is the package being documented (its own leftover refs are kept as text). The OCaml port of <code>resolve-deps.py</code>.</p></div></div></div>
+  string</span></code></div><div class="spec-doc"><p><code>deps ~hosted ~relroot ~side ~self page</code> rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and <code>xref-unresolved</code> spans. <code>hosted</code> maps a package to <code>(dir, multilib, wrapper)</code>; <code>relroot</code> is the path from the page to the shared root holding every project; <code>side</code> is <code>&quot;server&quot;</code>/<code>&quot;client&quot;</code>/<code>&quot;&quot;</code>; <code>self</code> is the package being documented (its own leftover refs are kept as text). The OCaml port of <code>resolve-deps.py</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-requalify"><code><span><span class="keyword">val</span> requalify : 
+  <span><span class="label">wrapped</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">exists</span>:<span>(<span>string <span class="arrow">&#45;&gt;</span></span> bool)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  string</span></code></div><div class="spec-doc"><p><code>requalify ~wrapped ~exists page</code> rewrites flat cross-project links to a wrapped library's module (e.g. <code>.../eliom.server/Eliom_content/…</code>, emitted by <code>odoc_driver --remap</code>) into the qualified path the target deploys (<code>.../eliom.server/Eliom/Content/…</code>). <code>wrapped</code> maps a project deploy-dir to its wrapper module (<code>(&quot;eliom&quot;,&quot;Eliom&quot;)</code>). The flat→qualified mapping is not uniform (renamed vs kept module names), so each candidate is probed with <code>exists</code> (the caller resolves the candidate URL against the page's location and stats the target).</p></div></div></div>
       </article>
     </div>
   </div>
 
   <script>
+    var wodocPub = "/wodoc";
+    // Switch version: keep the current page, swapping only the version segment.
     function wodocVersion(v) {
       if (!v) return;
-      var re = new RegExp('^(/wodoc/)[^/]+');
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
       var p = location.pathname;
-      location.href = re.test(p) ? p.replace(re, '$1' + v) : '/wodoc/' + v + '/index.html';
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
     }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
     (function () {
-      var m = location.pathname.match(new RegExp('^/wodoc/([^/]+)'));
-      if (!m) return;
-      document.querySelectorAll('.wodoc-version').forEach(function (sel) {
-        var ok = false, i;
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
         for (i = 0; i < sel.options.length; i++)
-          if (sel.options[i].value === m[1]) { sel.selectedIndex = i; ok = true; break; }
-        if (!ok) {
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
           var o = document.createElement('option');
-          o.value = m[1]; o.textContent = m[1]; o.selected = true;
+          o.value = seg; o.textContent = seg; o.selected = true;
           sel.insertBefore(o, sel.firstChild);
         }
-      });
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
     })();
   </script>
 </body>

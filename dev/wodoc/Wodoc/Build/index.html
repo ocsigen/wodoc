@@ -82,7 +82,6 @@
       <nav class="how-doctree"><div class="docversion">
   <label>Version:
     <select class="wodoc-version" onchange="wodocVersion(this.value)">
-      <option value="latest">latest</option>
       <option value="dev">dev</option>
     </select>
   </label>
@@ -119,7 +118,6 @@
         <div class="docversion">
   <label>Version:
     <select class="wodoc-version" onchange="wodocVersion(this.value)">
-      <option value="latest">latest</option>
       <option value="dev">dev</option>
     </select>
   </label>
@@ -148,7 +146,8 @@
       </nav>
       <article class="rightcol">
         <header class="odoc-preamble"><h1>Module <code><span>Wodoc.Build</span></code></h1></header>
-        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-read_file"><code><span><span class="keyword">val</span> read_file : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-write_file"><code><span><span class="keyword">val</span> write_file : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-is_url"><code><span><span class="keyword">val</span> is_url : <span>string <span class="arrow">&#45;&gt;</span></span> bool</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-origin_of"><code><span><span class="keyword">val</span> origin_of : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string option</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-read_menu"><code><span><span class="keyword">val</span> read_menu : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mkdir_p"><code><span><span class="keyword">val</span> mkdir_p : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-html_files"><code><span><span class="keyword">val</span> html_files : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span>string list</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-base_of"><code><span><span class="keyword">val</span> base_of : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-replace_hole"><code><span><span class="keyword">val</span> replace_hole : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-esc"><code><span><span class="keyword">val</span> esc : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-default_highlight"><code><span><span class="keyword">val</span> default_highlight : string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-template"><code><span><span class="keyword">val</span> template : <span><span class="optlabel">?body_extra</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?extra_script</span>:string <span class="arrow">&#45;&gt;</span></span> <span><a href="../Config/index.html#type-t">Config.t</a> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-docversion"><code><span><span class="keyword">val</span> docversion : <span><span>string list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-page_toc"><code><span><span class="keyword">val</span> page_toc : string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-leftnav"><code><span><span class="keyword">val</span> leftnav : <span><a href="../Config/index.html#type-t">Config.t</a> <span class="arrow">&#45;&gt;</span></span> <span><span>string list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-versions"><code><span><span class="keyword">val</span> versions : <span><span class="label">out</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="label">label</span>:string <span class="arrow">&#45;&gt;</span></span> <span>string list</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-asset_re"><code><span><span class="keyword">val</span> asset_re : <span class="xref-unresolved">Str</span>.regexp</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-local_assets"><code><span><span class="keyword">val</span> local_assets : <span><span class="label">menu</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="label">out</span>:string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cs_switch"><code><span><span class="keyword">val</span> cs_switch : <span><span><a href="../Config/index.html#type-cs_side">Config.cs_side</a> list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cs_switch_script"><code><span><span class="keyword">val</span> cs_switch_script : <span><a href="../Config/index.html#type-t">Config.t</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="../Config/index.html#type-cs_side">Config.cs_side</a> list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cs_leftnav"><code><span><span class="keyword">val</span> cs_leftnav : 
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-read_file"><code><span><span class="keyword">val</span> read_file : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-write_file"><code><span><span class="keyword">val</span> write_file : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-is_url"><code><span><span class="keyword">val</span> is_url : <span>string <span class="arrow">&#45;&gt;</span></span> bool</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-origin_of"><code><span><span class="keyword">val</span> origin_of : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string option</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-read_menu"><code><span><span class="keyword">val</span> read_menu : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-mkdir_p"><code><span><span class="keyword">val</span> mkdir_p : <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-html_files"><code><span><span class="keyword">val</span> html_files : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span>string list</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-base_of"><code><span><span class="keyword">val</span> base_of : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-replace_hole"><code><span><span class="keyword">val</span> replace_hole : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-esc"><code><span><span class="keyword">val</span> esc : <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-default_highlight"><code><span><span class="keyword">val</span> default_highlight : string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-template"><code><span><span class="keyword">val</span> template : <span><span class="optlabel">?body_extra</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?extra_script</span>:string <span class="arrow">&#45;&gt;</span></span> <span><a href="../Config/index.html#type-t">Config.t</a> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-docversion"><code><span><span class="keyword">val</span> docversion : <span><span class="label">latest</span>:<span>string option</span> <span class="arrow">&#45;&gt;</span></span> <span><span>string list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-page_toc"><code><span><span class="keyword">val</span> page_toc : string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-leftnav"><code><span><span class="keyword">val</span> leftnav : <span><span class="label">latest</span>:<span>string option</span> <span class="arrow">&#45;&gt;</span></span> <span><a href="../Config/index.html#type-t">Config.t</a> <span class="arrow">&#45;&gt;</span></span> <span><span>string list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-latest_target"><code><span><span class="keyword">val</span> latest_target : <span><span class="label">root</span>:string <span class="arrow">&#45;&gt;</span></span> <span>string option</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-compare_version"><code><span><span class="keyword">val</span> compare_version : <span>string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> int</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-version_names"><code><span><span class="keyword">val</span> version_names : <span><span class="label">root</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="optlabel">?extra</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="arrow">&#45;&gt;</span></span> <span>string list</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-versions"><code><span><span class="keyword">val</span> versions : <span><span class="label">out</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="label">label</span>:string <span class="arrow">&#45;&gt;</span></span> <span>string list</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-write_manifest"><code><span><span class="keyword">val</span> write_manifest : <span><span class="label">root</span>:string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-asset_re"><code><span><span class="keyword">val</span> asset_re : <span class="xref-unresolved">Str</span>.regexp</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-local_assets"><code><span><span class="keyword">val</span> local_assets : <span><span class="label">menu</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="label">out</span>:string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cs_switch"><code><span><span class="keyword">val</span> cs_switch : <span><span><a href="../Config/index.html#type-cs_side">Config.cs_side</a> list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cs_switch_script"><code><span><span class="keyword">val</span> cs_switch_script : <span><a href="../Config/index.html#type-t">Config.t</a> <span class="arrow">&#45;&gt;</span></span> <span><span><a href="../Config/index.html#type-cs_side">Config.cs_side</a> list</span> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-cs_leftnav"><code><span><span class="keyword">val</span> cs_leftnav : 
+  <span><span class="label">latest</span>:<span>string option</span> <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">versions</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">switch</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">manual_nav</span>:string <span class="arrow">&#45;&gt;</span></span>
@@ -162,31 +161,55 @@
   <span><span class="label">assets_dir</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">local</span>:bool <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">set_latest</span>:bool <span class="arrow">&#45;&gt;</span></span>
-  unit</span></code></div></div></div>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-release"><code><span><span class="keyword">val</span> release : <span><span class="label">site</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="label">from</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="label">version</span>:string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div></div>
       </article>
     </div>
   </div>
 
   <script>
+    var wodocPub = "/wodoc";
+    // Switch version: keep the current page, swapping only the version segment.
     function wodocVersion(v) {
       if (!v) return;
-      var re = new RegExp('^(/wodoc/)[^/]+');
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
       var p = location.pathname;
-      location.href = re.test(p) ? p.replace(re, '$1' + v) : '/wodoc/' + v + '/index.html';
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
     }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
     (function () {
-      var m = location.pathname.match(new RegExp('^/wodoc/([^/]+)'));
-      if (!m) return;
-      document.querySelectorAll('.wodoc-version').forEach(function (sel) {
-        var ok = false, i;
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
         for (i = 0; i < sel.options.length; i++)
-          if (sel.options[i].value === m[1]) { sel.selectedIndex = i; ok = true; break; }
-        if (!ok) {
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
           var o = document.createElement('option');
-          o.value = m[1]; o.textContent = m[1]; o.selected = true;
+          o.value = seg; o.textContent = seg; o.selected = true;
           sel.insertBefore(o, sel.firstChild);
         }
-      });
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
     })();
   </script>
 </body>
