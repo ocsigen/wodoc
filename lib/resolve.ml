@@ -348,22 +348,29 @@ let cap s =
 let requalify_url ~wrapped ~exists url =
   List.fold_left
     (fun url (dir, wrapper) ->
-       let re =
-         Str.regexp
-           (Printf.sprintf "\\(/%s\\.[a-z_]+/\\)%s_\\([A-Za-z0-9_]+\\)"
-              (Str.quote dir) (Str.quote wrapper))
+       (* the flat module sits right after either a multi-library segment
+          ([<dir>.<lib>/], eliom/toolkit) or a version segment of a
+          single-package manual-root project ([<dir>/<version>/], ocsigenserver). *)
+       let res =
+         [ Printf.sprintf "\\(/%s\\.[a-z_]+/\\)%s_\\([A-Za-z0-9_]+\\)"
+             (Str.quote dir) (Str.quote wrapper)
+         ; Printf.sprintf "\\(/%s/[^/]+/\\)%s_\\([A-Za-z0-9_]+\\)"
+             (Str.quote dir) (Str.quote wrapper) ]
        in
-       match Str.search_forward re url 0 with
-       | exception Not_found -> url
-       | _ ->
-           let lib = Str.matched_group 1 url and rest = Str.matched_group 2 url in
-           let b = Str.match_beginning () and e = Str.match_end () in
-           let mk seg =
-             String.sub url 0 b ^ lib ^ wrapper ^ "/" ^ seg
-             ^ String.sub url e (String.length url - e)
-           in
-           let c1 = mk (cap rest) and c2 = mk (wrapper ^ "_" ^ rest) in
-           if exists c1 then c1 else if exists c2 then c2 else url)
+       let try_re re =
+         match Str.search_forward (Str.regexp re) url 0 with
+         | exception Not_found -> None
+         | _ ->
+             let lib = Str.matched_group 1 url and rest = Str.matched_group 2 url in
+             let b = Str.match_beginning () and e = Str.match_end () in
+             let mk seg =
+               String.sub url 0 b ^ lib ^ wrapper ^ "/" ^ seg
+               ^ String.sub url e (String.length url - e)
+             in
+             let c1 = mk (cap rest) and c2 = mk (wrapper ^ "_" ^ rest) in
+             if exists c1 then Some c1 else if exists c2 then Some c2 else None
+       in
+       match List.find_map try_re res with Some u -> u | None -> url)
     url wrapped
 
 (* A cross-project link that omits the version segment ([../../eliom/page.html]

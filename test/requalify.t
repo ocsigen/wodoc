@@ -27,3 +27,23 @@ Eliom/Eliom_react (both probed, the existing form chosen):
   $ cat site/ocsigen-toolkit/dev/page.html
   <a href="../../eliom/latest/eliom.server/Eliom/Content/Html/index.html#type-elt">elt</a>
   <a href="../../eliom/latest/eliom.server/Eliom/Eliom_react/index.html">react</a>
+
+It also handles a SINGLE-package manual-root project (modules at the version
+root, e.g. ocsigenserver/<version>/Ocsigen_extensions) — not just the
+<pkg>.<lib>/ layout. The wrapper-renamed module is requalified, a kept-name one
+is left (it already resolves):
+
+  $ mkdir -p site2/ocsigenserver/latest/Ocsigen/Extensions
+  $ touch site2/ocsigenserver/latest/Ocsigen/Extensions/index.html
+  $ mkdir -p site2/ocsigenserver/latest/Ocsigen_cookie_map
+  $ touch site2/ocsigenserver/latest/Ocsigen_cookie_map/index.html
+  $ mkdir -p site2/eliom/dev
+  $ cat > site2/eliom/dev/p.html <<'HTML'
+  > <a href="../../ocsigenserver/latest/Ocsigen_extensions/index.html">ext</a>
+  > <a href="../../ocsigenserver/latest/Ocsigen_cookie_map/index.html">cm</a>
+  > HTML
+  $ wodoc requalify-xrefs --site site2 --wrapped ocsigenserver=Ocsigen
+  wodoc requalify-xrefs: rewrote 1 files
+  $ cat site2/eliom/dev/p.html
+  <a href="../../ocsigenserver/latest/Ocsigen/Extensions/index.html">ext</a>
+  <a href="../../ocsigenserver/latest/Ocsigen_cookie_map/index.html">cm</a>
