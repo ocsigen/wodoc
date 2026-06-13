@@ -97,6 +97,7 @@
 <li class="ml3" data-wodoc-page="overview"><a href="../../../wodoc/overview.html">How it works</a></li>
 <li class="ml3" data-wodoc-page="directives"><a href="../../../wodoc/directives.html">Directives</a></li>
 <li class="ml3" data-wodoc-page="authoring"><a href="../../../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="config"><a href="../../../wodoc/config.html">Configuration</a></li>
 <li class="ml3" data-wodoc-page="commands"><a href="../../../wodoc/commands.html">Commands</a></li>
 </ul>
 </nav>
@@ -133,6 +134,7 @@
 <li class="ml3" data-wodoc-page="overview"><a href="../../../wodoc/overview.html">How it works</a></li>
 <li class="ml3" data-wodoc-page="directives"><a href="../../../wodoc/directives.html">Directives</a></li>
 <li class="ml3" data-wodoc-page="authoring"><a href="../../../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="config"><a href="../../../wodoc/config.html">Configuration</a></li>
 <li class="ml3" data-wodoc-page="commands"><a href="../../../wodoc/commands.html">Commands</a></li>
 </ul>
 </nav>
@@ -145,21 +147,15 @@
 
       </nav>
       <article class="rightcol">
-        <header class="odoc-preamble"><h1>Module <code><span>Wodoc.Nav</span></code></h1><p>Build a manual's left-column navigation from its wikicréole menu.</p><p>The OCaml port of the per-project <code>gen-manual-nav.py</code> scripts: one implementation, the per-project differences (page location, API landing map, heading) given as options.</p></header>
-        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-manual"><code><span><span class="keyword">val</span> manual : 
-  <span><span class="optlabel">?pkg</span>:string <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="optlabel">?heading</span>:string <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="optlabel">?api_map</span>:<span><span>(string * string)</span> list</span> <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="label">base</span>:string <span class="arrow">&#45;&gt;</span></span>
-  <span>string <span class="arrow">&#45;&gt;</span></span>
-  string</span></code></div><div class="spec-doc"><p><code>manual ~base menu</code> renders the <code>&lt;nav&gt;</code> for the wiki menu source <code>menu</code>.</p><ul><li><code>pkg</code> (default <code>&quot;&quot;</code>): package dir holding the manual pages; <code>&quot;&quot;</code> puts a <code>[page|T]</code> link at <code>&lt;base&gt;/&lt;page&gt;.html</code>, otherwise <code>&lt;base&gt;/&lt;pkg&gt;/&lt;page&gt;.html</code>.</li><li><code>heading</code> (default <code>&quot;Manual&quot;</code>): the <code>&lt;h3&gt;</code> label.</li><li><code>api_map</code> (default <code>[]</code>): subproject -&gt; path (relative to <code>base</code>) for <code>&lt;&lt;a_api&gt;&gt;</code> landings; an unknown subproject falls back to <code>&lt;subproject&gt;/index.html</code>.</li></ul></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-api"><code><span><span class="keyword">val</span> api : 
+        <header class="odoc-preamble"><h1>Module <code><span>Wodoc.Nav</span></code></h1><p>Build a project's API module navigation from a curated odoc index.</p><p>The manual's own left navigation is no longer generated from a wikicréole menu: it is described declaratively in the project's <code>doc/wodoc</code> config (the <code>(nav …)</code> stanza) and rendered by <a href="../Build/index.html"><code>Build</code></a>. This module only renders the API module list, from a curated odoc <code>.indexdoc</code>.</p></header>
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-api"><code><span><span class="keyword">val</span> api : 
   <span><span class="optlabel">?wrapper</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span class="optlabel">?heading</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span class="optlabel">?skip</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">base</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span><span class="label">lib</span>:string <span class="arrow">&#45;&gt;</span></span>
   <span>string <span class="arrow">&#45;&gt;</span></span>
-  string</span></code></div><div class="spec-doc"><p><code>api ~base ~lib indexdoc</code> renders the API module <code>&lt;nav&gt;</code> from a curated odoc index (<code>{N title}</code> sections + <code>{!modules: …}</code> lists). The OCaml port of <code>gen-nav.py</code>. A module path <code>A.B.C</code> maps to <code>&lt;base&gt;/&lt;lib&gt;/[&lt;wrapper&gt;/]A/B/C/index.html</code>. <code>skip</code> lists section titles to drop (page titles, <code>Index</code>); <code>heading</code> is the <code>&lt;h3&gt;</code> (default <code>&quot;Modules&quot;</code>).</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-anchors"><code><span><span class="keyword">val</span> anchors : <span><span class="optlabel">?heading</span>:string <span class="arrow">&#45;&gt;</span></span> <span><span class="label">base</span>:string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div><div class="spec-doc"><p><code>anchors ~base menu</code> renders a single-page manual's <code>&lt;nav&gt;</code> from a wiki menu of in-page anchor links <code>[[#anchor|Title]]</code> (-&gt; <code>&lt;base&gt;/index.html#anchor</code>), cleaning <code>{{{…}}}</code>/<code>##…##</code> markup from titles. The OCaml port of <code>gen-anchor-nav.py</code>.</p></div></div></div>
+  string</span></code></div><div class="spec-doc"><p><code>api ~base ~lib indexdoc</code> renders the API module <code>&lt;nav&gt;</code> from a curated odoc index (<code>{N title}</code> sections + <code>{!modules: …}</code> lists). The OCaml port of <code>gen-nav.py</code>. A module path <code>A.B.C</code> maps to <code>&lt;base&gt;/&lt;lib&gt;/[&lt;wrapper&gt;/]A/B/C/index.html</code>. <code>skip</code> lists section titles to drop (page titles, <code>Index</code>); <code>heading</code> is the <code>&lt;h3&gt;</code> (default <code>&quot;Modules&quot;</code>).</p></div></div></div>
       </article>
     </div>
   </div>

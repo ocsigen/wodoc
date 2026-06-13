@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Configuration: the doc/wodoc file — Wodoc</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <script src="../highlight.pack.js"></script>
+  <script src="../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Wodoc</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#core-stanzas">Core stanzas</a></li><li><a href="#navigation:-the-(nav-…)-stanza">Navigation: the (nav …) stanza</a><ul><li><a href="#per-version-navigation-—---nav">Per-version navigation — --nav</a></li></ul></li><li><a href="#cross-reference-resolution">Cross-reference resolution</a></li><li><a href="#build-inputs-and-assets">Build inputs and assets</a></li><li><a href="#layout-variants">Layout variants</a><ul><li><a href="#manual-at-the-version-root-—-(manual-root)">Manual at the version root — (manual-root)</a></li><li><a href="#manual-only-/-archived-projects-—-(mld-dir-…)">Manual-only / archived projects — (mld-dir …)</a></li></ul></li><li><a href="#client/server-projects-—-(client-server-…)">Client/server projects — (client-server …)</a></li><li><a href="#the-version-selector-and-versions.json">The version selector and versions.json</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="index"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="overview"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="directives"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="authoring"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="config"><a href="../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="commands"><a href="../wodoc/commands.html">Commands</a></li>
+</ul>
+</nav>
+<nav class="api-nav">
+<h3>API</h3>
+<ul class="api-section">
+<li class="ml2" data-wodoc-page="api"><a href="../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#core-stanzas">Core stanzas</a></li><li><a href="#navigation:-the-(nav-…)-stanza">Navigation: the (nav …) stanza</a><ul><li><a href="#per-version-navigation-—---nav">Per-version navigation — --nav</a></li></ul></li><li><a href="#cross-reference-resolution">Cross-reference resolution</a></li><li><a href="#build-inputs-and-assets">Build inputs and assets</a></li><li><a href="#layout-variants">Layout variants</a><ul><li><a href="#manual-at-the-version-root-—-(manual-root)">Manual at the version root — (manual-root)</a></li><li><a href="#manual-only-/-archived-projects-—-(mld-dir-…)">Manual-only / archived projects — (mld-dir …)</a></li></ul></li><li><a href="#client/server-projects-—-(client-server-…)">Client/server projects — (client-server …)</a></li><li><a href="#the-version-selector-and-versions.json">The version selector and versions.json</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="index"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="overview"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="directives"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="authoring"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="config"><a href="../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="commands"><a href="../wodoc/commands.html">Commands</a></li>
+</ul>
+</nav>
+<nav class="api-nav">
+<h3>API</h3>
+<ul class="api-section">
+<li class="ml2" data-wodoc-page="api"><a href="../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1 id="configuration:-the-doc/wodoc-file">Configuration: the <code>doc/wodoc</code> file</h1><p>The turn-key <a href="commands.html" title="commands"><code>wodoc build</code></a> command is driven by one declarative file per project, conventionally <code>doc/wodoc</code>. It is a dune-style S-expression, read by <a href="Wodoc/Config/index.html"><code>Wodoc.Config</code></a>, and it replaces a project's old <code>build.sh</code> <em>and</em> its hand-written navigation — there is no <code>menu.wiki</code>, <code>nav.html</code>, <code>leftnav.html</code> or <code>template.html</code> any more: the left navigation is declared here, in the <code>(nav …)</code> stanza, and the page template is generated by <a href="Wodoc/Build/index.html"><code>Wodoc.Build</code></a>.</p><p>A minimal config (wodoc's own — this very site):</p><pre class="language-text"><code>(project wodoc)
+(title Wodoc)
+(pub /wodoc)
+(packages wodoc)
+(landing wodoc/index.html)
+
+(nav
+ (section &quot;Manual&quot;
+  (link &quot;Overview&quot; wodoc/index.html index)
+  (link &quot;Commands&quot; wodoc/commands.html commands))
+ (api-section &quot;API&quot;
+  (link &quot;API overview&quot; wodoc/api.html api)))</code></pre><p>Build it with:</p><pre class="language-text"><code>wodoc build --config doc/wodoc --out &lt;site&gt;/&lt;label&gt; \
+            --menu https://ocsigen.org/doc/menu.html --label &lt;label&gt; [--latest] [--local]</code></pre></header>
+        <div class="odoc-content"><h2 id="core-stanzas">Core stanzas</h2><table class="odoc-table"><tr><th><p>Stanza</p></th><th><p>Meaning</p></th></tr><tr><td><p><code>(project &lt;id&gt;)</code></p></td><td><p><b>required</b> — package / project id, e.g. <code>ocsipersist</code></p></td></tr><tr><td><p><code>(title &lt;label&gt;)</code></p></td><td><p>sub-project label shown by the logo (default: the project id)</p></td></tr><tr><td><p><code>(pub &lt;path&gt;)</code></p></td><td><p>absolute publish base for the version selector, e.g. <code>/ocsipersist</code> (default <code>/&lt;project&gt;</code>)</p></td></tr><tr><td><p><code>(menu-current &lt;id&gt;)</code></p></td><td><p>which project to highlight in the shared top menu (default: the project id)</p></td></tr><tr><td><p><code>(packages &lt;p&gt; …)</code></p></td><td><p>the odoc output subtrees to assemble, in order; empty = every subtree odoc produced</p></td></tr><tr><td><p><code>(landing &lt;path&gt;)</code></p></td><td><p>where the version-root <code>index.html</code> redirects, e.g. <code>ocsipersist/index.html</code></p></td></tr></table><h2 id="navigation:-the-(nav-…)-stanza">Navigation: the <code>(nav …)</code> stanza</h2><p>The left-column navigation is described declaratively here — <b>this is the only way to define navigation</b>; the old wikicréole <code>menu.wiki</code> is gone. <code>(nav …)</code> holds an ordered list of sections:</p><pre class="language-text"><code>(nav
+ (section &quot;Manual&quot;
+  (link &quot;Overview&quot;  index.html      index)
+  (link &quot;Tutorial&quot;  tutorial.html   tutorial))
+ (api-section &quot;API&quot;
+  (link &quot;Modules&quot;   pkg/index.html  pkg)))</code></pre><ul><li><code>(section &lt;heading&gt; &lt;item&gt; …)</code> — a <b>manual</b> block, rendered as <code>&lt;nav class=&quot;api-nav manual-nav&quot;&gt;</code>. Several sections stack in order, each with its own <code>&lt;h3&gt;</code> heading.</li><li><code>(api-section &lt;heading&gt; &lt;item&gt; …)</code> — an <b>API</b> block (<code>&lt;nav class=&quot;api-nav&quot;&gt;</code>); use it for hand-curated API links. (A client/server project's per-module API nav is generated automatically instead — see below.)</li><li><code>(link &lt;label&gt; &lt;path&gt; [&lt;current&gt;])</code> — one entry. <code>&lt;path&gt;</code> is taken relative to the version root (the per-page <code>base</code> is prefixed automatically), <em>unless</em> it is absolute (<code>/talks/…</code>) or a URL (<code>https://…</code>), in which case it is emitted verbatim. <code>&lt;current&gt;</code> is an optional <code>data-wodoc-page</code> id: the entry is highlighted on the page whose id matches (an API subtree's top directory, or a manual page's own basename). Omit it for a link that never needs highlighting.</li><li><code>(group &lt;heading&gt; &lt;item&gt; …)</code> — a <b>sub-heading</b> (<code>&lt;h4&gt;</code>) and its nested items, indented one level deeper. Groups nest, so a section can reproduce a multi-level menu (section → subsection → page links).</li></ul><p>To point at an <b>in-page anchor</b> (a one-page manual), put the fragment in the path: <code>(link &quot;Section 2&quot; index.html#sec2 index)</code>.</p><p>A nested example (one <code>&lt;h3&gt;</code> section, an <code>&lt;h4&gt;</code> subsection, indented links):</p><pre class="language-text"><code>(section &quot;Server-side programming&quot;
+ (group &quot;Services&quot;
+  (link &quot;Service parameters&quot; server-params.html server-params)
+  (link &quot;Service handlers&quot;   server-outputs.html server-outputs))
+ (link &quot;Sessions&quot; server-state.html server-state))</code></pre><h3 id="per-version-navigation-—---nav">Per-version navigation — <code>--nav</code></h3><p>The <code>(nav …)</code> stanza lives in the one <code>doc/wodoc</code>, so it is the same for every version a project builds. A project whose versions have <em>different</em> manuals (e.g. a manual-only project that builds several version directories from the same checkout) instead passes the nav per build, with the same syntax in a separate file:</p><pre class="language-text"><code>wodoc build --config doc/wodoc --out &lt;site&gt;/&lt;v&gt; --label &lt;v&gt; \
+            --mld-dir manual/&lt;v&gt; --nav manual/&lt;v&gt;/nav  --menu &lt;…&gt;</code></pre><p><code>--nav &lt;file&gt;</code> reads a <code>(nav …)</code> stanza from <code>&lt;file&gt;</code> and uses it instead of the config's. (This replaces the older per-version <code>menu.wiki</code>.)</p><h2 id="cross-reference-resolution">Cross-reference resolution</h2><p>odoc leaves some references dead in the HTML; these stanzas rewrite them (see <a href="commands.html" title="commands"><code>resolve-refs</code></a> and <a href="Wodoc/Resolve/index.html"><code>Wodoc.Resolve</code></a>).</p><ul><li><code>(sibling &lt;Module&gt; &lt;seg/seg/…&gt;) …</code> — cross-<em>package</em> references to a sibling library built in the same tree; maps a top module to its odoc directory path.</li><li><code>(hosted (&lt;pkg&gt; &lt;dir&gt; &lt;multi?&gt; &lt;Wrapper&gt;) …)</code> — cross-<em>project</em> references to another hosted Ocsigen project. odoc points these at <code>ocaml.org</code>; wodoc rewrites them to relative links into the sibling project's wodoc docs. <code>&lt;multi?&gt;</code> is <code>true</code> for a multi-library package, <code>&lt;Wrapper&gt;</code> its wrapper module (or <code>&quot;&quot;</code>).</li></ul><h2 id="build-inputs-and-assets">Build inputs and assets</h2><table class="odoc-table"><tr><th><p>Stanza</p></th><th><p>Meaning</p></th></tr><tr><td><p><code>(odoc-driver &lt;pkg&gt;)</code></p></td><td><p>build the API with <code>odoc_driver &lt;pkg&gt; --remap</code> (the engine ocaml.org uses) instead of <code>dune build @doc</code>; needed when <code>&lt;pkg&gt;.server</code>/<code>&lt;pkg&gt;.client</code> share module names</p></td></tr><tr><td><p><code>(profile &lt;p&gt;)</code></p></td><td><p>dune build profile (e.g. <code>release</code>) for the <code>dune build @doc</code></p></td></tr><tr><td><p><code>(doc-manual true)</code></p></td><td><p>also build the <code>@doc-manual</code> alias (examples)</p></td></tr><tr><td><p><code>(manual-files &lt;pkg&gt;)</code></p></td><td><p>package dir that receives <code>manual/files</code> (examples, images)</p></td></tr><tr><td><p><code>(highlight &lt;file&gt;)</code></p></td><td><p>a project-specific syntax-highlight starter to ship as <code>wodoc-highlight.js</code>; without it, wodoc ships a built-in default covering eliom / lwt / js_of_ocaml syntax</p></td></tr></table><h2 id="layout-variants">Layout variants</h2><h3 id="manual-at-the-version-root-—-(manual-root)">Manual at the version root — <code>(manual-root)</code></h3><p>A single-package <code>dune build @doc</code> project puts both its manual and its API under a <code>&lt;package&gt;/</code> subdirectory. <code>(manual-root)</code> strips that leading segment from output paths, the <code>(landing …)</code> and the <code>(nav …)</code> links, so the package deploys at the version root (<code>ocsigen.org/&lt;project&gt;/&lt;v&gt;/page.html</code>) — matching the layout of odoc-driver projects (eliom) so cross-project links resolve.</p><h3 id="manual-only-/-archived-projects-—-(mld-dir-…)">Manual-only / archived projects — <code>(mld-dir …)</code></h3><p>A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for <code>dune build @doc</code> to render. Point <code>(mld-dir &lt;dir&gt;)</code> at a directory of <code>.mld</code> pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); <code>(mld-package &lt;pkg&gt;)</code> gives the odoc package. The pages <em>are</em> the manual, so the landing <code>index.html</code> is a real page (no redirect). Add <code>(flat)</code> when the first content straddles odoc's preamble boundary. <code>(static-copy &lt;src&gt; [&lt;dest&gt;])</code> (repeatable) copies a tree in verbatim — e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.</p><h2 id="client/server-projects-—-(client-server-…)">Client/server projects — <code>(client-server …)</code></h2><p>A client/server project (eliom, ocsigen-toolkit, ocsigen-start) builds its API as two or three libraries of one package that share module names (<code>&lt;pkg&gt;.server</code> / <code>&lt;pkg&gt;.client</code> / <code>&lt;pkg&gt;.ppx</code>, built with <code>(odoc-driver &lt;pkg&gt;)</code>). The <code>(client-server …)</code> block lists one side per library:</p><pre class="language-text"><code>(client-server
+ (server (lib eliom.server) (indexdoc doc/server.indexdoc)
+         (heading &quot;Server API&quot;) (wrapper Eliom) (skip &quot;Index&quot;))
+ (client (lib eliom.client) (indexdoc doc/client.indexdoc)
+         (heading &quot;Client API&quot;) (wrapper Eliom)))</code></pre><p>Each side gives its <code>(lib &lt;pkg&gt;.&lt;side&gt;)</code>, a curated <code>(indexdoc &lt;file&gt;)</code> (a section-grouped odoc index — <code>{N title}</code> + <code>{!modules: …}</code> — turned into the side's module nav via <a href="Wodoc/Nav/index.html#val-api"><code>Wodoc.Nav.api</code></a>), a <code>(heading …)</code> (the API-nav title and switch-button label), the <code>(wrapper &lt;Module&gt;)</code> its modules sit under, and any <code>(skip &lt;title&gt;)…</code> section titles to drop. wodoc then gives every page its side's API nav, a body colour (<code>wodoc-server</code> / <code>wodoc-client</code> / …) and a client/server switch button. The <b>manual nav is shared</b> across the sides and comes from this config's <code>(section …)</code> blocks, exactly like a normal project. List the sibling Ocsigen projects in <code>(hosted …)</code> so their cross-references resolve.</p><h2 id="the-version-selector-and-versions.json">The version selector and <code>versions.json</code></h2><p>Every page carries a version <code>&lt;select&gt;</code> in its left column. Both <code>wodoc build</code> and <a href="commands.html" title="commands"><code>wodoc release</code></a> (re)write a <code>versions.json</code> manifest at the <b>project root</b> (the parent of the version directories, e.g. <code>&lt;site&gt;/&lt;project&gt;/versions.json</code>) — the single source of truth the page script reads to rebuild the menu on load. So even an old frozen page lists the current version set without being rewritten, and a release only has to touch this one file.</p><p>The format is small:</p><pre class="language-text"><code>{&quot;latest&quot;:&quot;2.3&quot;,&quot;list&quot;:[&quot;dev&quot;,&quot;10.0.0&quot;,&quot;2.3&quot;,&quot;2.0&quot;</code></pre><ul><li><code>&quot;list&quot;</code> is the ordered menu: <code>dev</code> first, then the version directories newest-first (numeric, so <code>10.0.0</code> sorts above <code>2.0.0</code>). A directory counts as a version only if it is itself a wodoc build (it carries <code>wodoc-highlight.js</code>), so the <code>latest</code> symlink and stray asset dirs are skipped.</li><li><code>&quot;latest&quot;</code> records the directory the <code>latest</code> symlink points at (or <code>null</code> before the first release). That entry is labelled <em>&quot;<code>&lt;v&gt;</code> (latest)&quot;</em> and keeps the canonical <code>/&lt;project&gt;/latest/</code> URL when chosen; other versions navigate to their own numbered URL.</li></ul><p>The menu is also baked statically into each page as a fallback, so it still works if the manifest cannot be fetched. You never write <code>versions.json</code> by hand — it is generated. See <a href="Wodoc/Build/index.html#val-write_manifest"><code>Wodoc.Build.write_manifest</code></a>.</p></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/wodoc";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>
