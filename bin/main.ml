@@ -6,7 +6,7 @@ let read_file f =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --menu <menu.wiki> --base <b> [--pkg <p>] [--heading <h>]\n\            [--api-map <sub=path;..>]\n\      build a manual's left-column navigation from its wiki menu\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--manual-menu <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -82,54 +82,23 @@ let () =
       | _ -> usage ())
   | _ :: "nav" :: args -> (
       let flags, _ = parse_args args in
-      match List.assoc_opt "base" flags with
-      | None -> usage ()
-      | Some base -> (
-          let heading = List.assoc_opt "heading" flags in
-          match
-            ( List.assoc_opt "menu" flags
-            , List.assoc_opt "api" flags
-            , List.assoc_opt "anchors" flags )
-          with
-          | Some menu_f, _, _ ->
-              let pkg = Option.value ~default:"" (List.assoc_opt "pkg" flags) in
-              let heading = Option.value ~default:"Manual" heading in
-              let api_map =
-                match List.assoc_opt "api-map" flags with
-                | None -> []
-                | Some s ->
-                    List.filter_map
-                      (fun kv ->
-                         match String.index_opt kv '=' with
-                         | Some i ->
-                             Some
-                               ( String.sub kv 0 i
-                               , String.sub kv (i + 1) (String.length kv - i - 1)
-                               )
-                         | None -> None)
-                      (String.split_on_char ';' s)
-              in
-              print_string
-                (Wodoc.Nav.manual ~pkg ~heading ~api_map ~base
-                   (read_file menu_f))
-          | _, Some idx_f, _ ->
-              let lib = Option.value ~default:"" (List.assoc_opt "lib" flags) in
-              let wrapper =
-                Option.value ~default:"" (List.assoc_opt "wrapper" flags)
-              in
-              let heading = Option.value ~default:"Modules" heading in
-              let skip =
-                List.filter_map
-                  (fun (k, v) -> if k = "skip-title" then Some v else None)
-                  flags
-              in
-              print_string
-                (Wodoc.Nav.api ~wrapper ~heading ~skip ~base ~lib
-                   (read_file idx_f))
-          | _, _, Some menu_f ->
-              let heading = Option.value ~default:"Manual" heading in
-              print_string (Wodoc.Nav.anchors ~heading ~base (read_file menu_f))
-          | None, None, None -> usage ()))
+      match List.assoc_opt "base" flags, List.assoc_opt "api" flags with
+      | Some base, Some idx_f ->
+          let lib = Option.value ~default:"" (List.assoc_opt "lib" flags) in
+          let wrapper =
+            Option.value ~default:"" (List.assoc_opt "wrapper" flags)
+          in
+          let heading =
+            Option.value ~default:"Modules" (List.assoc_opt "heading" flags)
+          in
+          let skip =
+            List.filter_map
+              (fun (k, v) -> if k = "skip-title" then Some v else None)
+              flags
+          in
+          print_string
+            (Wodoc.Nav.api ~wrapper ~heading ~skip ~base ~lib (read_file idx_f))
+      | _ -> usage ())
   | _ :: "resolve-refs" :: args ->
       (* rewrites the given files IN PLACE (like the resolve-*.py scripts).
          --hosted selects cross-PROJECT mode (resolve-deps.py); otherwise
@@ -205,15 +174,16 @@ let () =
       let c = Wodoc.Config.of_string (read_file cfg) in
       (* per-version overrides: a manual-only project with one config but several
          version directories (e.g. tuto's tutos/<v>/manual, distinct per version)
-         passes --mld-dir / --manual-menu per build instead of hardcoding them. *)
+         passes --mld-dir, and --nav for that version's left navigation (a file in
+         the same [(nav …)] syntax as the config stanza), instead of hardcoding. *)
       let c =
         match List.assoc_opt "mld-dir" flags with
         | Some d -> { c with mld_dir = Some d }
         | None -> c
       in
       let c =
-        match List.assoc_opt "manual-menu" flags with
-        | Some m -> { c with manual_menu = Some m }
+        match List.assoc_opt "nav" flags with
+        | Some f -> { c with nav = Wodoc.Config.nav_of_string (read_file f) }
         | None -> c
       in
       let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in

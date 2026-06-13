@@ -24,6 +24,7 @@
   (link "How it works" wodoc/overview.html overview)
   (link "Directives" wodoc/directives.html directives)
   (link "Authoring" wodoc/authoring.html authoring)
+  (link "Configuration" wodoc/config.html config)
   (link "Commands" wodoc/commands.html commands))
  (api-section "API"
   (link "API overview" wodoc/api.html api)))

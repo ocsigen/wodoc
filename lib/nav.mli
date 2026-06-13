@@ -1,23 +1,9 @@
-(** Build a manual's left-column navigation from its wikicréole menu.
+(** Build a project's API module navigation from a curated odoc index.
 
-    The OCaml port of the per-project [gen-manual-nav.py] scripts: one
-    implementation, the per-project differences (page location, API landing
-    map, heading) given as options. *)
-
-val manual :
-   ?pkg:string
-  -> ?heading:string
-  -> ?api_map:(string * string) list
-  -> base:string
-  -> string
-  -> string
-(** [manual ~base menu] renders the [<nav>] for the wiki menu source [menu].
-    - [pkg] (default [""]): package dir holding the manual pages; [""] puts a
-      [[page|T]] link at [<base>/<page>.html], otherwise [<base>/<pkg>/<page>.html].
-    - [heading] (default ["Manual"]): the [<h3>] label.
-    - [api_map] (default [[]]): subproject -> path (relative to [base]) for
-      [<<a_api>>] landings; an unknown subproject falls back to
-      [<subproject>/index.html]. *)
+    The manual's own left navigation is no longer generated from a wikicréole
+    menu: it is described declaratively in the project's [doc/wodoc] config (the
+    [(nav …)] stanza) and rendered by {!Build}. This module only renders the API
+    module list, from a curated odoc [.indexdoc]. *)
 
 val api :
    ?wrapper:string
@@ -32,9 +18,3 @@ val api :
     [gen-nav.py]. A module path [A.B.C] maps to
     [<base>/<lib>/[<wrapper>/]A/B/C/index.html]. [skip] lists section titles to
     drop (page titles, [Index]); [heading] is the [<h3>] (default ["Modules"]). *)
-
-val anchors : ?heading:string -> base:string -> string -> string
-(** [anchors ~base menu] renders a single-page manual's [<nav>] from a wiki menu
-    of in-page anchor links [\[\[#anchor|Title\]\]] (-> [<base>/index.html#anchor]),
-    cleaning [{{{…}}}]/[##…##] markup from titles. The OCaml port of
-    [gen-anchor-nav.py]. *)

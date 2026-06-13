@@ -239,6 +239,64 @@ let docversion ~latest names =
 let page_toc =
   "<div class=\"page-toc\">\n  <h3>On this page</h3>\n  {{toc}}\n</div>\n"
 
+(* an entry path is emitted verbatim when absolute ([/…]) or a URL, else made
+   relative to the version root with the per-page [{{base}}] hole. *)
+let nav_href path =
+  if (String.length path > 0 && path.[0] = '/') || is_url path
+  then path
+  else "{{base}}/" ^ path
+
+(* a single config-driven nav entry as an <li> at indent level [ml] *)
+let nav_link ml (e : Config.entry) =
+  let dwp =
+    if e.current = ""
+    then ""
+    else Printf.sprintf " data-wodoc-page=\"%s\"" e.current
+  in
+  Printf.sprintf "<li class=\"ml%d\"%s><a href=\"%s\">%s</a></li>\n" ml dwp
+    (nav_href e.path) (esc e.label)
+
+(* render a section body into [b] at indent level [ml]: consecutive [Link]s share
+   one [<ul class="api-section">]; a [Group] closes it, emits an [<h4>] sub-heading
+   and recurses one level deeper. [ml] feeds the CSS [.mlN] padding (3 = manual
+   top level, deeper groups 4, 5, …; 2 = an api section's flush level). *)
+let rec render_items b ml items =
+  let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
+  let ul = ref false in
+  let close () = if !ul then (add "</ul>"; ul := false) in
+  List.iter
+    (function
+      | Config.Link e ->
+          if not !ul then (add "<ul class=\"api-section\">"; ul := true);
+          Buffer.add_string b (nav_link ml e)
+      | Config.Group (h, children) ->
+          close ();
+          add (Printf.sprintf "<h4 class=\"ml%d\">%s</h4>" ml (esc h));
+          render_items b (ml + 1) children)
+    items;
+  close ()
+
+(* the manual left-nav block from the config [(section …)] stanzas (the
+   non-[api] sections of [(nav …)]) — a [<nav class="api-nav manual-nav">]. Empty
+   when the project declares no manual sections. Shared by the normal left column
+   and the client/server one (which used to take this from a wiki menu.wiki). *)
+let manual_nav (c : Config.t) =
+  let manual = List.filter (fun (s : Config.section) -> not s.api) c.nav in
+  if manual = []
+  then ""
+  else begin
+    let b = Buffer.create 512 in
+    let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
+    add "<nav class=\"api-nav manual-nav\">";
+    List.iter
+      (fun (s : Config.section) ->
+         add (Printf.sprintf "<h3>%s</h3>" (esc s.heading));
+         render_items b 3 s.items)
+      manual;
+    add "</nav>";
+    Buffer.contents b
+  end
+
 (* the left column: version selector + on-this-page + the config-driven nav.
    {{base}} and {{toc}} stay as holes, filled per page by Assemble. *)
 let leftnav ~latest (c : Config.t) names =
@@ -246,37 +304,13 @@ let leftnav ~latest (c : Config.t) names =
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
   Buffer.add_string b (docversion ~latest names);
   Buffer.add_string b page_toc;
-  let entry cls (e : Config.entry) =
-    let dwp =
-      if e.current = ""
-      then ""
-      else Printf.sprintf " data-wodoc-page=\"%s\"" e.current
-    in
-    add
-      (Printf.sprintf "<li class=\"%s\"%s><a href=\"{{base}}/%s\">%s</a></li>"
-         cls dwp e.path (esc e.label))
-  in
-  let manual = List.filter (fun (s : Config.section) -> not s.api) c.nav in
+  Buffer.add_string b (manual_nav c);
   let apis = List.filter (fun (s : Config.section) -> s.api) c.nav in
-  if manual <> []
-  then begin
-    add "<nav class=\"api-nav manual-nav\">";
-    List.iter
-      (fun (s : Config.section) ->
-         add (Printf.sprintf "<h3>%s</h3>" (esc s.heading));
-         add "<ul class=\"api-section\">";
-         List.iter (entry "ml3") s.entries;
-         add "</ul>")
-      manual;
-    add "</nav>"
-  end;
   List.iter
     (fun (s : Config.section) ->
        add "<nav class=\"api-nav\">";
        add (Printf.sprintf "<h3>%s</h3>" (esc s.heading));
-       add "<ul class=\"api-section\">";
-       List.iter (entry "ml2") s.entries;
-       add "</ul>";
+       render_items b 2 s.items;
        add "</nav>")
     apis;
   Buffer.contents b
@@ -471,7 +505,7 @@ let drop_prefix p str =
   else str
 
 (* the nav id to highlight: an API page's module path (under <topdir>/<wrapper>/,
-   dotted), or a root manual page's own name (matching Nav.manual / Nav.api). *)
+   dotted), or a root manual page's own name (matching the config nav / Nav.api). *)
 let cs_current sides rel =
   match topdir rel with
   | None -> Filename.remove_extension rel
@@ -515,6 +549,13 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
         String.sub rel (String.length p) (String.length rel - String.length p)
     | _ -> rel
   in
+  let rec strip_items items =
+    List.map
+      (function
+        | Config.Link e -> Config.Link {e with path = strip e.path}
+        | Config.Group (h, children) -> Config.Group (h, strip_items children))
+      items
+  in
   let c =
     match strip_pfx with
     | None -> c
@@ -523,12 +564,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
           landing = strip c.landing
         ; nav =
             List.map
-              (fun (s : Config.section) ->
-                 { s with
-                   entries =
-                     List.map
-                       (fun (e : Config.entry) -> {e with path = strip e.path})
-                       s.entries })
+              (fun (s : Config.section) -> {s with items = strip_items s.items})
               c.nav }
   in
   (* direct-mld build (manual-only/archived): the pages ARE the manual and the
@@ -564,18 +600,9 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     match c.client_server with
     | [] ->
         let tmpl = replace_hole (template c) "pub" c.pub in
-        (* left nav: a single page's in-page anchors, a wiki manual menu, or — by
-           default — the config-declared sections. *)
-        let nav =
-          match c.anchor_menu, c.manual_menu with
-          | Some f, _ when Sys.file_exists f ->
-              docversion ~latest vs ^ page_toc
-              ^ Nav.anchors ~base:"{{base}}" (read_file f)
-          | _, Some f when Sys.file_exists f ->
-              docversion ~latest vs ^ page_toc
-              ^ Nav.manual ~base:"{{base}}" (read_file f)
-          | _ -> leftnav ~latest c vs
-        in
+        (* left nav: version selector + on-this-page + the config-declared
+           [(nav …)] sections. *)
+        let nav = leftnav ~latest c vs in
         fun rel ->
           (* output position after manual-root stripping drives base/current *)
           let orel = strip rel in
@@ -598,12 +625,8 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     | sides ->
         let script = cs_switch_script c sides in
         let switch = cs_switch sides in
-        let manual_nav =
-          match c.manual_menu with
-          | Some f when Sys.file_exists f ->
-              Nav.manual ~base:"{{base}}" (read_file f)
-          | _ -> ""
-        in
+        (* the shared manual nav comes from the config [(section …)] stanzas *)
+        let manual_nav = manual_nav c in
         let default_side = match sides with s :: _ -> s.side | [] -> "" in
         let api_nav =
           List.map
