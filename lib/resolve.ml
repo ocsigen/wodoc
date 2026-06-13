@@ -366,13 +366,38 @@ let requalify_url ~wrapped ~exists url =
            if exists c1 then c1 else if exists c2 then c2 else url)
     url wrapped
 
-(* [requalify ~wrapped ~exists page] rewrites the flat wrapped-library segments
-   in every href/src of [page]. [exists] probes a candidate URL (the caller
-   resolves it against the page's own location). *)
+(* A cross-project link that omits the version segment ([../../eliom/page.html]
+   instead of [../../eliom/latest/page.html]): insert [latest/] after the project
+   segment (the first one past any [../] / leading [/]). [None] if there is no
+   such segment or it is already a version. *)
+let latest_insert url =
+  let re = Str.regexp "^\\(\\(\\.\\./\\)*\\|/\\)\\([A-Za-z][A-Za-z0-9_-]*\\)/\\(.+\\)$" in
+  if Str.string_match re url 0 then (
+    let pre = Str.matched_group 1 url
+    and proj = Str.matched_group 3 url
+    and rest = Str.matched_group 4 url in
+    if String.length rest >= 7 && String.sub rest 0 7 = "latest/"
+    then None
+    else Some (pre ^ proj ^ "/latest/" ^ rest))
+  else None
+
+(* [requalify ~wrapped ~exists page] repairs BROKEN cross-project links in every
+   href/src of [page] by probing: a link that already resolves is left as is;
+   otherwise try the wrapped flat→qualified rewrite, then a missing-[latest/]
+   version-segment insertion, keeping the first candidate that [exists]. *)
 let requalify ~wrapped ~exists page =
   let re = Str.regexp "\\(href\\|src\\)=\"\\([^\"]*\\)\"" in
   global_sub re
     (fun s ->
        let attr = Str.matched_group 1 s and url = Str.matched_group 2 s in
-       Printf.sprintf "%s=\"%s\"" attr (requalify_url ~wrapped ~exists url))
+       let fixed =
+         if url = "" || exists url
+         then url
+         else
+           let w = requalify_url ~wrapped ~exists url in
+           if w <> url && exists w
+           then w
+           else match latest_insert url with Some v when exists v -> v | _ -> url
+       in
+       Printf.sprintf "%s=\"%s\"" attr fixed)
     page
