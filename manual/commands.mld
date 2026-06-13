@@ -162,6 +162,6 @@ Under the hood that chains [preprocess | odoc | assemble] per page (with
 [convert] once up front to bring a legacy wiki manual over to [.mld]. This very
 site is built that way; see
 {{:https://github.com/ocsigen/wodoc/blob/master/doc/wodoc}[doc/wodoc]} (the
-config) and
-{{:https://github.com/ocsigen/wodoc/blob/master/doc/menu.html}[doc/menu.html]}
-(the shared menu) in the repository for a complete, working example.
+config) in the repository, and the shared site menu served at
+{{:https://ocsigen.org/doc/menu.html}[/doc/menu.html]} (one canonical copy reused
+by every Ocsigen project), for a complete, working example.

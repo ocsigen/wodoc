@@ -61,12 +61,13 @@ jobs:
         # Dogfood: build the wodoc binary from this checkout, then run its
         # turn-key build on wodoc's own doc/wodoc config. `wodoc build` runs
         # `dune build @doc` itself and assembles every page with the shared
-        # Ocsigen chrome (doc/menu.html) into _doc-site/<label>/.
+        # Ocsigen chrome, fetched from the single canonical menu served by
+        # ocsigen.org, into _doc-site/<label>/.
         run: |
           opam exec -- dune build bin/main.exe
           opam exec -- _build/default/bin/main.exe build \
             --config doc/wodoc --out "_doc-site/$LABEL" \
-            --menu doc/menu.html --label "$LABEL"
+            --menu https://ocsigen.org/doc/menu.html --label "$LABEL"
 
       - name: Deploy to gh-pages (replace only this version, keep the rest)
         uses: JamesIves/github-pages-deploy-action@v4
