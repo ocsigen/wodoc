@@ -160,34 +160,62 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
   </div>
 
   <script>
-%s    function wodocVersion(v) {
+%s    var wodocPub = "%s";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
       if (!v) return;
-      var re = new RegExp('^(%s/)[^/]+');
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
       var p = location.pathname;
-      location.href = re.test(p) ? p.replace(re, '$1' + v) : '%s/' + v + '/index.html';
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
     }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
     (function () {
-      var m = location.pathname.match(new RegExp('^%s/([^/]+)'));
-      if (!m) return;
-      document.querySelectorAll('.wodoc-version').forEach(function (sel) {
-        var ok = false, i;
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
         for (i = 0; i < sel.options.length; i++)
-          if (sel.options[i].value === m[1]) { sel.selectedIndex = i; ok = true; break; }
-        if (!ok) {
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
           var o = document.createElement('option');
-          o.value = m[1]; o.textContent = m[1]; o.selected = true;
+          o.value = seg; o.textContent = seg; o.selected = true;
           sel.insertBefore(o, sel.firstChild);
         }
-      });
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
     })();
   </script>
 </body>
 </html>
 |}
-    (esc c.title) hl body_extra extra_script c.pub c.pub c.pub
+    (esc c.title) hl body_extra extra_script c.pub
 
-(* the version <select> block (shared by the normal and per-side left columns) *)
-let docversion versions =
+(* the version <select> block (shared by the normal and per-side left columns).
+   The entry that the [latest] symlink targets is rendered with value "latest"
+   (so it keeps the canonical /<project>/latest/ URL) and labelled "<v> (latest)".
+   This is only the static fallback baked into the page: the script rebuilds the
+   list from versions.json at load time so it stays fresh after future releases. *)
+let docversion ~latest names =
   let b = Buffer.create 256 in
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
   add "<div class=\"docversion\">";
@@ -195,8 +223,14 @@ let docversion versions =
   add
     "    <select class=\"wodoc-version\" onchange=\"wodocVersion(this.value)\">";
   List.iter
-    (fun v -> add (Printf.sprintf "      <option value=\"%s\">%s</option>" v v))
-    versions;
+    (fun v ->
+       let value, label =
+         if Some v = latest then "latest", v ^ " (latest)" else v, v
+       in
+       add
+         (Printf.sprintf "      <option value=\"%s\">%s</option>" value
+            (esc label)))
+    names;
   add "    </select>";
   add "  </label>";
   add "</div>";
@@ -207,10 +241,10 @@ let page_toc =
 
 (* the left column: version selector + on-this-page + the config-driven nav.
    {{base}} and {{toc}} stay as holes, filled per page by Assemble. *)
-let leftnav (c : Config.t) versions =
+let leftnav ~latest (c : Config.t) names =
   let b = Buffer.create 1024 in
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
-  Buffer.add_string b (docversion versions);
+  Buffer.add_string b (docversion ~latest names);
   Buffer.add_string b page_toc;
   let entry cls (e : Config.entry) =
     let dwp =
@@ -247,26 +281,69 @@ let leftnav (c : Config.t) versions =
     apis;
   Buffer.contents b
 
-(* version directories already present next to [out] (its siblings), plus the
-   one being built, "latest" first — for the version <select>. A sibling counts
-   as a version only if it is itself a wodoc build (it carries wodoc-highlight.js):
-   this skips source/asset dirs that may sit alongside the versions (e.g. a
-   project whose mld/ or api-snapshot/ live next to its built versions). *)
-let versions ~out ~label =
-  let parent = Filename.dirname out in
+(* the version [latest] points at (its symlink target's basename), e.g. "2.3";
+   None when there is no [latest] symlink (no release yet) or it is unreadable. *)
+let latest_target ~root =
+  try Some (Filename.basename (Unix.readlink (Filename.concat root "latest")))
+  with _ -> None
+
+(* numeric-aware comparison of version strings, component by component on '.'
+   ("12.0.1" > "2.0"); non-numeric components fall back to string compare. *)
+let compare_version a b =
+  let rec cmp = function
+    | x :: xs, y :: ys ->
+        let c =
+          match int_of_string_opt x, int_of_string_opt y with
+          | Some i, Some j -> compare i j
+          | _ -> compare x y
+        in
+        if c <> 0 then c else cmp (xs, ys)
+    | [], [] -> 0
+    | [], _ -> -1
+    | _, [] -> 1
+  in
+  cmp (String.split_on_char '.' a, String.split_on_char '.' b)
+
+(* ordered menu entries for [root] (the project dir holding the version dirs):
+   "dev" first, then the real version dirs newest-first. A dir counts as a
+   version only if it is itself a wodoc build (it carries wodoc-highlight.js):
+   this skips the [latest] symlink and any source/asset dirs sitting alongside.
+   [extra] forces names in even if their dir is not built yet (the label being
+   built, whose tree may still be incomplete when this is first computed). *)
+let version_names ~root ?(extra = []) () =
   let dirs =
-    if Sys.file_exists parent
+    if Sys.file_exists root
     then
-      Array.to_list (Sys.readdir parent)
+      Array.to_list (Sys.readdir root)
       |> List.filter (fun d ->
         d <> "latest"
-        && Sys.is_directory (Filename.concat parent d)
+        && Sys.is_directory (Filename.concat root d)
         && Sys.file_exists
-             (Filename.concat (Filename.concat parent d) "wodoc-highlight.js"))
+             (Filename.concat (Filename.concat root d) "wodoc-highlight.js"))
     else []
   in
-  let all = "latest" :: List.sort compare (label :: dirs) in
-  List.fold_left (fun acc v -> if List.mem v acc then acc else acc @ [v]) [] all
+  let all = List.sort_uniq compare (extra @ dirs) in
+  let devs, vers = List.partition (fun d -> d = "dev") all in
+  devs @ List.sort (fun a b -> compare_version b a) vers
+
+(* the menu names next to [out] (its siblings), plus the [label] being built *)
+let versions ~out ~label =
+  version_names ~root:(Filename.dirname out) ~extra:[label] ()
+
+(* versions.json at the project root: the single source of truth the page script
+   reads to (re)build the version <select>. Regenerated on every build and every
+   release, so a release only has to rewrite this one file (no page rewriting). *)
+let write_manifest ~root =
+  let names = version_names ~root () in
+  let latest =
+    match latest_target ~root with Some v -> "\"" ^ v ^ "\"" | None -> "null"
+  in
+  let list =
+    "[" ^ String.concat "," (List.map (fun s -> "\"" ^ s ^ "\"") names) ^ "]"
+  in
+  write_file
+    (Filename.concat root "versions.json")
+    (Printf.sprintf "{\"latest\":%s,\"list\":%s}\n" latest list)
 
 (* Fetch the root-absolute assets the built pages reference (/css/…, /img/…, …)
    from the menu URL's site, into the parent of [out], so the result is viewable
@@ -364,9 +441,9 @@ let cs_switch_script (c : Config.t) (sides : Config.cs_side list) =
 
 (* the per-side left column: version selector + switch + on-this-page + the
    shared manual nav + this side's API nav ({{base}}/{{toc}} filled per page). *)
-let cs_leftnav ~versions ~switch ~manual_nav ~api_nav =
+let cs_leftnav ~latest ~versions ~switch ~manual_nav ~api_nav =
   String.concat ""
-    [docversion versions; switch; page_toc; manual_nav; "\n"; api_nav]
+    [docversion ~latest versions; switch; page_toc; manual_nav; "\n"; api_nav]
 
 (* a page's top directory ([<pkg>.<side>…/…]); None for a root manual page *)
 let topdir rel =
@@ -422,6 +499,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title)
   in
   let vs = versions ~out ~label in
+  let latest = latest_target ~root:(Filename.dirname out) in
   (* manual-root: strip the leading <package>/ from output paths, nav links and
      the landing so a single-package project deploys at the version ROOT (like
      eliom's odoc-driver layout). The package's internal links are relative, so
@@ -449,7 +527,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
                  { s with
                    entries =
                      List.map
-                       (fun (e : Config.entry) -> { e with path = strip e.path })
+                       (fun (e : Config.entry) -> {e with path = strip e.path})
                        s.entries })
               c.nav }
   in
@@ -491,12 +569,12 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
         let nav =
           match c.anchor_menu, c.manual_menu with
           | Some f, _ when Sys.file_exists f ->
-              docversion vs ^ page_toc
+              docversion ~latest vs ^ page_toc
               ^ Nav.anchors ~base:"{{base}}" (read_file f)
           | _, Some f when Sys.file_exists f ->
-              docversion vs ^ page_toc
+              docversion ~latest vs ^ page_toc
               ^ Nav.manual ~base:"{{base}}" (read_file f)
-          | _ -> leftnav c vs
+          | _ -> leftnav ~latest c vs
         in
         fun rel ->
           (* output position after manual-root stripping drives base/current *)
@@ -564,7 +642,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
           | Some n -> n
           | None ->
               let n =
-                cs_leftnav ~versions:vs ~switch ~manual_nav
+                cs_leftnav ~latest ~versions:vs ~switch ~manual_nav
                   ~api_nav:(api_of side)
               in
               Hashtbl.add ncache side n; n
@@ -667,6 +745,9 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
          "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>%s documentation</title></head>\n<body><p>Redirecting to the <a href=\"latest/index.html\">%s documentation</a>.</p></body>\n</html>\n"
          (esc c.title) (esc c.title))
   end;
+  (* refresh the version manifest the page script reads (now that this build's
+     dir and any new [latest] symlink are in place) *)
+  write_manifest ~root:(Filename.dirname out);
   if local then local_assets ~menu ~out
 
 (* [release ~site ~from ~version]: the stable-version release procedure. The CI
@@ -683,7 +764,8 @@ let release ~site ~from ~version =
   let dst = Filename.concat site version in
   ignore (Sys.command (Printf.sprintf "rm -rf %s" (Filename.quote dst)));
   if
-    Sys.command (Printf.sprintf "cp -a %s %s" (Filename.quote src) (Filename.quote dst))
+    Sys.command
+      (Printf.sprintf "cp -a %s %s" (Filename.quote src) (Filename.quote dst))
     <> 0
   then (
     Printf.eprintf "wodoc release: copy %s -> %s failed\n" src dst;
@@ -699,4 +781,8 @@ let release ~site ~from ~version =
   then
     write_file idx
       "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body><p>Redirecting to the <a href=\"latest/index.html\">latest documentation</a>.</p></body>\n</html>\n";
-  Printf.eprintf "wodoc release: froze %s -> %s, latest -> %s\n" from version version
+  (* refresh the version manifest so the new version + [latest] target show up in
+     every page's selector — this is the only file a release needs to rewrite. *)
+  write_manifest ~root:site;
+  Printf.eprintf "wodoc release: froze %s -> %s, latest -> %s\n" from version
+    version

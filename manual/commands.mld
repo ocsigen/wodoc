@@ -149,6 +149,21 @@ untouched. Run it on the [gh-pages] checkout at release time, then commit — th
 documented per-project release procedure (no rebuild: a release's docs are
 exactly the [dev] docs at that point).
 
+{2 The version selector}
+
+Each page carries a version [<select>] in its left column. Both [build] and
+[release] (re)write a [versions.json] manifest at the project root — the single
+source of truth listing [dev] first, then the version directories newest-first
+(numeric, so [10.0.0] sorts above [2.0.0]), with the directory the [latest]
+symlink points at recorded under ["latest"]. The page script reads it and
+rebuilds the menu on load, so even an old frozen page lists the current set
+without being rewritten. A release therefore touches only this one file.
+
+The entry that [latest] points at is labelled {e "[<v>] (latest)"} and keeps the
+canonical [/<project>/latest/] URL when chosen; other versions navigate to their
+own numbered URL. The menu is built statically too (as a fallback baked into the
+page), so it still works if the manifest cannot be fetched.
+
 {2 Client/server projects}
 
 A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a
