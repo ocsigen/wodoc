@@ -258,9 +258,19 @@ let () =
           | None -> (
             match c.odoc_driver with
             | Some pkg ->
+                (* [pkg] is a space-separated list of opam packages to document
+                   (e.g. "js_of_ocaml js_of_ocaml-lwt …" for a multi-package
+                   project; one name for a single-package one). odoc_driver
+                   documents them all (+ their deps) and --remaps the rest to
+                   ocaml.org. The FIRST package is the main one: its subtree
+                   holds the manual and is what the site is assembled around. *)
+                let pkgs =
+                  List.filter (fun s -> s <> "") (String.split_on_char ' ' pkg)
+                in
+                let main_pkg = match pkgs with p :: _ -> p | [] -> pkg in
                 (* The installed manual .mld carry {%wodoc:%} markers; rewrite
                    them in place to HTML comments (idempotent) so odoc keeps them
-                   for Assemble's render pass. Best-effort: skip if the package
+                   for Assemble's render pass. Best-effort: skip a package that
                    has no installed odoc-pages. *)
                 (let tmp = Filename.temp_file "wodoc-doc" "" in
                  let doc_root =
@@ -273,20 +283,28 @@ let () =
                    else ""
                  in
                  (try Sys.remove tmp with _ -> ());
-                 let pages =
-                   Filename.concat (Filename.concat doc_root pkg) "odoc-pages"
-                 in
-                 if doc_root <> "" && Sys.file_exists pages
+                 if doc_root <> ""
                  then
-                   Array.iter
-                     (fun e ->
-                        if Filename.check_suffix e ".mld"
-                        then (
-                          let f = Filename.concat pages e in
-                          let out = Wodoc.Preprocess.string (read_file f) in
-                          let oc = open_out_bin f in
-                          output_string oc out; close_out oc))
-                     (Sys.readdir pages));
+                   List.iter
+                     (fun p ->
+                        let pages =
+                          Filename.concat (Filename.concat doc_root p)
+                            "odoc-pages"
+                        in
+                        if Sys.file_exists pages
+                        then
+                          Array.iter
+                            (fun e ->
+                               if Filename.check_suffix e ".mld"
+                               then (
+                                 let f = Filename.concat pages e in
+                                 let out =
+                                   Wodoc.Preprocess.string (read_file f)
+                                 in
+                                 let oc = open_out_bin f in
+                                 output_string oc out; close_out oc))
+                            (Sys.readdir pages))
+                     pkgs);
                 (* Interactive examples (toplevel, demos) are a dune alias, not
                    something odoc_driver produces. When the project ships them
                    (doc_manual), build @doc-manual so its assets land in
@@ -305,13 +323,19 @@ let () =
                 let work = "_wodoc-html" in
                 if
                   Sys.command
-                    (Printf.sprintf "odoc_driver %s --remap --html-dir %s"
-                       (Filename.quote pkg) (Filename.quote work))
+                    (* [pkg] is the space-separated package list, passed as
+                       several args (not quoted as one). *)
+                    (Printf.sprintf "odoc_driver %s --remap --html-dir %s" pkg
+                       (Filename.quote work))
                   <> 0
                 then (
                   prerr_endline "wodoc build: odoc_driver failed";
                   exit 1);
-                Filename.concat work pkg
+                (* Multi-package: each package lands in its own _wodoc-html/<pkg>
+                   subtree, so assemble from the root and let (packages …) pick
+                   the subtrees. Single-package (no (packages …)): everything is
+                   under _wodoc-html/<pkg>, so point straight at it. *)
+                if c.packages <> [] then work else Filename.concat work main_pkg
             | None ->
                 let profile =
                   match c.profile with
