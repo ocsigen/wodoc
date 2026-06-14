@@ -267,11 +267,19 @@ let nav_link ml (e : Config.entry) =
 let rec render_items b ml items =
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
   let ul = ref false in
-  let close () = if !ul then (add "</ul>"; ul := false) in
+  let close () =
+    if !ul
+    then (
+      add "</ul>";
+      ul := false)
+  in
   List.iter
     (function
       | Config.Link e ->
-          if not !ul then (add "<ul class=\"api-section\">"; ul := true);
+          if not !ul
+          then (
+            add "<ul class=\"api-section\">";
+            ul := true);
           Buffer.add_string b (nav_link ml e)
       | Config.Group (h, children) ->
           close ();
@@ -512,7 +520,8 @@ let drop_prefix p str =
    dotted), or a root manual page's own name (matching the config nav / Nav.api). *)
 let cs_current sides rel =
   match topdir rel with
-  | None -> rel (* root manual page: matches manual_nav's data-wodoc-page = path *)
+  | None ->
+      rel (* root manual page: matches manual_nav's data-wodoc-page = path *)
   | Some td ->
       let wrapper =
         match side_for sides td with Some s -> s.wrapper | None -> ""
@@ -554,14 +563,16 @@ let current_of_page orel paths =
   fst
     (List.fold_left
        (fun (best, blen) ep ->
-         let e = strip_index ep in
-         let m =
-           pp = e
-           || (String.length e > 0
+          let e = strip_index ep in
+          let m =
+            pp = e
+            || String.length e > 0
                && e.[String.length e - 1] = '/'
-               && String.starts_with ~prefix:e pp)
-         in
-         if m && String.length e > blen then (ep, String.length e) else (best, blen))
+               && String.starts_with ~prefix:e pp
+          in
+          if m && String.length e > blen
+          then ep, String.length e
+          else best, blen)
        ("", -1) paths)
 
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
@@ -739,8 +750,8 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
      (instead of briefly showing "Redirecting…" text). *)
   let wrote_root_index =
     mld_mode
-    || (c.landing = "index.html"
-        && List.exists (fun rel -> strip rel = "index.html") rels)
+    || c.landing = "index.html"
+       && List.exists (fun rel -> strip rel = "index.html") rels
   in
   if not wrote_root_index
   then
