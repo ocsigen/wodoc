@@ -109,6 +109,13 @@ let emit_tags s =
                 Buffer.add_string out
                   (Printf.sprintf "<span%s>" (attrs_of rest));
                 stack := "</span>" :: !stack
+            | ("section" | "header" | "footer" | "nav" | "article" | "aside")
+              as t ->
+                (* semantic block containers (same family as div): the odoc
+                   paragraph that wraps the marker is normalised away by the
+                   browser when a block element opens inside it. *)
+                Buffer.add_string out (Printf.sprintf "<%s%s>" t (attrs_of rest));
+                stack := (Printf.sprintf "</%s>" t) :: !stack
             | "img" ->
                 Buffer.add_string out
                   (Printf.sprintf "<img%s/>" (attrs_of rest))
