@@ -82,7 +82,9 @@ and `.mli` sources. It provides:
   expands a landing marker (`{%html:<!--wodoc-blog-latest-->%}`, or
   `{%wodoc:blog-latest%}` in preprocessed builds) into a styled "latest posts"
   list (`.wodoc-blog-list`/`-card`/`-title`/`-meta`/`-excerpt`). Generic — no
-  project-specific assumptions; styled from the project's own stylesheet.
+  project-specific assumptions; styled from the project's own stylesheet. A page
+  built through the low-level `wodoc assemble` path (e.g. a separately built site
+  home) can carry the same listing with `--blog-config`/`--blog-base`.
 - `wodoc requalify-xrefs`: post-pass over a co-located multi-project site that
   fixes flat cross-project links to a wrapped library (`Eliom_content` →
   `Eliom/Content`) — `odoc_driver --remap` names the reference by the flat path

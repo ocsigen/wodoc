@@ -63,3 +63,17 @@ A post page carries the site chrome and highlights its own nav entry:
 
   $ grep -c 'class="ml3 current"[^>]*data-wodoc-page="blog/second.html"' _site/dev/blog/second.html
   1
+
+A page built through the low-level `assemble` path (e.g. a site home, not
+`wodoc build`) can still carry the listing: `--blog-config` expands the marker
+with the blog's latest-posts fragment, `--blog-base` giving the relative path
+from this page to the blog root.
+
+  $ cat > home-odoc.html <<'XEOF'
+  > <header class="odoc-preamble"><h1 id="home">Home</h1></header>
+  > <div class="odoc-content"><p><!--wodoc-blog-latest--></p></div>
+  > XEOF
+  $ printf '<html><body>{{preamble}}{{content}}</body></html>' > tmpl.html
+  $ wodoc assemble --template tmpl.html --blog-config doc/wodoc home-odoc.html | grep -o 'wodoc-blog-title" href="[^"]*"'
+  wodoc-blog-title" href="blog/second.html"
+  wodoc-blog-title" href="blog/hello.html"
