@@ -15,6 +15,10 @@ Because wodoc's markers use a custom raw-markup target that stock odoc ignores,
 website} when built with wodoc. There is no fork of odoc and no separate
 dialect to learn.
 
+It can even host an {b ultra-simple blog} on your site — dated [.mld] posts,
+auto-listed in the navigation, with a "latest posts" widget and an Atom feed for
+syndication. See {{!page-"blog"}Adding a blog}.
+
 {1 Manual}
 
 - {{!page-"overview"}How it works} — the pipeline and the one-source/two-outputs trick
@@ -22,6 +26,7 @@ dialect to learn.
 - {{!page-"authoring"}Authoring} — what survives on ocaml.org, what is wodoc-only
 - {{!page-"config"}Configuration} — the [doc/wodoc] file: navigation, layout, versions.json
 - {{!page-"commands"}Commands} — [preprocess], [render], [assemble], [nav], [resolve-refs], [convert]
+- {{!page-"blog"}Adding a blog} — dated [.mld] posts, the navigation list, the feed
 
 {1 API reference}
 
