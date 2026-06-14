@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Module Wodoc.Nav — Wodoc</title>
+  <title>Adding a blog — Wodoc</title>
   <link rel="stylesheet" href="/css/style.css"/>
   <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
-  <script src="../../../highlight.pack.js"></script>
-  <script src="../../../wodoc-highlight.js"></script>
+  <script src="../highlight.pack.js"></script>
+  <script src="../wodoc-highlight.js"></script>
 </head>
 <body class="wodoc-page wodoc-doc">
   <!-- Shared site menu — THE single source of truth for the header, top menu and
@@ -89,24 +89,24 @@
 </div>
 <div class="page-toc">
   <h3>On this page</h3>
-  
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#1.-declare-the-blog">1. Declare the blog</a></li><li><a href="#2.-write-an-article">2. Write an article</a></li><li><a href="#3.-show-the-latest-posts-on-a-page">3. Show the latest posts on a page</a></li><li><a href="#4.-the-generated-navigation">4. The generated navigation</a></li><li><a href="#5.-syndication:-the-atom-feed">5. Syndication: the Atom feed</a></li><li><a href="#turn-key-build-vs.-a-flat-site">Turn-key build vs. a flat site</a></li><li><a href="#styling">Styling</a></li></ul></nav>
 </div>
 <nav class="api-nav manual-nav">
 <h3>Manual</h3>
 <ul class="api-section">
-<li class="ml3 current" data-wodoc-page="wodoc/index.html"><a href="../../../wodoc/index.html">Overview</a></li>
-<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../../../wodoc/overview.html">How it works</a></li>
-<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../../../wodoc/directives.html">Directives</a></li>
-<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../../../wodoc/authoring.html">Authoring</a></li>
-<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../../../wodoc/config.html">Configuration</a></li>
-<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../../../wodoc/commands.html">Commands</a></li>
-<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../../../wodoc/blog.html">Adding a blog</a></li>
+<li class="ml3" data-wodoc-page="wodoc/index.html"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../wodoc/commands.html">Commands</a></li>
+<li class="ml3 current" data-wodoc-page="wodoc/blog.html"><a href="../wodoc/blog.html">Adding a blog</a></li>
 </ul>
 </nav>
 <nav class="api-nav">
 <h3>API</h3>
 <ul class="api-section">
-<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../../../wodoc/api.html">API overview</a></li>
+<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../wodoc/api.html">API overview</a></li>
 </ul>
 </nav>
 </nav>
@@ -127,38 +127,49 @@
 </div>
 <div class="page-toc">
   <h3>On this page</h3>
-  
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#1.-declare-the-blog">1. Declare the blog</a></li><li><a href="#2.-write-an-article">2. Write an article</a></li><li><a href="#3.-show-the-latest-posts-on-a-page">3. Show the latest posts on a page</a></li><li><a href="#4.-the-generated-navigation">4. The generated navigation</a></li><li><a href="#5.-syndication:-the-atom-feed">5. Syndication: the Atom feed</a></li><li><a href="#turn-key-build-vs.-a-flat-site">Turn-key build vs. a flat site</a></li><li><a href="#styling">Styling</a></li></ul></nav>
 </div>
 <nav class="api-nav manual-nav">
 <h3>Manual</h3>
 <ul class="api-section">
-<li class="ml3 current" data-wodoc-page="wodoc/index.html"><a href="../../../wodoc/index.html">Overview</a></li>
-<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../../../wodoc/overview.html">How it works</a></li>
-<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../../../wodoc/directives.html">Directives</a></li>
-<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../../../wodoc/authoring.html">Authoring</a></li>
-<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../../../wodoc/config.html">Configuration</a></li>
-<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../../../wodoc/commands.html">Commands</a></li>
-<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../../../wodoc/blog.html">Adding a blog</a></li>
+<li class="ml3" data-wodoc-page="wodoc/index.html"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../wodoc/commands.html">Commands</a></li>
+<li class="ml3 current" data-wodoc-page="wodoc/blog.html"><a href="../wodoc/blog.html">Adding a blog</a></li>
 </ul>
 </nav>
 <nav class="api-nav">
 <h3>API</h3>
 <ul class="api-section">
-<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../../../wodoc/api.html">API overview</a></li>
+<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../wodoc/api.html">API overview</a></li>
 </ul>
 </nav>
 
       </nav>
       <article class="rightcol">
-        <header class="odoc-preamble"><h1>Module <code><span>Wodoc.Nav</span></code></h1><p>Build a project's API module navigation from a curated odoc index.</p><p>The manual's own left navigation is no longer generated from a wikicréole menu: it is described declaratively in the project's <code>doc/wodoc</code> config (the <code>(nav …)</code> stanza) and rendered by <a href="../Build/index.html"><code>Build</code></a>. This module only renders the API module list, from a curated odoc <code>.indexdoc</code>.</p></header>
-        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-api"><code><span><span class="keyword">val</span> api : 
-  <span><span class="optlabel">?wrapper</span>:string <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="optlabel">?heading</span>:string <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="optlabel">?skip</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="label">base</span>:string <span class="arrow">&#45;&gt;</span></span>
-  <span><span class="label">lib</span>:string <span class="arrow">&#45;&gt;</span></span>
-  <span>string <span class="arrow">&#45;&gt;</span></span>
-  string</span></code></div><div class="spec-doc"><p><code>api ~base ~lib indexdoc</code> renders the API module <code>&lt;nav&gt;</code> from a curated odoc index (<code>{N title}</code> sections + <code>{!modules: …}</code> lists). The OCaml port of <code>gen-nav.py</code>. A module path <code>A.B.C</code> maps to <code>&lt;base&gt;/&lt;lib&gt;/[&lt;wrapper&gt;/]A/B/C/index.html</code>. <code>skip</code> lists section titles to drop (page titles, <code>Index</code>); <code>heading</code> is the <code>&lt;h3&gt;</code> (default <code>&quot;Modules&quot;</code>).</p></div></div></div>
+        <header class="odoc-preamble"><h1 id="adding-a-blog">Adding a blog</h1><p>wodoc can host an <b>ultra-simple blog</b> on a documentation site, with no extra tooling: a blog post is just a plain <code>.mld</code> page, like a manual page. wodoc lists the posts (newest first) in the navigation, can show the latest ones on any page, and generates an Atom feed for syndication. This page walks through setting one up and adding an article.</p></header>
+        <div class="odoc-content"><h2 id="1.-declare-the-blog">1. Declare the blog</h2><p>Add a <code>(blog …)</code> stanza to your <a href="config.html" title="config"><code>doc/wodoc</code></a> config:</p><pre class="language-text"><code>(blog
+ (dir blog/posts)   ; where the post .mld files live (relative to this config)
+ (out posts)        ; output subdirectory under the blog root: /…/posts/&lt;slug&gt;.html
+ (heading &quot;Blog&quot;)   ; the heading of the generated navigation section
+ (latest 5))        ; how many recent posts {%wodoc:blog-latest%} shows</code></pre><p>That is the only configuration the blog needs. See the <a href="config.html" title="config">configuration manual</a> for the full stanza reference.</p><h2 id="2.-write-an-article">2. Write an article</h2><p>A post is a plain <code>.mld</code> file in the <code>(dir …)</code> directory, named <code>YYYY-MM-DD-slug.mld</code>. <b>The date in the file name is the publication date</b> — there is no metadata file to keep in sync, and posts sort newest-first on it automatically. For example, <code>blog/posts/2026-06-14-hello-world.mld</code>:</p><pre class="language-text"><code>{0 Hello, world}
+
+@author Jane Doe
+
+This first paragraph becomes the excerpt shown in the post list and the feed.
+
+{1 A section}
+
+The rest of the article: text, code, images, links — anything odoc supports.</code></pre><ul><li>the <b>title</b> is the page's <code>{0 …}</code> heading;</li><li>the <b>author</b> is odoc's standard <code>@author</code> tag;</li><li>the <b>excerpt</b> (shown in listings and the feed) is the first paragraph.</li></ul><p><b>To add an article, just drop a new dated <code>.mld</code> file in that directory</b> and rebuild — wodoc picks it up, lists it and adds it to the feed. Nothing else to edit.</p><h2 id="3.-show-the-latest-posts-on-a-page">3. Show the latest posts on a page</h2><p>Put the marker <code>{%wodoc:blog-latest%}</code> wherever the recent-posts list should appear — typically the blog's landing page, but also a site home page:</p><pre class="language-text"><code>{0 Our blog}
+
+The latest articles:
+
+{%wodoc:blog-latest%}</code></pre><p>wodoc replaces it with a <code>&lt;ul class=&quot;wodoc-blog-list&quot;&gt;</code> of the most recent posts (title, date, author, excerpt), styled by your theme (see <a href="#styling" title="styling">Styling</a>). On a page built with a stock odoc it is simply dropped, so the source stays portable.</p><h2 id="4.-the-generated-navigation">4. The generated navigation</h2><p>wodoc builds a navigation section (the <code>(heading …)</code> you configured, one entry per post, newest first) and adds it to the left column automatically — you do not list posts by hand.</p><h2 id="5.-syndication:-the-atom-feed">5. Syndication: the Atom feed</h2><p><a href="commands.html" title="commands"><code>wodoc blog-feed</code></a> produces an Atom feed of the posts, ready for aggregators such as the OCaml Planet:</p><pre class="language-text"><code>wodoc blog-feed --config doc/wodoc --base-url https://example.org \
+                --blog-path /blog --feed-path /feed.xml \
+                --title &quot;My Blog&quot; --author &quot;Me&quot; &gt; feed.xml</code></pre><p>A post's link is <code>base-url ^ blog-path ^ &quot;/&quot; ^ &lt;post path&gt;</code>; the feed advertises itself at <code>base-url ^ feed-path</code>.</p><h2 id="turn-key-build-vs.-a-flat-site">Turn-key build vs. a flat site</h2><p>If your project is built with the turn-key <a href="commands.html" title="commands"><code>wodoc build</code></a>, the <code>(blog …)</code> stanza is all you need: <code>wodoc build</code> compiles every post, splices the navigation section and expands <code>{%wodoc:blog-latest%}</code> on the landing — no script.</p><p>If instead your blog is part of a <b>flat site</b> built with the lower-level <a href="commands.html" title="commands"><code>wodoc assemble</code></a> (as the Ocsigen website is), assemble each post page and:</p><ul><li>pass <code>--leftnav</code> the output of <a href="commands.html" title="commands"><code>wodoc blog-nav</code></a> (the post list);</li><li>pass <code>--blog-config</code>/<code>--blog-base</code> to expand a <code>{%wodoc:blog-latest%}</code> marker on a page (e.g. the site home);</li><li>pass <code>--byline &quot;&lt;date&gt; — &lt;author&gt;&quot;</code> to show the post's date and author under its title;</li><li>run <a href="commands.html" title="commands"><code>wodoc blog-feed</code></a> once for the feed.</li></ul><h2 id="styling">Styling</h2><p>wodoc emits only semantic markup; the look lives in your stylesheet. The classes to style are <code>.wodoc-blog-list</code> (the <code>&lt;ul&gt;</code>), <code>.wodoc-blog-card</code> (each <code>&lt;li&gt;</code>), <code>.wodoc-blog-title</code> (the link), <code>.wodoc-blog-meta</code> (the date — author line) and <code>.wodoc-blog-excerpt</code>.</p></div>
       </article>
     </div>
   </div>

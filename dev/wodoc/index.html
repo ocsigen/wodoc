@@ -35,6 +35,7 @@
   <div class="mainmenu">
     <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
     <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
     <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
     <p data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
     <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
@@ -71,7 +72,7 @@
         <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
         <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
         <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
-        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog-archive/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
         <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
         <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
       </ul>
@@ -99,6 +100,7 @@
 <li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../wodoc/authoring.html">Authoring</a></li>
 <li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../wodoc/config.html">Configuration</a></li>
 <li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../wodoc/commands.html">Commands</a></li>
+<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../wodoc/blog.html">Adding a blog</a></li>
 </ul>
 </nav>
 <nav class="api-nav">
@@ -136,6 +138,7 @@
 <li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../wodoc/authoring.html">Authoring</a></li>
 <li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../wodoc/config.html">Configuration</a></li>
 <li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../wodoc/commands.html">Commands</a></li>
+<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../wodoc/blog.html">Adding a blog</a></li>
 </ul>
 </nav>
 <nav class="api-nav">
@@ -147,8 +150,8 @@
 
       </nav>
       <article class="rightcol">
-        <header class="odoc-preamble"><h1 id="wodoc">Wodoc</h1><p><em>wodoc</em> (web + odoc) is an <a href="https://github.com/ocaml/odoc">odoc</a> driver that builds complete, styled <b>websites</b> from <code>.mld</code> and <code>.mli</code> sources — not just API documentation.</p><p>It extends odoc with <b>backward-compatible presentational markers</b> for arbitrary CSS classes, containers and layout, and adds a templating layer to assemble a full site (header, menus, version selector). Any OCaml project can use it — this very website is built by wodoc from its own sources.</p><p>Because wodoc's markers use a custom raw-markup target that stock odoc ignores, <b>the same sources render as plain semantic documentation</b> with a stock odoc (for example on <a href="https://ocaml.org">ocaml.org</a>) and as the <b>full themed website</b> when built with wodoc. There is no fork of odoc and no separate dialect to learn.</p></header>
-        <div class="odoc-content"><h2 id="manual">Manual</h2><ul><li><a href="overview.html" title="overview">How it works</a> — the pipeline and the one-source/two-outputs trick</li><li><a href="directives.html" title="directives">Directives</a> — the <code>{%wodoc:…%}</code> reference (classes, containers, tables)</li><li><a href="authoring.html" title="authoring">Authoring</a> — what survives on ocaml.org, what is wodoc-only</li><li><a href="config.html" title="config">Configuration</a> — the <code>doc/wodoc</code> file: navigation, layout, versions.json</li><li><a href="commands.html" title="commands">Commands</a> — <code>preprocess</code>, <code>render</code>, <code>assemble</code>, <code>nav</code>, <code>resolve-refs</code>, <code>convert</code></li></ul><h2 id="api-reference">API reference</h2><p>wodoc is also an OCaml library: the same passes the <code>wodoc</code> command-line tool chains are exposed as modules. See the <a href="api.html" title="api">API overview</a>, or jump to <a href="Wodoc/Preprocess/index.html"><code>Wodoc.Preprocess</code></a>, <a href="Wodoc/Render/index.html"><code>Wodoc.Render</code></a>, <a href="Wodoc/Assemble/index.html"><code>Wodoc.Assemble</code></a>, <a href="Wodoc/Nav/index.html"><code>Wodoc.Nav</code></a>, <a href="Wodoc/Resolve/index.html"><code>Wodoc.Resolve</code></a> and <a href="Wodoc/Convert/index.html"><code>Wodoc.Convert</code></a>.</p><h2 id="status">Status</h2><p>Early work in progress. wodoc is developed in the <a href="https://github.com/ocsigen/wodoc">ocsigen/wodoc</a> repository and distributed under the MIT license.</p></div>
+        <header class="odoc-preamble"><h1 id="wodoc">Wodoc</h1><p><em>wodoc</em> (web + odoc) is an <a href="https://github.com/ocaml/odoc">odoc</a> driver that builds complete, styled <b>websites</b> from <code>.mld</code> and <code>.mli</code> sources — not just API documentation.</p><p>It extends odoc with <b>backward-compatible presentational markers</b> for arbitrary CSS classes, containers and layout, and adds a templating layer to assemble a full site (header, menus, version selector). Any OCaml project can use it — this very website is built by wodoc from its own sources.</p><p>Because wodoc's markers use a custom raw-markup target that stock odoc ignores, <b>the same sources render as plain semantic documentation</b> with a stock odoc (for example on <a href="https://ocaml.org">ocaml.org</a>) and as the <b>full themed website</b> when built with wodoc. There is no fork of odoc and no separate dialect to learn.</p><p>It can even host an <b>ultra-simple blog</b> on your site — dated <code>.mld</code> posts, auto-listed in the navigation, with a &quot;latest posts&quot; widget and an Atom feed for syndication. See <a href="blog.html" title="blog">Adding a blog</a>.</p></header>
+        <div class="odoc-content"><h2 id="manual">Manual</h2><ul><li><a href="overview.html" title="overview">How it works</a> — the pipeline and the one-source/two-outputs trick</li><li><a href="directives.html" title="directives">Directives</a> — the <code>{%wodoc:…%}</code> reference (classes, containers, tables)</li><li><a href="authoring.html" title="authoring">Authoring</a> — what survives on ocaml.org, what is wodoc-only</li><li><a href="config.html" title="config">Configuration</a> — the <code>doc/wodoc</code> file: navigation, layout, versions.json</li><li><a href="commands.html" title="commands">Commands</a> — <code>preprocess</code>, <code>render</code>, <code>assemble</code>, <code>nav</code>, <code>resolve-refs</code>, <code>convert</code></li><li><a href="blog.html" title="blog">Adding a blog</a> — dated <code>.mld</code> posts, the navigation list, the feed</li></ul><h2 id="api-reference">API reference</h2><p>wodoc is also an OCaml library: the same passes the <code>wodoc</code> command-line tool chains are exposed as modules. See the <a href="api.html" title="api">API overview</a>, or jump to <a href="Wodoc/Preprocess/index.html"><code>Wodoc.Preprocess</code></a>, <a href="Wodoc/Render/index.html"><code>Wodoc.Render</code></a>, <a href="Wodoc/Assemble/index.html"><code>Wodoc.Assemble</code></a>, <a href="Wodoc/Nav/index.html"><code>Wodoc.Nav</code></a>, <a href="Wodoc/Resolve/index.html"><code>Wodoc.Resolve</code></a> and <a href="Wodoc/Convert/index.html"><code>Wodoc.Convert</code></a>.</p><h2 id="status">Status</h2><p>Early work in progress. wodoc is developed in the <a href="https://github.com/ocsigen/wodoc">ocsigen/wodoc</a> repository and distributed under the MIT license.</p></div>
       </article>
     </div>
   </div>
