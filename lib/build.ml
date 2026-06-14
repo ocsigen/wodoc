@@ -782,13 +782,13 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
     | _ -> default_highlight
   in
   write_file (Filename.concat out "wodoc-highlight.js") hl_js;
-  (* manual assets (examples, images): odoc puts them under <dune>/manual/files,
-     a sibling of the _doc/_html tree given as [src] *)
+  (* manual assets (examples, images): `dune build @doc-manual` always writes
+     them to _build/default/manual/files, regardless of whether the API was
+     built by `dune build @doc` (src = _build/default/_doc/_html) or by
+     odoc_driver (src = _wodoc-html/<pkg>), so use that canonical path. *)
   (match c.manual_files with
   | Some pkg ->
-      let files =
-        Filename.concat (Filename.dirname (Filename.dirname src)) "manual/files"
-      in
+      let files = "_build/default/manual/files" in
       if Sys.file_exists files
       then begin
         let dst = Filename.concat out pkg in

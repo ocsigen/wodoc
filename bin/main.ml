@@ -287,6 +287,21 @@ let () =
                           let oc = open_out_bin f in
                           output_string oc out; close_out oc))
                      (Sys.readdir pages));
+                (* Interactive examples (toplevel, demos) are a dune alias, not
+                   something odoc_driver produces. When the project ships them
+                   (doc_manual), build @doc-manual so its assets land in
+                   _build/default/manual/files for Build.run's manual_files copy. *)
+                (if c.doc_manual
+                 then
+                   let profile =
+                     match c.profile with
+                     | Some p -> " --profile " ^ p
+                     | None -> ""
+                   in
+                   if Sys.command ("dune build @doc-manual" ^ profile) <> 0
+                   then (
+                     prerr_endline "wodoc build: dune build @doc-manual failed";
+                     exit 1));
                 let work = "_wodoc-html" in
                 if
                   Sys.command
