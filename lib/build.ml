@@ -768,7 +768,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
      <out>/<blog.out>/<slug>.html. Assembled as a normal (non-side) page, so a
      blog works for any project type. *)
   (match c.blog with
-  | Some b when blog_posts <> [] ->
+  | Some _ when blog_posts <> [] ->
       let tmpl = replace_hole (template c) "pub" c.pub in
       let nav = leftnav ~latest c vs in
       let nav_paths = nav_entry_paths c in
@@ -810,7 +810,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
              | [] ->
                  prerr_endline ("wodoc build: no HTML for blog post " ^ p.src)
              | hf :: _ ->
-                 let orel = b.out ^ "/" ^ p.slug ^ ".html" in
+                 let orel = p.path in
                  let base = base_of orel in
                  let current = current_of_page orel nav_paths in
                  let page =
