@@ -232,6 +232,11 @@ sentinel. The list is a [<ul class="wodoc-blog-list">] of
 [.wodoc-blog-meta] line (date — author) and a [.wodoc-blog-excerpt]. wodoc emits
 only this semantic markup; style it from your theme's stylesheet.
 
+A page built through the low-level {{!page-"commands"}[wodoc assemble]} path
+(rather than [wodoc build]) — typically a separately built site home — can carry
+the same listing with
+[wodoc assemble … --blog-config <this config> --blog-base <path to the blog root>].
+
 {1 The version selector and [versions.json]}
 
 Every page carries a version [<select>] in its left column. Both [wodoc build]
