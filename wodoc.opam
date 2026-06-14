@@ -41,11 +41,13 @@ dev-repo: "git+https://github.com/ocsigen/wodoc.git"
 # needs a fix that makes the driver link each unit only against its actual
 # library dependencies (so sibling cross-references resolve). That fix is not yet
 # upstream, so we pin the odoc family to the fork. The fork is version-locked
-# (each package requires `odoc {= version}` = "dev"), so all four are pinned
-# together — pinning odoc-driver alone would not resolve.
+# (each package requires `odoc {= version}`), so all four are pinned together —
+# pinning odoc-driver alone would not resolve. We pin them AS 3.2.1 (not the
+# fork's internal "dev"): odoc-driver pulls sherlodoc, which constrains odoc to a
+# released version (= 3.2.1), so the pin must carry that version.
 pin-depends: [
-  ["odoc.dev" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
-  ["odoc-parser.dev" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
-  ["odoc-md.dev" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
-  ["odoc-driver.dev" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
+  ["odoc.3.2.1" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
+  ["odoc-parser.3.2.1" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
+  ["odoc-md.3.2.1" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
+  ["odoc-driver.3.2.1" "git+https://github.com/balat/odoc.git#driver-sibling-lib-link-fix"]
 ]
