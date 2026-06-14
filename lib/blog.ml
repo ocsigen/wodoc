@@ -188,7 +188,10 @@ let posts (b : Config.blog) =
           { date
           ; slug
           ; src
-          ; path = b.out ^ "/" ^ slug ^ ".html"
+          ; path =
+              (if b.out = ""
+               then slug ^ ".html"
+               else b.out ^ "/" ^ slug ^ ".html")
           ; title = (if title = "" then slug else title)
           ; author = author s
           ; excerpt = excerpt s after })
