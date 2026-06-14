@@ -12,7 +12,7 @@ type entry =
 type item =
   | Link of entry
   | Group of string * item list
-      (** a sub-heading ([<h4>]) and its nested items, one indent level deeper.
+  (** a sub-heading ([<h4>]) and its nested items, one indent level deeper.
           Lets a manual nav reproduce a multi-level menu (sections, subsections,
           page links) — what the old wikicréole menu expressed with [==]/[===]. *)
 
@@ -69,7 +69,7 @@ type t =
           (deploy dir, multi-library?, wrapper module). Rewrites sibling Ocsigen
           projects' [ocaml.org] xrefs to relative links into their wodoc docs. *)
   ; manual_root : bool
-      (** deploy the package's pages at the version ROOT instead of under a
+    (** deploy the package's pages at the version ROOT instead of under a
           [<package>/] subdirectory: strip the leading [<package>/] segment from
           output paths, the landing and the nav links. Makes a single-package
           [dune build @doc] project (ocsigenserver, i18n) match the layout of
@@ -109,20 +109,23 @@ let rec parse_items items =
 
 let parse_section api = function
   | Sexp.List (Atom heading :: items) ->
-      { heading; api; items = parse_items items }
+      {heading; api; items = parse_items items}
   | _ -> raise (Sexp.Error "bad nav section")
 
 let parse_nav_blocks blocks =
   List.filter_map
     (function
-      | Sexp.List (Atom "section" :: rest) -> Some (parse_section false (List rest))
+      | Sexp.List (Atom "section" :: rest) ->
+          Some (parse_section false (List rest))
       | Sexp.List (Atom "api-section" :: rest) ->
           Some (parse_section true (List rest))
       | _ -> None)
     blocks
 
 let parse_nav stanzas =
-  match Sexp.fields "nav" stanzas with blocks :: _ -> parse_nav_blocks blocks | [] -> []
+  match Sexp.fields "nav" stanzas with
+  | blocks :: _ -> parse_nav_blocks blocks
+  | [] -> []
 
 (* parse a standalone [(nav …)] file (the [--nav <file>] per-version override),
    reusing the same syntax as the [(nav …)] stanza inside a [doc/wodoc] config. *)
