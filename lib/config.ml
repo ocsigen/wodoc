@@ -22,6 +22,25 @@ type section =
     (** [api-section] -> class "api-nav"; else "api-nav manual-nav" *)
   ; items : item list }
 
+type blog =
+  { dir : string
+    (** directory of post sources, named [YYYY-MM-DD-slug.mld] (the date is the
+          publication date; posts sort newest-first on it). Relative to the build
+          cwd. The posts are plain [.mld] (author given by odoc's [@author]). *)
+  ; out : string
+    (** output subdirectory under the version root, e.g. "blog": posts deploy as
+          [<out>/blog/<slug>.html] *)
+  ; heading : string
+    (** the generated left-nav section [<h3>] label, e.g. "Blog" *)
+  ; latest : int
+    (** how many recent posts the [{%wodoc:blog-latest%}] marker expands to on the
+          landing page *)
+  }
+(** an ultra-simple blog: a directory of dated [.mld] posts that wodoc builds like
+    any other page, auto-listing them in a generated left-nav section and exposing
+    the most recent ones to the landing via the [{%wodoc:blog-latest%}] marker.
+    Generic (no project hardcoding); [None] when the project declares no [(blog …)]. *)
+
 type cs_side =
   { side : string
     (** key, e.g. "server" — body class [wodoc-server], switch id *)
@@ -89,6 +108,7 @@ type t =
   ; static_copy : (string * string) list
     (** verbatim copies into the output: (source path, dest under <out>) — e.g.
           a frozen API snapshot, or a manual image *)
+  ; blog : blog option  (** an optional [(blog …)] section (see {!type:blog}) *)
   }
 
 let parse_entry = function
@@ -177,6 +197,24 @@ let parse_hosted stanzas =
         block
   | [] -> []
 
+(* (blog (dir <d>) [(out <o>)] [(heading <h>)] [(latest <n>)]) — at most one *)
+let parse_blog stanzas =
+  match Sexp.fields "blog" stanzas with
+  | fields :: _ ->
+      let latest =
+        match
+          int_of_string_opt (Sexp.field_atom_default "latest" "5" fields)
+        with
+        | Some n -> n
+        | None -> 5
+      in
+      Some
+        { dir = Sexp.field_atom_default "dir" "blog" fields
+        ; out = Sexp.field_atom_default "out" "blog" fields
+        ; heading = Sexp.field_atom_default "heading" "Blog" fields
+        ; latest }
+  | [] -> None
+
 (* (static-copy <src> <dest>) ...  — repeatable *)
 let parse_static_copy stanzas =
   List.filter_map
@@ -219,4 +257,5 @@ let of_string s =
   ; flat =
       Sexp.field_atom "flat" stanzas = Some "true"
       || Sexp.fields "flat" stanzas <> []
-  ; static_copy = parse_static_copy stanzas }
+  ; static_copy = parse_static_copy stanzas
+  ; blog = parse_blog stanzas }
