@@ -246,12 +246,16 @@ let nav_href path =
   then path
   else "{{base}}/" ^ path
 
-(* a single config-driven nav entry as an <li> at indent level [ml] *)
+(* a single config-driven nav entry as an <li> at indent level [ml]. The
+   data-wodoc-page key is the entry's own (local) path, so it is UNIQUE per entry:
+   the page picks the single longest-prefix match (see [current_of_page]) rather
+   than every entry that shares a hand-written id. Cross-project / absolute links
+   get no key (they are never "current"). *)
 let nav_link ml (e : Config.entry) =
   let dwp =
-    if e.current = ""
+    if (String.length e.path > 0 && e.path.[0] = '/') || is_url e.path
     then ""
-    else Printf.sprintf " data-wodoc-page=\"%s\"" e.current
+    else Printf.sprintf " data-wodoc-page=\"%s\"" e.path
   in
   Printf.sprintf "<li class=\"ml%d\"%s><a href=\"%s\">%s</a></li>\n" ml dwp
     (nav_href e.path) (esc e.label)
@@ -508,7 +512,7 @@ let drop_prefix p str =
    dotted), or a root manual page's own name (matching the config nav / Nav.api). *)
 let cs_current sides rel =
   match topdir rel with
-  | None -> Filename.remove_extension rel
+  | None -> rel (* root manual page: matches manual_nav's data-wodoc-page = path *)
   | Some td ->
       let wrapper =
         match side_for sides td with Some s -> s.wrapper | None -> ""
@@ -523,6 +527,42 @@ let cs_current sides rel =
         else rest
       in
       String.map (fun c -> if c = '/' then '.' else c) rest
+
+(* the local (relative) entry paths declared in the config nav — the candidates
+   for the "current" highlight (cross-project / absolute entries are excluded). *)
+let nav_entry_paths (c : Config.t) =
+  let local p = not ((String.length p > 0 && p.[0] = '/') || is_url p) in
+  let rec items acc = function
+    | [] -> acc
+    | Config.Link e :: t ->
+        items (if local e.path then e.path :: acc else acc) t
+    | Config.Group (_, sub) :: t -> items (items acc sub) t
+  in
+  List.fold_left (fun acc (s : Config.section) -> items acc s.items) [] c.nav
+
+(* drop a trailing "index.html" so a directory page compares as its directory *)
+let strip_index p =
+  if Filename.check_suffix p "index.html"
+  then Filename.chop_suffix p "index.html"
+  else p
+
+(* the data-wodoc-page key to highlight for the page deployed at [orel]: the nav
+   entry whose path is the longest prefix of — or an exact match for — the page.
+   Computed statically so exactly ONE left-nav entry is marked. "" if none. *)
+let current_of_page orel paths =
+  let pp = strip_index orel in
+  fst
+    (List.fold_left
+       (fun (best, blen) ep ->
+         let e = strip_index ep in
+         let m =
+           pp = e
+           || (String.length e > 0
+               && e.[String.length e - 1] = '/'
+               && String.starts_with ~prefix:e pp)
+         in
+         if m && String.length e > blen then (ep, String.length e) else (best, blen))
+       ("", -1) paths)
 
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
@@ -603,17 +643,15 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
         (* left nav: version selector + on-this-page + the config-declared
            [(nav …)] sections. *)
         let nav = leftnav ~latest c vs in
+        let nav_paths = nav_entry_paths c in
         fun rel ->
           (* output position after manual-root stripping drives base/current *)
           let orel = strip rel in
           let base = base_of orel in
-          (* current nav id: an API page's top package dir, or a root manual
-             page's own name (so the matching left-nav entry is highlighted) *)
-          let current =
-            match String.index_opt orel '/' with
-            | Some i -> String.sub orel 0 i
-            | None -> Filename.remove_extension orel
-          in
+          (* the single left-nav entry to highlight: the longest-prefix match for
+             this page among the config nav entries (so an "Overview" and a module
+             page in the same package no longer light up together) *)
+          let current = current_of_page orel nav_paths in
           let page =
             Assemble.page ~flat:c.flat ~base ~menu:menu_html ~subproject
               ~menu_current:c.menu_current ~leftnav:nav ~template:tmpl ~current
