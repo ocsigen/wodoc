@@ -6,7 +6,7 @@ let read_file f =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>] <odoc.html>\n\      wrap rendered odoc HTML in a site template\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>]\n\                 [--blog-config <c>] [--blog-base <b>] <odoc.html>\n\      wrap rendered odoc HTML in a site template (--blog-config expands a\n\      {%wodoc:blog-latest%} marker with that blog's latest-posts fragment)\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc blog-nav --config <doc/wodoc> [--base <b>]\n\      the blog's left-nav block (for assemble --leftnav)\n\  wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]\n\                  [--feed-path /feed.xml] [--title <t>] [--author <a>]\n\      an Atom feed of the blog posts (syndication, e.g. OCaml Planet)\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -18,6 +18,19 @@ let parse_args args =
     | [] -> flags, List.rev pos
   in
   go [] [] args
+
+(* Resolve a blog's [(dir …)] relative to the config file (like dune paths),
+   so it is found regardless of the build script's cwd (e.g. the vitrine builds
+   the site home from doc/vitrine but reads the blog declared in doc/blog). *)
+let resolve_blog cfg (c : Wodoc.Config.t) =
+  match c.blog with
+  | Some b when Filename.is_relative b.dir ->
+      { c with
+        blog = Some {b with dir = Filename.concat (Filename.dirname cfg) b.dir}
+      }
+  | _ -> c
+
+let config_of cfg = resolve_blog cfg (Wodoc.Config.of_string (read_file cfg))
 
 let () =
   match Array.to_list Sys.argv with
@@ -75,10 +88,33 @@ let () =
             | None -> ""
           in
           let template = read_file tmpl in
-          print_string
-            (Wodoc.Assemble.page ~preamble ~flat
-               ~strip_anchors:(not keep_anchors) ~base ~menu ~subproject
-               ~menu_current ~leftnav ~template ~current (read_file file))
+          let page =
+            Wodoc.Assemble.page ~preamble ~flat
+              ~strip_anchors:(not keep_anchors) ~base ~menu ~subproject
+              ~menu_current ~leftnav ~template ~current (read_file file)
+          in
+          (* --blog-config <doc/blog wodoc>: expand a {%wodoc:blog-latest%} marker
+             on this page with the latest-posts fragment of that blog (so a page
+             built via the low-level assemble path — e.g. a site home — can carry
+             the listing, like `wodoc build` does for the turn-key path).
+             --blog-base is the relative path from this page to the blog root. *)
+          let page =
+            match List.assoc_opt "blog-config" flags with
+            | None -> page
+            | Some cf -> (
+              match (config_of cf).blog with
+              | None -> page
+              | Some b ->
+                  let bbase =
+                    Option.value ~default:"" (List.assoc_opt "blog-base" flags)
+                  in
+                  Wodoc.Blog.expand
+                    ~fragment:
+                      (Wodoc.Blog.latest_fragment ~base:bbase b
+                         (Wodoc.Blog.posts b))
+                    page)
+          in
+          print_string page
       | _ -> usage ())
   | _ :: "nav" :: args -> (
       let flags, _ = parse_args args in
@@ -171,19 +207,19 @@ let () =
         match List.assoc_opt k flags with Some v -> v | None -> usage ()
       in
       let cfg = req "config" in
-      let c = Wodoc.Config.of_string (read_file cfg) in
+      let c = config_of cfg in
       (* per-version overrides: a manual-only project with one config but several
          version directories (e.g. tuto's tutos/<v>/manual, distinct per version)
          passes --mld-dir, and --nav for that version's left navigation (a file in
          the same [(nav …)] syntax as the config stanza), instead of hardcoding. *)
       let c =
         match List.assoc_opt "mld-dir" flags with
-        | Some d -> { c with mld_dir = Some d }
+        | Some d -> {c with mld_dir = Some d}
         | None -> c
       in
       let c =
         match List.assoc_opt "nav" flags with
-        | Some f -> { c with nav = Wodoc.Config.nav_of_string (read_file f) }
+        | Some f -> {c with nav = Wodoc.Config.nav_of_string (read_file f)}
         | None -> c
       in
       let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in
@@ -366,7 +402,9 @@ let () =
              then
                match String.index_opt v '=' with
                | Some i ->
-                   Some (String.sub v 0 i, String.sub v (i + 1) (String.length v - i - 1))
+                   Some
+                     ( String.sub v 0 i
+                     , String.sub v (i + 1) (String.length v - i - 1) )
                | None -> None
              else None)
           flags
@@ -375,8 +413,10 @@ let () =
         Array.iter
           (fun e ->
              let p = Filename.concat dir e in
-             if (try Sys.is_directory p with _ -> false) then walk f p
-             else if Filename.check_suffix p ".html" then f p)
+             if try Sys.is_directory p with _ -> false
+             then walk f p
+             else if Filename.check_suffix p ".html"
+             then f p)
           (try Sys.readdir dir with _ -> [||])
       in
       let count = ref 0 in
@@ -384,12 +424,19 @@ let () =
         (fun p ->
            let dir = Filename.dirname p in
            let exists href =
-             let href = match String.index_opt href '#' with
-               | Some i -> String.sub href 0 i | None -> href in
-             if href = "" then false
+             let href =
+               match String.index_opt href '#' with
+               | Some i -> String.sub href 0 i
+               | None -> href
+             in
+             if href = ""
+             then false
              else
                let tgt =
-                 if href.[0] = '/' then Filename.concat site (String.sub href 1 (String.length href - 1))
+                 if href.[0] = '/'
+                 then
+                   Filename.concat site
+                     (String.sub href 1 (String.length href - 1))
                  else Filename.concat dir href
                in
                Sys.file_exists tgt
@@ -398,10 +445,10 @@ let () =
            in
            let s = read_file p in
            let out = Wodoc.Resolve.requalify ~wrapped ~exists s in
-           if out <> s then (
+           if out <> s
+           then (
              let oc = open_out_bin p in
-             output_string oc out; close_out oc;
-             incr count))
+             output_string oc out; close_out oc; incr count))
         site;
       Printf.eprintf "wodoc requalify-xrefs: rewrote %d files\n" !count
   | _ :: "release" :: args ->
@@ -411,4 +458,41 @@ let () =
       in
       let from = Option.value ~default:"dev" (List.assoc_opt "from" flags) in
       Wodoc.Build.release ~site:(req "site") ~from ~version:(req "version")
+  | _ :: "blog-nav" :: args -> (
+      (* the blog's left-nav block, for the low-level assemble path (--leftnav) *)
+      let flags, _ = parse_args args in
+      match List.assoc_opt "config" flags with
+      | None -> usage ()
+      | Some cfg -> (
+        match (config_of cfg).blog with
+        | None -> ()
+        | Some b ->
+            let base = Option.value ~default:"" (List.assoc_opt "base" flags) in
+            print_string (Wodoc.Blog.nav_html ~base b (Wodoc.Blog.posts b))))
+  | _ :: "blog-feed" :: args -> (
+      (* an Atom feed of the blog posts (syndication, e.g. OCaml Planet) *)
+      let flags, _ = parse_args args in
+      let req k =
+        match List.assoc_opt k flags with Some v -> v | None -> usage ()
+      in
+      let cfg = req "config" in
+      match (config_of cfg).blog with
+      | None -> ()
+      | Some b ->
+          let base_url = req "base-url" in
+          let blog_path =
+            Option.value ~default:"" (List.assoc_opt "blog-path" flags)
+          in
+          let feed_path =
+            Option.value ~default:"/feed.xml" (List.assoc_opt "feed-path" flags)
+          in
+          let title =
+            Option.value ~default:"Blog" (List.assoc_opt "title" flags)
+          in
+          let author =
+            Option.value ~default:"" (List.assoc_opt "author" flags)
+          in
+          print_string
+            (Wodoc.Blog.feed ~base_url ~blog_path ~feed_path ~title ~author
+               (Wodoc.Blog.posts b)))
   | _ -> usage ()

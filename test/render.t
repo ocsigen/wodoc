@@ -60,3 +60,14 @@ skipped as a whole, so index 2 reaches the real second row:
   
   <table><tr><td><table><tr><td>x</td></tr></table></td></tr><tr class="out"><td>real2</td></tr></table>
 
+
+
+The blog-latest directive is a widget, not presentational markup: render passes
+it through as a stable hyphen-form sentinel (which this scanner, keyed on the
+colon form, then ignores), for the build layer to substitute with the post list:
+
+  $ cat > blog.html <<'XEOF'
+  > <p><!--wodoc:blog-latest--></p>
+  > XEOF
+  $ wodoc render blog.html
+  <p><!--wodoc-blog-latest--></p>

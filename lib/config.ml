@@ -12,7 +12,7 @@ type entry =
 type item =
   | Link of entry
   | Group of string * item list
-      (** a sub-heading ([<h4>]) and its nested items, one indent level deeper.
+  (** a sub-heading ([<h4>]) and its nested items, one indent level deeper.
           Lets a manual nav reproduce a multi-level menu (sections, subsections,
           page links) — what the old wikicréole menu expressed with [==]/[===]. *)
 
@@ -21,6 +21,25 @@ type section =
   ; api : bool
     (** [api-section] -> class "api-nav"; else "api-nav manual-nav" *)
   ; items : item list }
+
+type blog =
+  { dir : string
+    (** directory of post sources, named [YYYY-MM-DD-slug.mld] (the date is the
+          publication date; posts sort newest-first on it). Relative to the config
+          file's directory. The posts are plain [.mld] (author from [@author]). *)
+  ; out : string
+    (** output subdirectory under the version root, e.g. "blog": posts deploy as
+          [<out>/blog/<slug>.html] *)
+  ; heading : string
+    (** the generated left-nav section [<h3>] label, e.g. "Blog" *)
+  ; latest : int
+    (** how many recent posts the [{%wodoc:blog-latest%}] marker expands to on the
+          landing page *)
+  }
+(** an ultra-simple blog: a directory of dated [.mld] posts that wodoc builds like
+    any other page, auto-listing them in a generated left-nav section and exposing
+    the most recent ones to the landing via the [{%wodoc:blog-latest%}] marker.
+    Generic (no project hardcoding); [None] when the project declares no [(blog …)]. *)
 
 type cs_side =
   { side : string
@@ -69,7 +88,7 @@ type t =
           (deploy dir, multi-library?, wrapper module). Rewrites sibling Ocsigen
           projects' [ocaml.org] xrefs to relative links into their wodoc docs. *)
   ; manual_root : bool
-      (** deploy the package's pages at the version ROOT instead of under a
+    (** deploy the package's pages at the version ROOT instead of under a
           [<package>/] subdirectory: strip the leading [<package>/] segment from
           output paths, the landing and the nav links. Makes a single-package
           [dune build @doc] project (ocsigenserver, i18n) match the layout of
@@ -89,6 +108,7 @@ type t =
   ; static_copy : (string * string) list
     (** verbatim copies into the output: (source path, dest under <out>) — e.g.
           a frozen API snapshot, or a manual image *)
+  ; blog : blog option  (** an optional [(blog …)] section (see {!type:blog}) *)
   }
 
 let parse_entry = function
@@ -109,20 +129,23 @@ let rec parse_items items =
 
 let parse_section api = function
   | Sexp.List (Atom heading :: items) ->
-      { heading; api; items = parse_items items }
+      {heading; api; items = parse_items items}
   | _ -> raise (Sexp.Error "bad nav section")
 
 let parse_nav_blocks blocks =
   List.filter_map
     (function
-      | Sexp.List (Atom "section" :: rest) -> Some (parse_section false (List rest))
+      | Sexp.List (Atom "section" :: rest) ->
+          Some (parse_section false (List rest))
       | Sexp.List (Atom "api-section" :: rest) ->
           Some (parse_section true (List rest))
       | _ -> None)
     blocks
 
 let parse_nav stanzas =
-  match Sexp.fields "nav" stanzas with blocks :: _ -> parse_nav_blocks blocks | [] -> []
+  match Sexp.fields "nav" stanzas with
+  | blocks :: _ -> parse_nav_blocks blocks
+  | [] -> []
 
 (* parse a standalone [(nav …)] file (the [--nav <file>] per-version override),
    reusing the same syntax as the [(nav …)] stanza inside a [doc/wodoc] config. *)
@@ -174,6 +197,24 @@ let parse_hosted stanzas =
         block
   | [] -> []
 
+(* (blog (dir <d>) [(out <o>)] [(heading <h>)] [(latest <n>)]) — at most one *)
+let parse_blog stanzas =
+  match Sexp.fields "blog" stanzas with
+  | fields :: _ ->
+      let latest =
+        match
+          int_of_string_opt (Sexp.field_atom_default "latest" "5" fields)
+        with
+        | Some n -> n
+        | None -> 5
+      in
+      Some
+        { dir = Sexp.field_atom_default "dir" "blog" fields
+        ; out = Sexp.field_atom_default "out" "blog" fields
+        ; heading = Sexp.field_atom_default "heading" "Blog" fields
+        ; latest }
+  | [] -> None
+
 (* (static-copy <src> <dest>) ...  — repeatable *)
 let parse_static_copy stanzas =
   List.filter_map
@@ -216,4 +257,5 @@ let of_string s =
   ; flat =
       Sexp.field_atom "flat" stanzas = Some "true"
       || Sexp.fields "flat" stanzas <> []
-  ; static_copy = parse_static_copy stanzas }
+  ; static_copy = parse_static_copy stanzas
+  ; blog = parse_blog stanzas }

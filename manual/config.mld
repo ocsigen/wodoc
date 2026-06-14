@@ -180,6 +180,66 @@ comes from this config's [(section …)] blocks, exactly like a normal project.
 List the sibling Ocsigen projects in [(hosted …)] so their cross-references
 resolve.
 
+{1 An ultra-simple blog — [(blog …)]}
+
+A wodoc site can carry a blog with no extra tooling: a blog post is just a [.mld]
+page. Point [(blog …)] at a directory of posts and wodoc builds each like any
+other page, auto-lists them in a generated left-nav section (newest first) and
+expands a marker on the landing into a styled "latest posts" list.
+
+{@text[
+(blog
+ (dir doc/blog)     ; directory of post sources (default "blog")
+ (out blog)         ; output subdirectory under the version root (default "blog")
+ (heading "Blog")   ; the generated left-nav section heading (default "Blog")
+ (latest 5))        ; how many recent posts {%wodoc:blog-latest%} shows (default 5)
+]}
+
+{2 Writing a post}
+
+A post is a plain [.mld] in [(dir …)], named [YYYY-MM-DD-slug.mld]:
+
+{@text[
+doc/blog/2026-06-14-hello-world.mld
+]}
+
+- the {b publication date} is the file-name prefix — no metadata file, and posts
+  sort newest-first on it automatically;
+- the {b title} is the post's [{0 …}] / [{1 …}] heading;
+- the {b author} is odoc's native [@author] tag (so it also shows on ocaml.org).
+  odoc warns {e "Tags are not allowed in pages"} for [@author] in a [.mld] page,
+  but still renders it; the warning is harmless;
+- the {b excerpt} shown in listings is the first body paragraph (markup stripped).
+
+Posts deploy at [<out>/<slug>.html] and get the full site chrome, the shared
+menu and the blog-augmented left navigation, like every other page.
+
+{2 Latest posts on the landing}
+
+Place a marker where the recent-posts list should appear (typically the landing
+[index.mld]):
+
+{@text[
+{%html:<!--wodoc-blog-latest-->%}
+]}
+
+This [{%html:…%}] form is honoured by stock odoc as an invisible HTML comment
+(so it is harmless on ocaml.org) and substituted by wodoc with the list. In a
+{e preprocessed} build (a [(mld-dir …)] or [(odoc-driver …)] project) you may
+instead write the friendlier [{%wodoc:blog-latest%}]; both reach the same
+sentinel. The list is a [<ul class="wodoc-blog-list">] of
+[<li class="wodoc-blog-card">], each with a [.wodoc-blog-title] link, a
+[.wodoc-blog-meta] line (date — author) and a [.wodoc-blog-excerpt]. wodoc emits
+only this semantic markup; style it from your theme's stylesheet.
+
+A page built through the low-level {{!page-"commands"}[wodoc assemble]} path
+(rather than [wodoc build]) — typically a separately built site home — can carry
+the same listing with
+[wodoc assemble … --blog-config <this config> --blog-base <path to the blog root>].
+For such a build, {{!page-"commands"}[wodoc blog-nav]} prints the left-nav block
+and {{!page-"commands"}[wodoc blog-feed]} prints an Atom feed of the posts (for
+syndication, e.g. OCaml Planet).
+
 {1 The version selector and [versions.json]}
 
 Every page carries a version [<select>] in its left column. Both [wodoc build]

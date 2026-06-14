@@ -29,7 +29,8 @@ images, and the [<p>]-hoisting that makes block containers possible. See
 {@text[
 wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
                [--keep-anchors] [--base <b>] [--menu <f>] [--subproject <s>]
-               [--menu-current <id>] [--leftnav <f>] <odoc.html>
+               [--menu-current <id>] [--leftnav <f>]
+               [--blog-config <c>] [--blog-base <b>] <odoc.html>
 ]}
 
 Wrap rendered odoc HTML in a site template, filling the [{{title}}],
@@ -42,7 +43,12 @@ a [{{menu}}] hole with that fragment, [--subproject <s>] its [{{subproject}}]
 label, [--menu-current <id>] highlights the current project in it (scoped to the
 menu), and [--leftnav <f>] fills every [{{leftnav}}] hole (left column and mobile
 drawer) from one source. [--base <b>] fills [{{base}}] (the relative path to the
-doc root). See {!Wodoc.Assemble}.
+doc root). [--blog-config <c>] expands a [{%wodoc:blog-latest%}] marker on the
+page with the latest-posts fragment of the blog declared in config [<c>] (so a
+page built through this low-level path — e.g. a site home — can carry the blog
+listing, like [wodoc build] does for the turn-key path), [--blog-base <b>] giving
+the relative path from the page to the blog root. See {!Wodoc.Assemble} and
+{{!page-"config"}the [(blog …)] stanza}.
 
 {1 [wodoc nav]}
 
@@ -254,6 +260,27 @@ plain-OCaml default built into wodoc, or — for a project whose code blocks use
 extra syntax (a ppx, a client/server split) — the file given by [(highlight …)]
 in the config. So a project without special syntax ships no JavaScript at all.
 See {!Wodoc.Build}.
+
+{1 [wodoc blog-nav] and [wodoc blog-feed]}
+
+{@text[
+wodoc blog-nav  --config <doc/wodoc> [--base <b>]
+wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]
+                [--feed-path /feed.xml] [--title <t>] [--author <a>]
+]}
+
+Helpers for a blog (the [(blog …)] stanza, see {{!page-"config"}config}) built
+through the low-level path rather than [wodoc build]. [blog-nav] prints the
+blog's left-nav block (one entry per post, newest first) to feed
+[assemble --leftnav]; [--base] is the page's relative path to the blog root.
+
+[blog-feed] prints an {b Atom feed} of the posts, for syndication (e.g. OCaml
+Planet). A post's URL is [base-url ^ blog-path ^ "/" ^ <post path>] (so
+[--base-url https://ocsigen.org --blog-path /blog] yields
+[https://ocsigen.org/blog/…]); the feed advertises itself at
+[base-url ^ feed-path] (default [/feed.xml]). Entry bodies are the post excerpt;
+the feed [updated] is the newest post's date (stable across rebuilds). Both read
+post metadata via {!Wodoc.Blog}.
 
 {1 Putting it together}
 

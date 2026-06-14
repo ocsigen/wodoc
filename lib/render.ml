@@ -115,6 +115,11 @@ let emit_tags s =
             | "@" ->
                 Buffer.add_string out
                   (Printf.sprintf "<!--wodoc-attr:%s-->" rest)
+            | "blog-latest" ->
+                (* a blog widget, not a presentational element: pass it through as
+                   a stable hyphen-form sentinel (this very scanner ignores it,
+                   keyed on [<!--wodoc:]) for the build layer to substitute. *)
+                Buffer.add_string out "<!--wodoc-blog-latest-->"
             | "" -> ()
             | other ->
                 Buffer.add_string out

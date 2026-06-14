@@ -204,9 +204,12 @@ wodoc render [--strip-anchors] <odoc.html>
 
 wodoc assemble --template <tmpl.html> [--current <id>] [--base <b>] [--menu <f>]
                [--subproject <s>] [--menu-current <id>] [--leftnav <f>]
-               [--no-preamble] [--flat] [--keep-anchors] <odoc.html>
+               [--no-preamble] [--flat] [--keep-anchors]
+               [--blog-config <c>] [--blog-base <b>] <odoc.html>
     wrap rendered odoc HTML in a site template (fills {{title}}/{{preamble}}/
-    {{toc}}/{{content}}/{{menu}}/{{leftnav}} and marks the current entry)
+    {{toc}}/{{content}}/{{menu}}/{{leftnav}} and marks the current entry;
+    --blog-config expands a {%wodoc:blog-latest%} marker with that blog's
+    latest-posts fragment)
 
 wodoc nav  --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--skip-title <t>]..
     render an API module navigation fragment from a curated odoc index (used by
@@ -223,6 +226,13 @@ wodoc convert <file.wiki>
     (headings, lists, links, code blocks, {%wodoc:%} for classes/containers,
     odoc references from <<a_api>>/<<a_manual>>); the output is meant to be
     reviewed by hand
+
+wodoc blog-nav  --config <doc/wodoc> [--base <b>]
+    the blog's left-nav block (one entry per post, newest first), for the
+    low-level assemble --leftnav path
+wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]
+                [--feed-path /feed.xml] [--title <t>] [--author <a>]
+    an Atom feed of the blog posts, for syndication (e.g. OCaml Planet)
 ```
 
 A turn-key build is a single `wodoc build` per version, configured by a
@@ -230,6 +240,21 @@ A turn-key build is a single `wodoc build` per version, configured by a
 assemble` per page (plus `nav`/`resolve-refs` for the navigation and
 cross-package links), using `convert` once up front to bring a legacy wiki manual
 over to `.mld`.
+
+## Blog
+
+wodoc can carry an **ultra-simple blog** with no extra tooling: a post is a plain
+`.mld` named `YYYY-MM-DD-slug.mld` (the date prefix is the publication date, so
+posts sort newest-first with no metadata file; the author is odoc's `@author`,
+the title the page heading, the excerpt the first paragraph). Declare it with a
+`(blog (dir …) (out …) (heading …) (latest …))` stanza in `doc/wodoc`:
+`wodoc build` then builds each post like any page, auto-lists them in a generated
+left-nav section, and expands a `{%wodoc:blog-latest%}` marker on the landing
+into a styled "latest posts" list (`.wodoc-blog-*` classes, styled by your
+theme). A site that builds its home through the low-level `assemble` path can
+carry the same listing with `--blog-config`/`--blog-base`, its full left-nav
+block with `wodoc blog-nav`, and an Atom feed (for OCaml Planet and the like)
+with `wodoc blog-feed`. See the [Configuration](manual/config.mld) manual.
 
 ## Status
 
