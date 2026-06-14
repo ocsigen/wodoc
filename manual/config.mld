@@ -236,6 +236,9 @@ A page built through the low-level {{!page-"commands"}[wodoc assemble]} path
 (rather than [wodoc build]) — typically a separately built site home — can carry
 the same listing with
 [wodoc assemble … --blog-config <this config> --blog-base <path to the blog root>].
+For such a build, {{!page-"commands"}[wodoc blog-nav]} prints the left-nav block
+and {{!page-"commands"}[wodoc blog-feed]} prints an Atom feed of the posts (for
+syndication, e.g. OCaml Planet).
 
 {1 The version selector and [versions.json]}
 

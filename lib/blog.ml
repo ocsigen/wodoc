@@ -212,6 +212,79 @@ let nav_section (b : Config.blog) (posts : post list) : Config.section =
 
 let esc = Resolve.html_escape
 
+(* the blog's left-nav block, rendered exactly like {!Build.manual_nav} renders a
+   manual [(section …)] (a [<nav class="api-nav manual-nav">] with an [<h3>] and
+   one [ml3] [<li>] per entry), so the shared CSS styles it identically. Used by
+   the [wodoc blog-nav] command to feed the low-level [assemble --leftnav] path
+   (the turn-key [wodoc build] path splices {!nav_section} instead). [base] is the
+   per-page relative path to the blog root. *)
+let nav_html ~base (b : Config.blog) (posts : post list) =
+  let buf = Buffer.create 512 in
+  let add s = Buffer.add_string buf s; Buffer.add_char buf '\n' in
+  add "<nav class=\"api-nav manual-nav\">";
+  add (Printf.sprintf "<h3>%s</h3>" (esc b.heading));
+  add "<ul class=\"api-section\">";
+  List.iter
+    (fun p ->
+       let href = (if base = "" then "" else base ^ "/") ^ p.path in
+       add
+         (Printf.sprintf
+            "<li class=\"ml3\" data-wodoc-page=\"%s\"><a href=\"%s\">%s</a></li>"
+            (esc p.path) (esc href)
+            (esc (p.date ^ " — " ^ p.title))))
+    posts;
+  add "</ul>";
+  add "</nav>";
+  Buffer.contents buf
+
+(* an Atom feed of the posts (newest first), for syndication (e.g. OCaml Planet).
+   [base_url] is the site origin (e.g. "https://ocsigen.org"); a post's URL is
+   [base_url ^ blog_path ^ "/" ^ post.path] (blog_path = the blog root from the
+   origin, e.g. "/blog"); the feed advertises itself at [base_url ^ feed_path].
+   Entry bodies are the post excerpt as an HTML [<summary>]. [updated] is taken
+   from the newest post's date (so the feed is stable across rebuilds). *)
+let feed ~base_url ~blog_path ~feed_path ~title ~author (posts : post list) =
+  let rfc3339 date = date ^ "T00:00:00+00:00" in
+  let post_url p = base_url ^ blog_path ^ "/" ^ p.path in
+  let updated =
+    match posts with
+    | p :: _ -> rfc3339 p.date
+    | [] -> "1970-01-01T00:00:00+00:00"
+  in
+  let buf = Buffer.create 1024 in
+  let add s = Buffer.add_string buf s; Buffer.add_char buf '\n' in
+  add {|<?xml version="1.0" encoding="utf-8"?>|};
+  add {|<feed xmlns="http://www.w3.org/2005/Atom">|};
+  add (Printf.sprintf "  <title>%s</title>" (esc title));
+  add
+    (Printf.sprintf "  <link href=\"%s%s\" rel=\"self\" />" (esc base_url)
+       (esc feed_path));
+  add (Printf.sprintf "  <link href=\"%s\" />" (esc base_url));
+  add (Printf.sprintf "  <updated>%s</updated>" updated);
+  add (Printf.sprintf "  <id>%s/</id>" (esc base_url));
+  add (Printf.sprintf "  <author><name>%s</name></author>" (esc author));
+  List.iter
+    (fun p ->
+       let url = post_url p in
+       add "  <entry>";
+       add (Printf.sprintf "    <title>%s</title>" (esc p.title));
+       add (Printf.sprintf "    <link href=\"%s\" />" (esc url));
+       add (Printf.sprintf "    <updated>%s</updated>" (rfc3339 p.date));
+       add (Printf.sprintf "    <id>%s</id>" (esc url));
+       if p.author <> ""
+       then
+         add
+           (Printf.sprintf "    <author><name>%s</name></author>" (esc p.author));
+       if p.excerpt <> ""
+       then
+         add
+           (Printf.sprintf "    <summary type=\"html\">%s</summary>"
+              (esc p.excerpt));
+       add "  </entry>")
+    posts;
+  add "</feed>";
+  Buffer.contents buf
+
 let latest_fragment ~base (b : Config.blog) (posts : post list) =
   let recent = List.filteri (fun i _ -> i < b.latest) posts in
   if recent = []

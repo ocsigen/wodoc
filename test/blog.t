@@ -77,3 +77,24 @@ from this page to the blog root.
   $ wodoc assemble --template tmpl.html --blog-config doc/wodoc home-odoc.html | grep -o 'wodoc-blog-title" href="[^"]*"'
   wodoc-blog-title" href="blog/second.html"
   wodoc-blog-title" href="blog/hello.html"
+
+`wodoc blog-nav` prints the blog's left-nav block (for the low-level assemble
+path), one entry per post, newest first:
+
+  $ wodoc blog-nav --config doc/wodoc --base . | grep -o 'data-wodoc-page="[^"]*"'
+  data-wodoc-page="blog/second.html"
+  data-wodoc-page="blog/hello.html"
+
+`wodoc blog-feed` prints an Atom feed for syndication (e.g. OCaml Planet): a
+self link at the chosen feed path, and one entry per post with an absolute URL
+(base-url + blog-path + post path) and the excerpt as a summary.
+
+  $ wodoc blog-feed --config doc/wodoc --base-url https://ocsigen.org \
+  >   --blog-path /blog --title "Ocsigen Blog" --author "Ocsigen Project" \
+  >   | grep -o '<link href="[^"]*" rel="self" />\|<title>[^<]*</title>\|<link href="https://ocsigen.org/blog/[^"]*"'
+  <title>Ocsigen Blog</title>
+  <link href="https://ocsigen.org/feed.xml" rel="self" />
+  <title>The second post</title>
+  <link href="https://ocsigen.org/blog/blog/second.html"
+  <title>Hello world</title>
+  <link href="https://ocsigen.org/blog/blog/hello.html"

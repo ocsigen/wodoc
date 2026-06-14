@@ -261,6 +261,27 @@ extra syntax (a ppx, a client/server split) — the file given by [(highlight �
 in the config. So a project without special syntax ships no JavaScript at all.
 See {!Wodoc.Build}.
 
+{1 [wodoc blog-nav] and [wodoc blog-feed]}
+
+{@text[
+wodoc blog-nav  --config <doc/wodoc> [--base <b>]
+wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]
+                [--feed-path /feed.xml] [--title <t>] [--author <a>]
+]}
+
+Helpers for a blog (the [(blog …)] stanza, see {{!page-"config"}config}) built
+through the low-level path rather than [wodoc build]. [blog-nav] prints the
+blog's left-nav block (one entry per post, newest first) to feed
+[assemble --leftnav]; [--base] is the page's relative path to the blog root.
+
+[blog-feed] prints an {b Atom feed} of the posts, for syndication (e.g. OCaml
+Planet). A post's URL is [base-url ^ blog-path ^ "/" ^ <post path>] (so
+[--base-url https://ocsigen.org --blog-path /blog] yields
+[https://ocsigen.org/blog/…]); the feed advertises itself at
+[base-url ^ feed-path] (default [/feed.xml]). Entry bodies are the post excerpt;
+the feed [updated] is the newest post's date (stable across rebuilds). Both read
+post metadata via {!Wodoc.Blog}.
+
 {1 Putting it together}
 
 The turn-key way is a single [wodoc build] per version, configured by [doc/wodoc].
