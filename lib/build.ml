@@ -618,6 +618,24 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
               (fun (s : Config.section) -> {s with items = strip_items s.items})
               c.nav }
   in
+  (* blog: discover the dated posts (newest first) and splice a generated nav
+     section into the config nav, so every page's left column lists them and the
+     per-page "current" highlight can match a post page. *)
+  let blog_posts = match c.blog with Some b -> Blog.posts b | None -> [] in
+  let c =
+    match c.blog with
+    | Some b when blog_posts <> [] ->
+        {c with nav = c.nav @ [Blog.nav_section b blog_posts]}
+    | _ -> c
+  in
+  (* the "latest posts" fragment that the {%wodoc:blog-latest%} marker expands to,
+     per page (the link base differs by page depth); a no-op without a blog. *)
+  let expand_blog ~base page =
+    match c.blog with
+    | Some b ->
+        Blog.expand ~fragment:(Blog.latest_fragment ~base b blog_posts) page
+    | None -> page
+  in
   (* direct-mld build (manual-only/archived): the pages ARE the manual and the
      landing index.html is a real page, so keep it and write no redirect. *)
   let mld_mode = c.mld_dir <> None in
@@ -668,6 +686,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
               ~menu_current:c.menu_current ~leftnav:nav ~template:tmpl ~current
               (read_file (Filename.concat src rel))
           in
+          let page = expand_blog ~base page in
           if c.siblings = []
           then page
           else Resolve.html ~siblings:c.siblings ~base page
@@ -730,6 +749,7 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
               ~template:(tmpl_of side) ~current:(cs_current sides rel)
               (read_file (Filename.concat src rel))
           in
+          let page = expand_blog ~base page in
           if c.hosted = []
           then page
           else
@@ -742,6 +762,74 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
        mkdir_p (Filename.dirname dst);
        write_file dst (assemble_page rel))
     rels;
+  (* blog posts: each post .mld is compiled straight with odoc (preprocess ->
+     compile -> link -> html-generate, the direct-mld pipeline), then assembled
+     with the same site chrome and the (blog-augmented) left nav, and written to
+     <out>/<blog.out>/<slug>.html. Assembled as a normal (non-side) page, so a
+     blog works for any project type. *)
+  (match c.blog with
+  | Some b when blog_posts <> [] ->
+      let tmpl = replace_hole (template c) "pub" c.pub in
+      let nav = leftnav ~latest c vs in
+      let nav_paths = nav_entry_paths c in
+      let work = "_wodoc-blog" in
+      let odoc = Filename.concat work "odoc"
+      and html = Filename.concat work "html" in
+      let rec find_html dir =
+        Array.to_list (Sys.readdir dir)
+        |> List.concat_map (fun e ->
+          let p = Filename.concat dir e in
+          if Sys.is_directory p
+          then find_html p
+          else if Filename.check_suffix p ".html"
+          then [p]
+          else [])
+      in
+      List.iter
+        (fun (p : Blog.post) ->
+           ignore
+             (Sys.command (Printf.sprintf "rm -rf %s" (Filename.quote work)));
+           mkdir_p odoc;
+           mkdir_p html;
+           let pp = Filename.concat odoc ("pp-" ^ p.slug ^ ".mld") in
+           write_file pp (Preprocess.string (read_file p.src));
+           let odocf = Filename.concat odoc ("page-" ^ p.slug ^ ".odoc") in
+           let odoclf = Filename.concat odoc ("page-" ^ p.slug ^ ".odocl") in
+           let cmd =
+             Printf.sprintf
+               "odoc compile %s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s"
+               (Filename.quote pp) (Filename.quote odoc) (Filename.quote odocf)
+               (Filename.quote odocf) (Filename.quote odoc)
+               (Filename.quote odoclf) (Filename.quote odoclf)
+               (Filename.quote html)
+           in
+           if Sys.command cmd <> 0
+           then prerr_endline ("wodoc build: odoc failed on blog post " ^ p.src)
+           else
+             match find_html html with
+             | [] ->
+                 prerr_endline ("wodoc build: no HTML for blog post " ^ p.src)
+             | hf :: _ ->
+                 let orel = b.out ^ "/" ^ p.slug ^ ".html" in
+                 let base = base_of orel in
+                 let current = current_of_page orel nav_paths in
+                 let page =
+                   Assemble.page ~flat:c.flat ~base ~menu:menu_html ~subproject
+                     ~menu_current:c.menu_current ~leftnav:nav ~template:tmpl
+                     ~current (read_file hf)
+                 in
+                 let page = expand_blog ~base page in
+                 let page =
+                   if c.siblings = []
+                   then page
+                   else Resolve.html ~siblings:c.siblings ~base page
+                 in
+                 let dst = Filename.concat out orel in
+                 mkdir_p (Filename.dirname dst);
+                 write_file dst page)
+        blog_posts;
+      ignore (Sys.command (Printf.sprintf "rm -rf %s" (Filename.quote work)))
+  | _ -> ());
   (* version root index.html: redirect to the landing page — UNLESS the landing
      IS this version-root index.html, i.e. a real manual page already written here
      (direct-mld builds, or manual-root single-package projects whose index.mld
