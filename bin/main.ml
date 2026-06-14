@@ -178,12 +178,12 @@ let () =
          the same [(nav …)] syntax as the config stanza), instead of hardcoding. *)
       let c =
         match List.assoc_opt "mld-dir" flags with
-        | Some d -> { c with mld_dir = Some d }
+        | Some d -> {c with mld_dir = Some d}
         | None -> c
       in
       let c =
         match List.assoc_opt "nav" flags with
-        | Some f -> { c with nav = Wodoc.Config.nav_of_string (read_file f) }
+        | Some f -> {c with nav = Wodoc.Config.nav_of_string (read_file f)}
         | None -> c
       in
       let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in
@@ -366,7 +366,9 @@ let () =
              then
                match String.index_opt v '=' with
                | Some i ->
-                   Some (String.sub v 0 i, String.sub v (i + 1) (String.length v - i - 1))
+                   Some
+                     ( String.sub v 0 i
+                     , String.sub v (i + 1) (String.length v - i - 1) )
                | None -> None
              else None)
           flags
@@ -375,8 +377,10 @@ let () =
         Array.iter
           (fun e ->
              let p = Filename.concat dir e in
-             if (try Sys.is_directory p with _ -> false) then walk f p
-             else if Filename.check_suffix p ".html" then f p)
+             if try Sys.is_directory p with _ -> false
+             then walk f p
+             else if Filename.check_suffix p ".html"
+             then f p)
           (try Sys.readdir dir with _ -> [||])
       in
       let count = ref 0 in
@@ -384,12 +388,19 @@ let () =
         (fun p ->
            let dir = Filename.dirname p in
            let exists href =
-             let href = match String.index_opt href '#' with
-               | Some i -> String.sub href 0 i | None -> href in
-             if href = "" then false
+             let href =
+               match String.index_opt href '#' with
+               | Some i -> String.sub href 0 i
+               | None -> href
+             in
+             if href = ""
+             then false
              else
                let tgt =
-                 if href.[0] = '/' then Filename.concat site (String.sub href 1 (String.length href - 1))
+                 if href.[0] = '/'
+                 then
+                   Filename.concat site
+                     (String.sub href 1 (String.length href - 1))
                  else Filename.concat dir href
                in
                Sys.file_exists tgt
@@ -398,10 +409,10 @@ let () =
            in
            let s = read_file p in
            let out = Wodoc.Resolve.requalify ~wrapped ~exists s in
-           if out <> s then (
+           if out <> s
+           then (
              let oc = open_out_bin p in
-             output_string oc out; close_out oc;
-             incr count))
+             output_string oc out; close_out oc; incr count))
         site;
       Printf.eprintf "wodoc requalify-xrefs: rewrote %d files\n" !count
   | _ :: "release" :: args ->
