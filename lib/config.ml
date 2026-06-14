@@ -25,8 +25,8 @@ type section =
 type blog =
   { dir : string
     (** directory of post sources, named [YYYY-MM-DD-slug.mld] (the date is the
-          publication date; posts sort newest-first on it). Relative to the build
-          cwd. The posts are plain [.mld] (author given by odoc's [@author]). *)
+          publication date; posts sort newest-first on it). Relative to the config
+          file's directory. The posts are plain [.mld] (author from [@author]). *)
   ; out : string
     (** output subdirectory under the version root, e.g. "blog": posts deploy as
           [<out>/blog/<slug>.html] *)
