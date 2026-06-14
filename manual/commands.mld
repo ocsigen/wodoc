@@ -140,13 +140,58 @@ lists the wrapped projects (e.g. [eliom=Eliom], [ocsigen-toolkit=Ot]).
 wodoc release --site <gh-pages-dir> --version <v> [--from dev]
 ]}
 
-The CI only ever (re)builds [<site>/dev]. A stable version is a {e frozen
-snapshot} of it: [release] copies [<site>/<from>] (default [dev]) to
-[<site>/<version>], repoints the [latest] symlink at it, and writes the
-project-root redirect to [latest/] if missing. Older version directories are left
-untouched. Run it on the [gh-pages] checkout at release time, then commit — the
-documented per-project release procedure (no rebuild: a release's docs are
-exactly the [dev] docs at that point).
+[release] {b does not build anything}: it {e freezes a directory that is already
+deployed}. The CI only ever (re)builds [<site>/dev], and a stable version is a
+copy of that [dev] snapshot taken at release time. Run it on a checkout of the
+[gh-pages] branch, then commit and push.
+
+{t
+  | Flag | Meaning |
+  |------|---------|
+  | [--site <gh-pages-dir>] | a working copy of the project's [gh-pages] branch — the deployed site root that holds [dev/], the version directories, the [latest] symlink and [versions.json] |
+  | [--version <v>] | the name of the new frozen version directory to create, e.g. [12.0] |
+  | [--from <dir>] | the {e existing} directory to copy from (default [dev]) |
+}
+
+It copies [<site>/<from>] → [<site>/<version>], repoints the [latest] symlink at
+[<version>], writes the project-root redirect to [latest/] if missing, and
+regenerates [versions.json]. Older version directories are left untouched.
+
+{@text[
+# on the gh-pages checkout, after dev has been built & deployed
+git clone -b gh-pages git@github.com:ocsigen/eliom eliom-gh
+wodoc release --site eliom-gh --version 12.0
+cd eliom-gh && git add -A && git commit -m "doc: release 12.0" && git push
+]}
+
+A release's docs are therefore {b exactly the [dev] docs at that point} — no
+rebuild. This is the procedure for {e odoc-driver} projects (eliom,
+ocsigen-toolkit, ocsigen-start), whose [build] documents the {e installed}
+package: you cannot cheaply rebuild an old version from source, so you freeze the
+current [dev] instead.
+
+{2 Documenting an older tag or branch}
+
+[release] cannot reach back into git history — it only freezes the current
+[dev]. To build the docs of an {b older tag or a branch}, check it out and run
+[build] with that [--label] (and [--latest] if it should become the current
+version):
+
+{@text[
+git checkout v0.1.0
+wodoc build --config doc/wodoc --out <gh-pages>/0.1.0 --label 0.1.0 \
+            --menu https://ocsigen.org/doc/menu.html --latest
+]}
+
+[--label <v>] names the output (version) directory — it is the version segment of
+the deployed URL ([/<project>/<v>/…]) and the entry added to the version selector
+(default [dev]); [--latest] repoints the [latest] symlink at this build. This is
+the {e rebuild-from-ref} path, used by [dune build @doc] projects (those without
+[(odoc-driver …)]), where [build] compiles the checked-out sources. In CI it is a
+manual workflow run: set the workflow's [label] input to the version, [ref] to
+the tag/branch, and tick [set_latest]. (For an odoc-driver project the same idea
+means installing that version of the package first, since [build] documents the
+installed package, not the checkout.)
 
 {2 The version selector}
 
