@@ -8,6 +8,20 @@ It extends odoc with **backward-compatible presentational markers** for arbitrar
 CSS classes, containers and layout, and adds a templating layer to assemble a
 full site (header, menus, version selector). Any OCaml project can use it.
 
+## Installation
+
+wodoc is not on the opam repository yet — pin it from git:
+
+```
+opam pin add wodoc git+https://github.com/ocsigen/wodoc.git
+```
+
+(or `opam pin add wodoc .` from a clone). This also pins the `odoc` family
+(`odoc`, `odoc-driver`, …) to the small fork wodoc needs, via the `pin-depends`
+in [`wodoc.opam`](wodoc.opam) — no manual setup. It needs OCaml ≥ 5.1 (pulled in
+by `odoc-driver`). At run time it shells out to `odoc`/`odoc_driver` and to
+`curl` (for `--menu <URL>`).
+
 ## How it works
 
 odoc's lightweight markup is intentionally semantic: it has no way to put an
