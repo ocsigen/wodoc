@@ -19,6 +19,19 @@ let parse_args args =
   in
   go [] [] args
 
+(* Resolve a blog's [(dir …)] relative to the config file (like dune paths),
+   so it is found regardless of the build script's cwd (e.g. the vitrine builds
+   the site home from doc/vitrine but reads the blog declared in doc/blog). *)
+let resolve_blog cfg (c : Wodoc.Config.t) =
+  match c.blog with
+  | Some b when Filename.is_relative b.dir ->
+      { c with
+        blog = Some {b with dir = Filename.concat (Filename.dirname cfg) b.dir}
+      }
+  | _ -> c
+
+let config_of cfg = resolve_blog cfg (Wodoc.Config.of_string (read_file cfg))
+
 let () =
   match Array.to_list Sys.argv with
   | _ :: "convert" :: args -> (
@@ -89,7 +102,7 @@ let () =
             match List.assoc_opt "blog-config" flags with
             | None -> page
             | Some cf -> (
-              match (Wodoc.Config.of_string (read_file cf)).blog with
+              match (config_of cf).blog with
               | None -> page
               | Some b ->
                   let bbase =
@@ -194,7 +207,7 @@ let () =
         match List.assoc_opt k flags with Some v -> v | None -> usage ()
       in
       let cfg = req "config" in
-      let c = Wodoc.Config.of_string (read_file cfg) in
+      let c = config_of cfg in
       (* per-version overrides: a manual-only project with one config but several
          version directories (e.g. tuto's tutos/<v>/manual, distinct per version)
          passes --mld-dir, and --nav for that version's left navigation (a file in
@@ -451,7 +464,7 @@ let () =
       match List.assoc_opt "config" flags with
       | None -> usage ()
       | Some cfg -> (
-        match (Wodoc.Config.of_string (read_file cfg)).blog with
+        match (config_of cfg).blog with
         | None -> ()
         | Some b ->
             let base = Option.value ~default:"" (List.assoc_opt "base" flags) in
@@ -463,7 +476,7 @@ let () =
         match List.assoc_opt k flags with Some v -> v | None -> usage ()
       in
       let cfg = req "config" in
-      match (Wodoc.Config.of_string (read_file cfg)).blog with
+      match (config_of cfg).blog with
       | None -> ()
       | Some b ->
           let base_url = req "base-url" in

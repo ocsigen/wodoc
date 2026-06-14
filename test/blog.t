@@ -28,7 +28,7 @@ first body paragraph.
   > XEOF
   $ cat > doc/wodoc <<'XEOF'
   > (project demo)
-  > (blog (dir doc/blog) (out blog) (heading Blog) (latest 5))
+  > (blog (dir blog) (out blog) (heading Blog) (latest 5))
   > (nav (section Manual (link Home index.html index)))
   > XEOF
   $ echo '<header>menu</header>' > menu.html
