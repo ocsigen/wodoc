@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Module Wodoc.Render — Wodoc</title>
+  <title>Module Wodoc.Llms — Wodoc</title>
   <link rel="stylesheet" href="/css/style.css"/>
   <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
-  <link rel="alternate" type="text/markdown" href="../../../wodoc/Wodoc-Render.md"/>
+  <link rel="alternate" type="text/markdown" href="../../../wodoc/Wodoc-Llms.md"/>
   <script src="../../../highlight.pack.js"></script>
   <script src="../../../wodoc-highlight.js"></script>
 </head>
@@ -151,8 +151,13 @@
 
       </nav>
       <article class="rightcol">
-        <header class="odoc-preamble"><h1>Module <code><span>Wodoc.Render</span></code></h1><p>wodoc rendering pass over odoc's HTML output.</p><p>odoc emits the <code>{%html:&lt;!--wodoc:DIRECTIVE--&gt;%}</code> markers produced by <a href="../Preprocess/index.html"><code>Preprocess</code></a> as HTML comments. This pass turns those comments into real, correctly nested HTML and removes the <code>&lt;p&gt;</code> wrappers odoc forces around inline raw-markup.</p><p>Supported directives (the content after <code>wodoc:</code>):</p><ul><li><code>div class=...</code> / <code>a class=... href=...</code> / <code>span class=...</code> open a container, paired with <code>end</code> which closes the most recent one;</li><li><code>\@ S0 | S1 | S2</code> adds attributes at successive nesting levels: section <code>Si</code> is applied to the element reached by descending <code>i</code> times into the first child element, starting at the next element. This is the <code>\@\@</code> equivalent and mirrors html_of_wiki's <code>\@\@a\@b\@c\@\@</code> (e.g. table / row / cell). A <code>class</code> is merged with any existing one; an empty section styles nothing but still descends. A single section (<code>\@ class=...</code>) targets the next element. The marker must stand alone (a blank line before the element it applies to), so it targets the following element rather than being absorbed into a paragraph;</li><li><code>img src=... class=... alt=...</code> emits a self-contained <code>&lt;img&gt;</code>.</li></ul><p>The directive set is intentionally small and generic; project-specific widgets (menus, switches…) belong to the assembly layer, not here.</p></header>
-        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-html"><code><span><span class="keyword">val</span> html : <span><span class="optlabel">?strip_anchors</span>:bool <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> string</span></code></div><div class="spec-doc"><p><code>html s</code> processes the wodoc markers in odoc's HTML <code>s</code> and returns the transformed HTML. Markers are consumed; on malformed input the offending marker is left as an HTML comment rather than raising.</p><p><code>strip_anchors</code> (default <code>false</code>) removes the empty hover-link anchors odoc inserts inside headings — useful for website pages (and required when a heading sits inside a clickable card link, to avoid a nested <code>&lt;a&gt;</code>).</p></div></div></div>
+        <header class="odoc-preamble"><h1>Module <code><span>Wodoc.Llms</span></code></h1><p>Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that <a href="../Build/index.html"><code>Build</code></a> produces in the output directory.</p><p>Follows the <code>llms.txt</code> convention (llmstxt.org): a single H1 with the project name, a blockquote summary, then sections listing the Markdown pages.</p></header>
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec value anchored" id="val-write"><code><span><span class="keyword">val</span> write : 
+  <span><span class="label">out</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">title</span>:string <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">landing</span>:<span>string option</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">order</span>:<span>string list</span> <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div><div class="spec-doc"><p><code>write ~out ~title ~landing ~order</code> writes, at the version root <code>out</code>:</p><ul><li><code>llms.txt</code>: the index — <code># title</code>, a <code>&gt;</code> blockquote summary (the first paragraph of the <code>landing</code> Markdown page when given, else a generic line), then a <code>## Manual</code> and a <code>## API</code> section listing every <code>.md</code> page found under <code>out</code> (manual = lowercase-named pages, API = Capitalised modules), each as <code>- [H1 title](relative path)</code>;</li><li><code>llms-full.txt</code>: all those pages concatenated, for single-shot ingestion.</li></ul><p><code>order</code> is a list of <code>.md</code> paths giving the preferred (project-nav) ordering; pages absent from it follow alphabetically. Does nothing if no <code>.md</code> page exists under <code>out</code> (e.g. markdown generation was skipped).</p></div></div></div>
       </article>
     </div>
   </div>

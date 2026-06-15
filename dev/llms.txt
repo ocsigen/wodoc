@@ -1,0 +1,29 @@
+# Wodoc
+
+> *wodoc* (web \+ odoc) is an [odoc](https://github.com/ocaml/odoc) driver that builds complete, styled **websites** from `.mld` and `.mli` sources — not just API documentation.
+
+## Manual
+- [Wodoc](wodoc/index.md)
+- [How wodoc works](wodoc/overview.md)
+- [Directives](wodoc/directives.md)
+- [Authoring: what survives on ocaml.org](wodoc/authoring.md)
+- [Configuration: the `doc/wodoc` file](wodoc/config.md)
+- [Commands](wodoc/commands.md)
+- [Adding a blog](wodoc/blog.md)
+- [API reference](wodoc/api.md)
+- [OCaml Package Documentation](index.md)
+
+## API
+- [Module `Assemble.Parts`](wodoc/Wodoc-Assemble-Parts.md)
+- [Module `Wodoc.Assemble`](wodoc/Wodoc-Assemble.md)
+- [Module `Wodoc.Blog`](wodoc/Wodoc-Blog.md)
+- [Module `Wodoc.Build`](wodoc/Wodoc-Build.md)
+- [Module `Wodoc.Config`](wodoc/Wodoc-Config.md)
+- [Module `Wodoc.Convert`](wodoc/Wodoc-Convert.md)
+- [Module `Wodoc.Llms`](wodoc/Wodoc-Llms.md)
+- [Module `Wodoc.Nav`](wodoc/Wodoc-Nav.md)
+- [Module `Wodoc.Preprocess`](wodoc/Wodoc-Preprocess.md)
+- [Module `Wodoc.Render`](wodoc/Wodoc-Render.md)
+- [Module `Wodoc.Resolve`](wodoc/Wodoc-Resolve.md)
+- [Module `Wodoc.Sexp`](wodoc/Wodoc-Sexp.md)
+- [Module `Wodoc`](wodoc/Wodoc.md)
