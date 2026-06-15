@@ -65,6 +65,7 @@ type t = {
   flat : bool; (* assemble --flat (content straddling odoc's preamble boundary) *)
   static_copy : (string * string) list; (* verbatim copies into the output: (source path, dest under <out>) — e.g. a frozen API snapshot, or a manual image *)
   blog : blog option; (* an optional (blog …) section (see blog) *)
+  markdown : bool; (* emit the Markdown twin of every page + the llms.txt/llms-full.txt index (for AI/LLM consumption). On by default; (markdown false) turns it off. *)
 }
 ```
 ```ocaml

@@ -279,6 +279,7 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`
 | `(doc-manual true)` | also build the `@doc-manual` alias (examples) |
 | `(manual-files <pkg>)` | package dir that receives `manual/files` (examples, images) |
 | `(highlight <file>)` | a project-specific syntax-highlight starter to ship as `wodoc-highlight.js`; without it, wodoc ships a built-in default covering eliom / lwt / js\_of\_ocaml syntax |
+| `(markdown false)` | turn off the Markdown twins  `llms.txt` index (on by default; see [Commands](./commands.md)) |
 
 ## Layout variants
 
@@ -434,6 +435,15 @@ wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 
 The turn-key command: assemble a whole odoc HTML tree into the themed site from ONE per-project config file (a dune-style S-expression `doc/wodoc`, fully documented in [Configuration](./config.md)) — replacing a project's `build.sh` *and* its hand-written navigation (`menu.wiki` / `nav.html` / `leftnav.html` / `template.html`, all gone). It generates the page template and the left navigation (version selector, on-this-page, the config-declared nav), then fills the shared menu, marks the current project/package, resolves sibling references and ships the assets, the version redirect and the `latest` symlink. Without `--src` it builds the odoc HTML itself: `dune build @doc` by default, or — when the config has `(odoc-driver <pkg>)` — `odoc_driver <pkg> --remap` on the *installed* package (the engine ocaml.org uses), needed for a client/server package whose `<pkg>.server`/`<pkg>.client` libraries share module names and would collide under `dune build @doc`.
+
+
+### Markdown twins and the llms.txt index (for AIs)
+
+Alongside the themed HTML, `wodoc build` emits a **Markdown twin** of every page, so the documentation is consumable by AIs/LLMs as plain Markdown (the [llms.txt](https://llmstxt.org/) convention). It uses odoc's Markdown backend (`odoc markdown-generate`, or the `@doc-markdown` dune alias) on the *same* compiled artifacts that produce the HTML, so nothing is recompiled. The `.md` files are placed next to their `.html` pages (odoc's Markdown layout is flat — `Mod/Sub/index.html` has the twin `Mod-Sub.md`), and each HTML page advertises its twin with `<link rel="alternate" type="text/markdown">`.
+
+Two index files are written at the version root: `llms.txt` (the project name, a one-line summary, then a Manual and an API section linking every page) and `llms-full.txt` (all pages concatenated, for single-shot ingestion). The site's root `/llms.txt` (built by the vitrine) links each project's `llms.txt` in turn.
+
+Markdown generation is **best-effort**: if it fails it is skipped with a warning and never aborts the HTML build. It is **on by default**; disable it per project with `(markdown false)` in the config (see [Configuration](./config.md)) — for example for a project whose Markdown output is not yet useful.
 
 
 ### Requalifying cross-project links
@@ -1005,6 +1015,7 @@ type t = {
   flat : bool; (* assemble --flat (content straddling odoc's preamble boundary) *)
   static_copy : (string * string) list; (* verbatim copies into the output: (source path, dest under <out>) — e.g. a frozen API snapshot, or a manual image *)
   blog : blog option; (* an optional (blog …) section (see blog) *)
+  markdown : bool; (* emit the Markdown twin of every page + the llms.txt/llms-full.txt index (for AI/LLM consumption). On by default; (markdown false) turns it off. *)
 }
 ```
 ```ocaml
