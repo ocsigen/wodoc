@@ -47,7 +47,7 @@ let generate_markdown ~odocls ~out =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>]\n\                 [--blog-config <c>] [--blog-base <b>] [--byline <t>] <odoc.html>\n\      wrap rendered odoc HTML in a site template (--blog-config expands a\n\      {%wodoc:blog-latest%} marker with that blog's latest-posts fragment;\n\      --byline inserts a meta line after the title)\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc blog-nav --config <doc/wodoc> [--base <b>]\n\      the blog's left-nav block (for assemble --leftnav)\n\  wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]\n\                  [--feed-path /feed.xml] [--title <t>] [--author <a>]\n\      an Atom feed of the blog posts (syndication, e.g. OCaml Planet)\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>]\n\                 [--blog-config <c>] [--blog-base <b>] [--byline <t>] [--mdlink <href>] <odoc.html>\n\      wrap rendered odoc HTML in a site template (--blog-config expands a\n\      {%wodoc:blog-latest%} marker with that blog's latest-posts fragment;\n\      --byline inserts a meta line after the title)\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc blog-nav --config <doc/wodoc> [--base <b>]\n\      the blog's left-nav block (for assemble --leftnav)\n\  wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]\n\                  [--feed-path /feed.xml] [--title <t>] [--author <a>]\n\      an Atom feed of the blog posts (syndication, e.g. OCaml Planet)\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -128,11 +128,23 @@ let () =
             | Some f -> read_file f
             | None -> ""
           in
+          (* --mdlink <href>: advertise this page's Markdown twin with a
+             <link rel="alternate" type="text/markdown"> (fills {{mdlink}}), so
+             pages built via the low-level assemble path (e.g. the site vitrine)
+             expose their .md version like the turn-key build does. *)
+          let mdlink =
+            match List.assoc_opt "mdlink" flags with
+            | Some href ->
+                Printf.sprintf
+                  "  <link rel=\"alternate\" type=\"text/markdown\" href=\"%s\"/>\n"
+                  href
+            | None -> ""
+          in
           let template = read_file tmpl in
           let page =
             Wodoc.Assemble.page ~preamble ~flat
               ~strip_anchors:(not keep_anchors) ~base ~menu ~subproject
-              ~menu_current ~leftnav ~template ~current (read_file file)
+              ~menu_current ~leftnav ~mdlink ~template ~current (read_file file)
           in
           (* --blog-config <doc/blog wodoc>: expand a {%wodoc:blog-latest%} marker
              on this page with the latest-posts fragment of that blog (so a page
