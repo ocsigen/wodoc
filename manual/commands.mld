@@ -127,6 +127,27 @@ HTML itself: [dune build @doc] by default, or — when the config has
 [<pkg>.server]/[<pkg>.client] libraries share module names and would collide
 under [dune build @doc].
 
+{2 Markdown twins and the llms.txt index (for AIs)}
+
+Alongside the themed HTML, [wodoc build] emits a {b Markdown twin} of every page,
+so the documentation is consumable by AIs/LLMs as plain Markdown
+(the {{:https://llmstxt.org/}llms.txt} convention). It uses odoc's Markdown
+backend ([odoc markdown-generate], or the [@doc-markdown] dune alias) on the {e
+same} compiled artifacts that produce the HTML, so nothing is recompiled. The
+[.md] files are placed next to their [.html] pages (odoc's Markdown layout is flat
+— [Mod/Sub/index.html] has the twin [Mod-Sub.md]), and each HTML page advertises
+its twin with [<link rel="alternate" type="text/markdown">].
+
+Two index files are written at the version root: [llms.txt] (the project name, a
+one-line summary, then a Manual and an API section linking every page) and
+[llms-full.txt] (all pages concatenated, for single-shot ingestion). The site's
+root [/llms.txt] (built by the vitrine) links each project's [llms.txt] in turn.
+
+Markdown generation is {b best-effort}: if it fails it is skipped with a warning
+and never aborts the HTML build. It is {b on by default}; disable it per project
+with [(markdown false)] in the config (see {{!page-"config"}Configuration}) — for
+example for a project whose Markdown output is not yet useful.
+
 {2 Requalifying cross-project links}
 
 {@text[
