@@ -75,3 +75,17 @@ llms-full.txt concatenates every page for single-shot ingestion:
 
   $ grep -c '^# ' out/dev/llms-full.txt
   3
+
+A project can opt out of the whole Markdown pipeline with (markdown false): no
+.md twins, no llms.txt, and no <link rel="alternate"> on the pages.
+
+  $ printf '(project demo)\n(title Demo)\n(pub /demo)\n(packages demo)\n(landing demo/index.html)\n(markdown false)\n' > doc/wodoc
+  $ wodoc build --config doc/wodoc --src src --md-src md --out off/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ test -e off/dev/demo/index.md && echo twin || echo "no twin"
+  no twin
+  $ test -e off/dev/llms.txt && echo index || echo "no index"
+  no index
+  $ grep -c 'rel="alternate"' off/dev/demo/index.html
+  0
+  [1]

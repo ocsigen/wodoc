@@ -109,6 +109,10 @@ type t =
     (** verbatim copies into the output: (source path, dest under <out>) — e.g.
           a frozen API snapshot, or a manual image *)
   ; blog : blog option  (** an optional [(blog …)] section (see {!type:blog}) *)
+  ; markdown : bool
+    (** emit the Markdown twin of every page + the [llms.txt]/[llms-full.txt]
+          index (for AI/LLM consumption). On by default; [(markdown false)] turns
+          it off. *)
   }
 
 let parse_entry = function
@@ -258,4 +262,6 @@ let of_string s =
       Sexp.field_atom "flat" stanzas = Some "true"
       || Sexp.fields "flat" stanzas <> []
   ; static_copy = parse_static_copy stanzas
-  ; blog = parse_blog stanzas }
+  ; blog = parse_blog stanzas
+  ; (* Markdown twins + llms.txt are on by default; only (markdown false) disables *)
+    markdown = Sexp.field_atom "markdown" stanzas <> Some "false" }

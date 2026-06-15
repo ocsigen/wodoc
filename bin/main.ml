@@ -297,7 +297,8 @@ let () =
          so AIs/LLMs get a clean .md twin of every page (see [Build.run ~md_src]). *)
       let src, md_src =
         match List.assoc_opt "src" flags with
-        | Some s -> s, List.assoc_opt "md-src" flags
+        | Some s ->
+            s, if c.markdown then List.assoc_opt "md-src" flags else None
         | None -> (
           match c.mld_dir with
           | Some dir ->
@@ -344,25 +345,34 @@ let () =
                    let odoclf =
                      Filename.concat odoc ("page-" ^ name ^ ".odocl")
                    in
+                   (* the markdown twin step is appended unless the project opts
+                      out of markdown with (markdown false) *)
+                   let md_step =
+                     if c.markdown
+                     then
+                       Printf.sprintf " && odoc markdown-generate %s -o %s"
+                         (Filename.quote odoclf) (Filename.quote md)
+                     else ""
+                   in
                    let cmd =
                      Printf.sprintf
-                       "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s && odoc markdown-generate %s -o %s"
+                       "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s%s"
                        (Filename.quote pp) pkg_flag (Filename.quote odoc)
                        (Filename.quote odocf) (Filename.quote odocf)
                        (Filename.quote odoc) (Filename.quote odoclf)
-                       (Filename.quote odoclf) (Filename.quote html)
-                       (Filename.quote odoclf) (Filename.quote md)
+                       (Filename.quote odoclf) (Filename.quote html) md_step
                    in
                    if Sys.command cmd <> 0
                    then (
                      prerr_endline ("wodoc build: odoc failed on " ^ e);
                      exit 1))
                 mlds;
+              let md_src = if c.markdown then Some md else None in
               if c.mld_package = ""
-              then html, Some md
+              then html, md_src
               else
                 ( Filename.concat html c.mld_package
-                , Some (Filename.concat md c.mld_package) )
+                , Option.map (fun m -> Filename.concat m c.mld_package) md_src )
           | None -> (
             match c.odoc_driver with
             | Some pkg ->
@@ -445,15 +455,19 @@ let () =
                   prerr_endline "wodoc build: odoc_driver failed";
                   exit 1);
                 (* markdown twin (best-effort): render the kept odocls into a
-                   parallel tree; layout mirrors the HTML one (per-<pkg> subtrees). *)
+                   parallel tree; layout mirrors the HTML one (per-<pkg> subtrees).
+                   Skipped when the project opts out with (markdown false). *)
                 let md_src =
-                  match generate_markdown ~odocls ~out:"_wodoc-md" with
-                  | None -> None
-                  | Some md ->
-                      Some
-                        (if c.packages <> []
-                         then md
-                         else Filename.concat md main_pkg)
+                  if not c.markdown
+                  then None
+                  else
+                    match generate_markdown ~odocls ~out:"_wodoc-md" with
+                    | None -> None
+                    | Some md ->
+                        Some
+                          (if c.packages <> []
+                           then md
+                           else Filename.concat md main_pkg)
                 in
                 (* Multi-package: each package lands in its own _wodoc-html/<pkg>
                    subtree, so assemble from the root and let (packages …) pick
@@ -475,9 +489,12 @@ let () =
                   prerr_endline "wodoc build: dune build @doc failed";
                   exit 1);
                 (* markdown twin (best-effort): the @doc-markdown alias mirrors
-                   @doc into _doc/_markdown (flat module layout). *)
+                   @doc into _doc/_markdown (flat module layout). Skipped when the
+                   project opts out with (markdown false). *)
                 let md_src =
-                  if Sys.command ("dune build @doc-markdown" ^ profile) = 0
+                  if not c.markdown
+                  then None
+                  else if Sys.command ("dune build @doc-markdown" ^ profile) = 0
                   then Some "_build/default/_doc/_markdown"
                   else (
                     prerr_endline
