@@ -4,6 +4,47 @@ let read_file f =
   let s = really_input_string ic n in
   close_in ic; s
 
+(* Render every linked [.odocl] under [odocls] with odoc's markdown backend into
+   [out], producing a flat-module markdown tree parallel to the HTML one (used by
+   the odoc_driver route, which keeps its linked odocls). Source-implementation
+   odocls ([impl-*]) are skipped — they need markdown-generate-source and are not
+   doc pages. Best-effort: returns [Some out] if at least one page was produced
+   (warning on partial failures), else [None] — a markdown hiccup never aborts the
+   HTML build. *)
+let generate_markdown ~odocls ~out =
+  let oks = ref 0 and fails = ref 0 in
+  let rec walk dir =
+    Array.iter
+      (fun e ->
+         let p = Filename.concat dir e in
+         if try Sys.is_directory p with _ -> false
+         then walk p
+         else if
+           Filename.check_suffix p ".odocl"
+           && not (String.starts_with ~prefix:"impl-" (Filename.basename p))
+         then
+           if
+             Sys.command
+               (Printf.sprintf "odoc markdown-generate %s -o %s 2>/dev/null"
+                  (Filename.quote p) (Filename.quote out))
+             = 0
+           then incr oks
+           else incr fails)
+      (try Sys.readdir dir with _ -> [||])
+  in
+  (try Sys.mkdir out 0o755 with _ -> ());
+  walk odocls;
+  if !oks = 0
+  then (
+    prerr_endline "wodoc build: no markdown produced; skipping markdown";
+    None)
+  else (
+    if !fails > 0
+    then
+      Printf.eprintf "wodoc build: markdown-generate failed on %d/%d odocl\n"
+        !fails (!oks + !fails);
+    Some out)
+
 let usage () =
   prerr_endline
     "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>]\n\                 [--blog-config <c>] [--blog-base <b>] [--byline <t>] <odoc.html>\n\      wrap rendered odoc HTML in a site template (--blog-config expands a\n\      {%wodoc:blog-latest%} marker with that blog's latest-posts fragment;\n\      --byline inserts a meta line after the title)\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc blog-nav --config <doc/wodoc> [--base <b>]\n\      the blog's left-nav block (for assemble --leftnav)\n\  wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]\n\                  [--feed-path /feed.xml] [--title <t>] [--author <a>]\n\      an Atom feed of the blog posts (syndication, e.g. OCaml Planet)\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
@@ -239,25 +280,29 @@ let () =
          The build method comes from the config: odoc_driver on the installed
          package for a client/server project (server/client share module names,
          so `dune build @doc` collides), else plain `dune build @doc`. *)
-      let src =
+      (* [src] is the odoc _html tree to assemble; [md_src] (when [Some]) is the
+         parallel odoc markdown tree, copied verbatim next to the HTML by Build.run
+         so AIs/LLMs get a clean .md twin of every page (see [Build.run ~md_src]). *)
+      let src, md_src =
         match List.assoc_opt "src" flags with
-        | Some s -> s
+        | Some s -> s, List.assoc_opt "md-src" flags
         | None -> (
           match c.mld_dir with
           | Some dir ->
               (* Direct-mld build (manual-only / archived project, no dune @doc):
                    compile every .mld with odoc straight (preprocess -> compile ->
-                   link -> html-generate). Output goes under <pkg>/ if a package is
-                   set, else at the html root. *)
+                   link -> html-generate -> markdown-generate). Output goes under
+                   <pkg>/ if a package is set, else at the html / md root. *)
               let work = "_wodoc-html" in
               let odoc = Filename.concat work "odoc" in
               let html = Filename.concat work "html" in
+              let md = Filename.concat work "md" in
               List.iter
                 (fun d ->
                    ignore
                      (Sys.command
                         (Printf.sprintf "mkdir -p %s" (Filename.quote d))))
-                [odoc; html];
+                [odoc; html; md];
               let pkg_flag =
                 if c.mld_package = ""
                 then ""
@@ -289,11 +334,12 @@ let () =
                    in
                    let cmd =
                      Printf.sprintf
-                       "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s"
+                       "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s && odoc markdown-generate %s -o %s"
                        (Filename.quote pp) pkg_flag (Filename.quote odoc)
                        (Filename.quote odocf) (Filename.quote odocf)
                        (Filename.quote odoc) (Filename.quote odoclf)
                        (Filename.quote odoclf) (Filename.quote html)
+                       (Filename.quote odoclf) (Filename.quote md)
                    in
                    if Sys.command cmd <> 0
                    then (
@@ -301,8 +347,10 @@ let () =
                      exit 1))
                 mlds;
               if c.mld_package = ""
-              then html
-              else Filename.concat html c.mld_package
+              then html, Some md
+              else
+                ( Filename.concat html c.mld_package
+                , Some (Filename.concat md c.mld_package) )
           | None -> (
             match c.odoc_driver with
             | Some pkg ->
@@ -336,7 +384,8 @@ let () =
                    List.iter
                      (fun p ->
                         let pages =
-                          Filename.concat (Filename.concat doc_root p)
+                          Filename.concat
+                            (Filename.concat doc_root p)
                             "odoc-pages"
                         in
                         if Sys.file_exists pages
@@ -369,21 +418,39 @@ let () =
                      prerr_endline "wodoc build: dune build @doc-manual failed";
                      exit 1));
                 let work = "_wodoc-html" in
+                let odocls = Filename.concat work "_odocls" in
                 if
                   Sys.command
                     (* [pkg] is the space-separated package list, passed as
-                       several args (not quoted as one). *)
-                    (Printf.sprintf "odoc_driver %s --remap --html-dir %s" pkg
-                       (Filename.quote work))
+                       several args (not quoted as one). --odocl-dir keeps the
+                       linked odocls so the markdown backend can render the same
+                       resolved artifacts that produced the HTML. *)
+                    (Printf.sprintf
+                       "odoc_driver %s --remap --html-dir %s --odocl-dir %s" pkg
+                       (Filename.quote work) (Filename.quote odocls))
                   <> 0
                 then (
                   prerr_endline "wodoc build: odoc_driver failed";
                   exit 1);
+                (* markdown twin (best-effort): render the kept odocls into a
+                   parallel tree; layout mirrors the HTML one (per-<pkg> subtrees). *)
+                let md_src =
+                  match generate_markdown ~odocls ~out:"_wodoc-md" with
+                  | None -> None
+                  | Some md ->
+                      Some
+                        (if c.packages <> []
+                         then md
+                         else Filename.concat md main_pkg)
+                in
                 (* Multi-package: each package lands in its own _wodoc-html/<pkg>
                    subtree, so assemble from the root and let (packages …) pick
                    the subtrees. Single-package (no (packages …)): everything is
                    under _wodoc-html/<pkg>, so point straight at it. *)
-                if c.packages <> [] then work else Filename.concat work main_pkg
+                ( (if c.packages <> []
+                   then work
+                   else Filename.concat work main_pkg)
+                , md_src )
             | None ->
                 let profile =
                   match c.profile with
@@ -395,9 +462,19 @@ let () =
                 then (
                   prerr_endline "wodoc build: dune build @doc failed";
                   exit 1);
-                "_build/default/_doc/_html"))
+                (* markdown twin (best-effort): the @doc-markdown alias mirrors
+                   @doc into _doc/_markdown (flat module layout). *)
+                let md_src =
+                  if Sys.command ("dune build @doc-markdown" ^ profile) = 0
+                  then Some "_build/default/_doc/_markdown"
+                  else (
+                    prerr_endline
+                      "wodoc build: dune build @doc-markdown failed; skipping markdown";
+                    None)
+                in
+                "_build/default/_doc/_html", md_src))
       in
-      Wodoc.Build.run c ~src ~out:(req "out") ~label ~menu:(req "menu")
+      Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu:(req "menu")
         ~assets_dir:(Filename.dirname cfg) ~local ~set_latest
   | _ :: "requalify-xrefs" :: args ->
       (* Post-pass over a co-located multi-project site: rewrite flat

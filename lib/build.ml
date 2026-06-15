@@ -577,7 +577,17 @@ let current_of_page orel paths =
 
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
-let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
+let run
+      (c : Config.t)
+      ~src
+      ~md_src
+      ~out
+      ~label
+      ~menu
+      ~assets_dir
+      ~local
+      ~set_latest
+  =
   mkdir_p out;
   let menu_html = read_menu menu in
   let subproject =
@@ -762,6 +772,29 @@ let run (c : Config.t) ~src ~out ~label ~menu ~assets_dir ~local ~set_latest =
        mkdir_p (Filename.dirname dst);
        write_file dst (assemble_page rel))
     rels;
+  (* the markdown twin tree: odoc's markdown backend emits a flat-module layout
+     ([<pkg>/Mod-Sub.md]) parallel to the HTML one, with self-consistent relative
+     .md xrefs. Copy it verbatim next to the HTML, applying the same manual-root
+     [strip] so the .md siblings land beside their .html pages and stay linkable.
+     This is what AIs/LLMs consume; the per-page <link rel="alternate"> and the
+     llms.txt index (below) point into it. *)
+  (match md_src with
+  | Some root when Sys.file_exists root ->
+      let rec walk rel =
+        let abs = if rel = "" then root else Filename.concat root rel in
+        if Sys.is_directory abs
+        then
+          Array.iter
+            (fun e -> walk (if rel = "" then e else Filename.concat rel e))
+            (Sys.readdir abs)
+        else if Filename.check_suffix rel ".md"
+        then (
+          let dst = Filename.concat out (strip rel) in
+          mkdir_p (Filename.dirname dst);
+          write_file dst (read_file abs))
+      in
+      walk ""
+  | _ -> ());
   (* blog posts: each post .mld is compiled straight with odoc (preprocess ->
      compile -> link -> html-generate, the direct-mld pipeline), then assembled
      with the same site chrome and the (blog-augmented) left nav, and written to
