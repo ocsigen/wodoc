@@ -47,6 +47,7 @@ val page :
   -> ?subproject:string
   -> ?menu_current:string
   -> ?leftnav:string
+  -> ?mdlink:string
   -> template:string
   -> current:string
   -> string
@@ -77,4 +78,8 @@ val page :
       in-page nav.
     - [leftnav] (default [""]): fills every [{{leftnav}}] hole (the drawer's
       mobile menu and the left column share one source), so the navigation is
-      defined once instead of being [sed]-expanded into both slots. *)
+      defined once instead of being [sed]-expanded into both slots.
+    - [mdlink] (default [""]): fills [{{mdlink}}] with the page's
+      [<link rel="alternate" type="text/markdown">] element pointing at its
+      Markdown twin (or [""] when there is no twin), so AIs/LLMs can discover the
+      [.md] version of any page. *)
