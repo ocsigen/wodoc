@@ -621,6 +621,19 @@ let md_alternate ~md_src ~base ~rel ~orel =
         base (md_twin orel)
   | _ -> ""
 
+(* the markdown paths of the project's nav entries, in declaration order — the
+   preferred Manual ordering for the llms.txt index ({!Llms.write}). Only local
+   entries (not absolute/cross-project or URLs) have a twin in this project. *)
+let nav_md_order (c : Config.t) =
+  let local p = p <> "" && p.[0] <> '/' && not (is_url p) in
+  let rec items = function
+    | [] -> []
+    | Config.Link e :: t ->
+        (if local e.path then [md_twin e.path] else []) @ items t
+    | Config.Group (_, sub) :: t -> items sub @ items t
+  in
+  List.concat_map (fun (s : Config.section) -> items s.items) c.nav
+
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
 let run
@@ -842,7 +855,12 @@ let run
           mkdir_p (Filename.dirname dst);
           write_file dst (read_file abs))
       in
-      walk ""
+      walk "";
+      (* the llms.txt / llms-full.txt index over the markdown tree just placed,
+         so AIs/LLMs get a structured entry point and a single-file dump *)
+      Llms.write ~out ~title:c.title
+        ~landing:(Some (md_twin c.landing))
+        ~order:(nav_md_order c)
   | _ -> ());
   (* blog posts: each post .mld is compiled straight with odoc (preprocess ->
      compile -> link -> html-generate, the direct-mld pipeline), then assembled
