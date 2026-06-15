@@ -142,7 +142,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
   <title>{{title}} — %s</title>
   <link rel="stylesheet" href="/css/style.css"/>
   <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
-  <script src="{{base}}/highlight.pack.js"></script>
+{{mdlink}}  <script src="{{base}}/highlight.pack.js"></script>
 %s</head>
 <body class="wodoc-page wodoc-doc%s">
   {{menu}}
@@ -575,6 +575,52 @@ let current_of_page orel paths =
           else best, blen)
        ("", -1) paths)
 
+(* Map an odoc HTML page path to its Markdown twin. odoc's html-generate NESTS
+   module pages ([Mod/Sub/index.html]) while markdown-generate FLATTENS them
+   ([Mod-Sub.md]), keeping the lowercase page/package directories. So: drop the
+   [.html]; drop a trailing [index] (unless it is the whole path); collapse the
+   trailing run of Capitalised module segments with [-]; keep the lowercase
+   prefix; append [.md]. e.g. [pkg/Nest/Sub/index.html] -> [pkg/Nest-Sub.md];
+   [pkg/intro.html] -> [pkg/intro.md]. *)
+let md_twin rel =
+  let rel =
+    if Filename.check_suffix rel ".html"
+    then Filename.chop_suffix rel ".html"
+    else rel
+  in
+  let is_mod s = s <> "" && s.[0] >= 'A' && s.[0] <= 'Z' in
+  let rev = List.rev (String.split_on_char '/' rel) in
+  (* drop the trailing [index] ONLY for a module page ([Mod/index] -> [Mod]); a
+     manual [index] under a lowercase package dir ([pkg/index]) keeps its name. *)
+  let rev =
+    match rev with "index" :: (m :: _ as t) when is_mod m -> t | r -> r
+  in
+  let rec take_mods acc = function
+    | s :: t when is_mod s -> take_mods (s :: acc) t
+    | rest -> acc, rest
+  in
+  let mods, rest_rev = take_mods [] rev in
+  let prefix = List.rev rest_rev in
+  let flat = String.concat "-" mods in
+  (match prefix, flat with
+    | [], f -> f
+    | p, "" -> String.concat "/" p
+    | p, f -> String.concat "/" p ^ "/" ^ f)
+  ^ ".md"
+
+(* the per-page [<link rel="alternate" type="text/markdown">] pointing at the
+   page's markdown twin, emitted only when that twin was actually produced.
+   [rel] is relative to [src] (used to probe [md_src], which parallels it);
+   [base]/[orel] give the page's output position (the md tree is copied to [out]
+   with the same [strip], so the twin sits at [base]/[md_twin orel]). *)
+let md_alternate ~md_src ~base ~rel ~orel =
+  match md_src with
+  | Some root when Sys.file_exists (Filename.concat root (md_twin rel)) ->
+      Printf.sprintf
+        "  <link rel=\"alternate\" type=\"text/markdown\" href=\"%s/%s\"/>\n"
+        base (md_twin orel)
+  | _ -> ""
+
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
 let run
@@ -691,9 +737,11 @@ let run
              this page among the config nav entries (so an "Overview" and a module
              page in the same package no longer light up together) *)
           let current = current_of_page orel nav_paths in
+          let mdlink = md_alternate ~md_src ~base ~rel ~orel in
           let page =
             Assemble.page ~flat:c.flat ~base ~menu:menu_html ~subproject
               ~menu_current:c.menu_current ~leftnav:nav ~template:tmpl ~current
+              ~mdlink
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in
@@ -753,10 +801,11 @@ let run
           let side = side_of sides rel in
           (* manual/other pages have no side colour but show the default api nav *)
           let nav_side = if side = "" then default_side else side in
+          let mdlink = md_alternate ~md_src ~base ~rel ~orel:rel in
           let page =
             Assemble.page ~base ~menu:menu_html ~subproject
               ~menu_current:c.menu_current ~leftnav:(leftnav_of nav_side)
-              ~template:(tmpl_of side) ~current:(cs_current sides rel)
+              ~template:(tmpl_of side) ~current:(cs_current sides rel) ~mdlink
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in

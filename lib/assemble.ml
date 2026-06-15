@@ -239,6 +239,7 @@ let page
       ?(subproject = "")
       ?(menu_current = "")
       ?(leftnav = "")
+      ?(mdlink = "")
       ~template
       ~current
       odoc_html
@@ -269,6 +270,8 @@ let page
         "leftnav", leftnav
       ; "subproject", subproject
       ; "base", base
+      ; (* the per-page markdown-twin <link rel="alternate"> (or "" if none) *)
+        "mdlink", mdlink
       ; "title", p.title
       ; ( "preamble"
         , if flat || not preamble
