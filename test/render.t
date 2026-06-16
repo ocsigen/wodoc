@@ -71,3 +71,14 @@ colon form, then ignores), for the build layer to substitute with the post list:
   > XEOF
   $ wodoc render blog.html
   <p><!--wodoc-blog-latest--></p>
+
+
+odoc_driver links each declaration to its rendered implementation with an
+<a class="source_link">Source</a>; wodoc does not assemble those (empty) source
+pages, so the dead links are stripped:
+
+  $ cat > src.html <<'XEOF'
+  > <a href="../../src/lib/x.ml.html#val-foo" class="source_link">Source</a><code>val foo : int</code>
+  > XEOF
+  $ wodoc render src.html
+  <code>val foo : int</code>

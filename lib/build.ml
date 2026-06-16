@@ -723,7 +723,11 @@ let run
         then
           Array.iter
             (fun e ->
-               if not (rel = "" && e = "odoc.support")
+               (* skip odoc's support assets and its rendered implementation
+                  tree ([src/]): wodoc does not assemble source pages (they would
+                  be empty), and their per-declaration "Source" links are stripped
+                  in {!Render.html}, so the tree would only be dead weight. *)
+               if not (rel = "" && (e = "odoc.support" || e = "src"))
                then walk (if rel = "" then e else Filename.concat rel e))
             (Sys.readdir abs)
         else if

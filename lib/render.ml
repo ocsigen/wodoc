@@ -109,13 +109,14 @@ let emit_tags s =
                 Buffer.add_string out
                   (Printf.sprintf "<span%s>" (attrs_of rest));
                 stack := "</span>" :: !stack
-            | ("section" | "header" | "footer" | "nav" | "article" | "aside")
-              as t ->
+            | ("section" | "header" | "footer" | "nav" | "article" | "aside") as
+              t ->
                 (* semantic block containers (same family as div): the odoc
                    paragraph that wraps the marker is normalised away by the
                    browser when a block element opens inside it. *)
-                Buffer.add_string out (Printf.sprintf "<%s%s>" t (attrs_of rest));
-                stack := (Printf.sprintf "</%s>" t) :: !stack
+                Buffer.add_string out
+                  (Printf.sprintf "<%s%s>" t (attrs_of rest));
+                stack := Printf.sprintf "</%s>" t :: !stack
             | "img" ->
                 Buffer.add_string out
                   (Printf.sprintf "<img%s/>" (attrs_of rest))
@@ -430,6 +431,16 @@ let strip_heading_anchors s =
     (Str.regexp "<a href=\"#[^\"]*\" class=\"anchor\">[^<]*</a>")
     "" s
 
+(* odoc_driver renders the implementation and links each declaration to it with
+   an [<a class="source_link">Source</a>]. wodoc does not assemble those source
+   pages (they would come out empty), so the links would be dead — drop them.
+   Unconditional: projects built with [dune build @doc] emit none, so this is a
+   no-op there. *)
+let strip_source_links s =
+  Str.global_replace
+    (Str.regexp "<a [^>]*class=\"source_link\"[^>]*>[^<]*</a>")
+    "" s
+
 let html ?(strip_anchors = false) s =
-  let s = s |> emit_tags |> fuse_attrs |> hoist in
+  let s = s |> emit_tags |> fuse_attrs |> hoist |> strip_source_links in
   if strip_anchors then strip_heading_anchors s else s
