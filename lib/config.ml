@@ -83,10 +83,11 @@ type t =
           [nav], wodoc builds a per-side API nav from each side's curated index,
           shows a client/server switch, and colours the body by side. The manual
           nav is shared, taken from [nav]'s manual ([(section …)]) blocks. *)
-  ; hosted : (string * (string * bool * string)) list
+  ; hosted : (string * (string * Resolve.layout * string)) list
     (** cross-project resolve-refs table (resolve-refs --hosted): package ->
-          (deploy dir, multi-library?, wrapper module). Rewrites sibling Ocsigen
-          projects' [ocaml.org] xrefs to relative links into their wodoc docs. *)
+          (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen
+          projects' [ocaml.org] xrefs to relative links into their wodoc docs.
+          See {!Resolve.layout} for the layout token (multilib/root/subdir). *)
   ; manual_root : bool
     (** deploy the package's pages at the version ROOT instead of under a
           [<package>/] subdirectory: strip the leading [<package>/] segment from
@@ -183,20 +184,24 @@ let parse_client_server stanzas =
         block
   | [] -> []
 
-(* (hosted (eliom eliom true Eliom) (ocsigenserver ocsigenserver false "") ..) *)
+(* (hosted (eliom eliom multilib Eliom) (ocsigenserver ocsigenserver root "")
+          (js_of_ocaml js_of_ocaml subdir "") ..)
+   The layout token also accepts the legacy [true]/[false] (= multilib/root). *)
 let parse_hosted stanzas =
   match Sexp.fields "hosted" stanzas with
   | block :: _ ->
       List.filter_map
         (function
           | Sexp.List (Atom pkg :: Atom dir :: rest) ->
-              let multi =
-                match rest with Sexp.Atom m :: _ -> m = "true" | _ -> false
+              let layout =
+                match rest with
+                | Sexp.Atom m :: _ -> Resolve.layout_of_string m
+                | _ -> Resolve.Root
               in
               let wrapper =
                 match rest with _ :: Sexp.Atom w :: _ -> w | _ -> ""
               in
-              Some (pkg, (dir, multi, wrapper))
+              Some (pkg, (dir, layout, wrapper))
           | _ -> None)
         block
   | [] -> []

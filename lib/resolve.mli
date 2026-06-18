@@ -28,8 +28,20 @@ val html :
     (both [xref-unresolved] spans and bare [<code>] qualified names), outside
     [<pre>] blocks, and returns the new HTML. *)
 
+(** How a hosted project's modules are laid out under [<dir>/latest/]. *)
+type layout =
+  | Multilib  (** client/server libs under [<dir>.<side>/], path flattened *)
+  | Root  (** single package at the version root, path flattened *)
+  | Subdir
+  (** multi-package project, each opam package under its own [<pkg>/], odoc
+          module layout kept verbatim *)
+
+val layout_of_string : string -> layout
+(** Parse a [hosted] layout token: ["multilib"]/["true"] -> [Multilib],
+    ["subdir"] -> [Subdir], anything else (["root"]/["false"]) -> [Root]. *)
+
 val deps :
-   hosted:(string * (string * bool * string)) list
+   hosted:(string * (string * layout * string)) list
   -> relroot:string
   -> side:string
   -> self:string
@@ -38,10 +50,11 @@ val deps :
 (** [deps ~hosted ~relroot ~side ~self page] rewrites cross-PROJECT references
     to a hosted Ocsigen project into relative links: both resolved ocaml.org
     dep links and [xref-unresolved] spans. [hosted] maps a package to
-    [(dir, multilib, wrapper)]; [relroot] is the path from the page to the
-    shared root holding every project; [side] is ["server"]/["client"]/[""];
-    [self] is the package being documented (its own leftover refs are kept as
-    text). The OCaml port of [resolve-deps.py]. *)
+    [(dir, layout, wrapper)]; a [Subdir] entry also matches any package
+    extending its key with a [-]/[_] separator (whole-family match). [relroot]
+    is the path from the page to the shared root holding every project; [side]
+    is ["server"]/["client"]/[""]; [self] is the package being documented (its
+    own leftover refs are kept as text). The OCaml port of [resolve-deps.py]. *)
 
 val requalify :
    wrapped:(string * string) list
