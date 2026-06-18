@@ -215,8 +215,11 @@ let () =
                match String.split_on_char '=' v with
                | [pkg; spec] -> (
                  match String.split_on_char ':' spec with
-                 | [dir; multi; wrapper] ->
-                     Some (pkg, (dir, multi = "true", wrapper))
+                 | [dir; layout; wrapper] ->
+                     Some
+                       ( pkg
+                       , (dir, Wodoc.Resolve.layout_of_string layout, wrapper)
+                       )
                  | _ -> None)
                | _ -> None)
           flags

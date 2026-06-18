@@ -56,7 +56,10 @@ and `.mli` sources. It provides:
   wikicréole menu.
 - `Resolve`: link references odoc left dead — cross-package "sibling" references
   built in the same tree, and cross-project references to other hosted projects —
-  rewriting the HTML in place.
+  rewriting the HTML in place. A hosted project declares its deployed layout
+  (`multilib` / `root` / `subdir`); a `subdir` entry rewrites links to a
+  multi-package project (e.g. `js_of_ocaml`, `tyxml`) into its per-package
+  `<pkg>/` subtree and matches the whole opam family (`js_of_ocaml-lwt`, …).
 - `Config` / `Build` / `wodoc build`: the turn-key command. From one declarative
   `doc/wodoc` config it runs `dune build @doc` and assembles a project's whole
   site (shared menu, generated left navigation and version selector, sibling
