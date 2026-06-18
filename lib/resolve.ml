@@ -207,10 +207,47 @@ let html ~siblings ~base s = outside_pre (process siblings base) s
    resolved dep as an absolute ocaml.org link; an unresolved one as an
    [xref-unresolved] span. For projects we host ourselves we rewrite both into
    RELATIVE links to that project's deployed docs. [hosted] maps a package to
-   [(dir, multilib, wrapper)]: [dir] is its directory under the shared root,
-   [multilib] whether its server/client libs sit in [<dir>.<side>/], [wrapper]
-   its wrapping module (used to collapse a wrapped path to the flat layout the
-   deployed docs use). *)
+   [(dir, layout, wrapper)]: [dir] is its directory under the shared root,
+   [layout] how its modules are laid out under [<dir>/latest/], [wrapper] its
+   wrapping module (used to collapse a wrapped path to the flat layout some
+   deployed docs use).
+
+   Three deployed layouts are supported (one per Ocsigen project family):
+   - [Multilib]: client/server libs in [<dir>.<side>/] (eliom, toolkit, start),
+     module path flattened with [wrapper];
+   - [Root]: a single package whose modules sit directly at the version root
+     (ocsigenserver, reactiveData), module path flattened with [wrapper];
+   - [Subdir]: a multi-package project where each opam package keeps its own
+     [<pkg>/] subdirectory and odoc's nested module layout (js_of_ocaml, tyxml,
+     lwt). The module path is kept verbatim (no flattening). One [hosted] entry
+     covers a whole family: a package whose name extends the entry key with a
+     [-]/[_] separator (e.g. [js_of_ocaml-lwt] for key [js_of_ocaml]) matches it
+     and deploys under its own [<pkg>/]. *)
+
+type layout = Multilib | Root | Subdir
+
+let layout_of_string = function
+  | "true" | "multilib" -> Multilib
+  | "subdir" -> Subdir
+  | _ -> Root (* "false" | "root" *)
+
+(* Find the hosted entry for an ocaml.org package [pkg]: an exact key first,
+   then a [Subdir] family key that [pkg] extends with a [-]/[_] separator. *)
+let find_hosted hosted pkg =
+  match List.assoc_opt pkg hosted with
+  | Some e -> Some e
+  | None ->
+      List.find_map
+        (fun (key, ((_, layout, _) as e)) ->
+           let k = String.length key in
+           if
+             layout = Subdir
+             && String.length pkg > k
+             && String.sub pkg 0 k = key
+             && (pkg.[k] = '-' || pkg.[k] = '_')
+           then Some e
+           else None)
+        hosted
 
 let flat_module wrapper comp =
   let pre = wrapper ^ "_" in
@@ -229,10 +266,12 @@ let flat_path wrapper path =
     flat_module wrapper comp ^ tail
   else path
 
-let dep_base hosted relroot side pkg =
-  let dir, multilib, _ = List.assoc pkg hosted in
+let dep_base relroot side dir layout pkg =
   let b = relroot ^ "/" ^ dir ^ "/latest" in
-  if multilib then b ^ "/" ^ dir ^ "." ^ side else b
+  match layout with
+  | Multilib -> b ^ "/" ^ dir ^ "." ^ side
+  | Root -> b
+  | Subdir -> b ^ "/" ^ pkg
 
 let resolved_re =
   Str.regexp
@@ -244,12 +283,15 @@ let fix_resolved hosted relroot side s =
        let m0 = Str.matched_string whole in
        let pkg = Str.matched_group 1 whole in
        let path = Str.matched_group 2 whole in
-       match List.assoc_opt pkg hosted with
-       | Some (_, _, wrapper) when not (String.starts_with ~prefix:"src/" path)
-         ->
+       match find_hosted hosted pkg with
+       | Some (dir, layout, wrapper)
+         when not (String.starts_with ~prefix:"src/" path) ->
+           let path' =
+             match layout with Subdir -> path | _ -> flat_path wrapper path
+           in
            Printf.sprintf "href=\"%s/%s\""
-             (dep_base hosted relroot side pkg)
-             (flat_path wrapper path)
+             (dep_base relroot side dir layout pkg)
+             path'
        | _ -> m0)
     s
 
@@ -321,8 +363,9 @@ let fix_dep_spans hosted relroot side self s =
                    then but_last rest, "#type-" ^ last
                    else rest, ""
                  in
+                 let dir, layout, _ = List.assoc pkg hosted in
                  let url =
-                   dep_base hosted relroot side pkg
+                   dep_base relroot side dir layout pkg
                    ^ "/" ^ modhead
                    ^ String.concat "" (List.map (fun d -> "/" ^ d) dirs)
                    ^ "/index.html" ^ anchor
@@ -342,8 +385,11 @@ let deps ~hosted ~relroot ~side ~self s =
    flat top segment [<W>_<x>] right after a wrapped project's [<dir>.<lib>/], try
    [<W>/<Cap x>] then [<W>/<W>_<x>] and keep the one whose target [exists]. *)
 let cap s =
-  if s = "" then s
-  else String.make 1 (Char.uppercase_ascii s.[0]) ^ String.sub s 1 (String.length s - 1)
+  if s = ""
+  then s
+  else
+    String.make 1 (Char.uppercase_ascii s.[0])
+    ^ String.sub s 1 (String.length s - 1)
 
 let requalify_url ~wrapped ~exists url =
   List.fold_left
@@ -361,7 +407,8 @@ let requalify_url ~wrapped ~exists url =
          match Str.search_forward (Str.regexp re) url 0 with
          | exception Not_found -> None
          | _ ->
-             let lib = Str.matched_group 1 url and rest = Str.matched_group 2 url in
+             let lib = Str.matched_group 1 url
+             and rest = Str.matched_group 2 url in
              let b = Str.match_beginning () and e = Str.match_end () in
              let mk seg =
                String.sub url 0 b ^ lib ^ wrapper ^ "/" ^ seg
@@ -378,14 +425,17 @@ let requalify_url ~wrapped ~exists url =
    segment (the first one past any [../] / leading [/]). [None] if there is no
    such segment or it is already a version. *)
 let latest_insert url =
-  let re = Str.regexp "^\\(\\(\\.\\./\\)*\\|/\\)\\([A-Za-z][A-Za-z0-9_-]*\\)/\\(.+\\)$" in
-  if Str.string_match re url 0 then (
+  let re =
+    Str.regexp "^\\(\\(\\.\\./\\)*\\|/\\)\\([A-Za-z][A-Za-z0-9_-]*\\)/\\(.+\\)$"
+  in
+  if Str.string_match re url 0
+  then
     let pre = Str.matched_group 1 url
     and proj = Str.matched_group 3 url
     and rest = Str.matched_group 4 url in
     if String.length rest >= 7 && String.sub rest 0 7 = "latest/"
     then None
-    else Some (pre ^ proj ^ "/latest/" ^ rest))
+    else Some (pre ^ proj ^ "/latest/" ^ rest)
   else None
 
 (* [requalify ~wrapped ~exists page] repairs BROKEN cross-project links in every
@@ -404,7 +454,8 @@ let requalify ~wrapped ~exists page =
            let w = requalify_url ~wrapped ~exists url in
            if w <> url && exists w
            then w
-           else match latest_insert url with Some v when exists v -> v | _ -> url
+           else
+             match latest_insert url with Some v when exists v -> v | _ -> url
        in
        Printf.sprintf "%s=\"%s\"" attr fixed)
     page
