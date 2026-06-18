@@ -58,7 +58,7 @@ type t = {
   siblings : (string * string list) list; (* resolve-refs sibling table *)
   nav : section list;
   client_server : cs_side list; (* when non-empty, the project is client/server: instead of one nav from nav, wodoc builds a per-side API nav from each side's curated index, shows a client/server switch, and colours the body by side. The manual nav is shared, taken from nav's manual ((section …)) blocks. *)
-  hosted : (string * (string * bool * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, multi-library?, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. *)
+  hosted : (string * (string * Resolve.layout * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. See Resolve.layout for the layout token (multilib/root/subdir). *)
   manual_root : bool; (* deploy the package's pages at the version ROOT instead of under a <package>/ subdirectory: strip the leading <package>/ segment from output paths, the landing and the nav links. Makes a single-package dune build @doc project (ocsigenserver, i18n) match the layout of odoc-driver projects (eliom: manual at the version root, e.g. /ocsigenserver/latest/config.html) so cross-project links resolve. The package's internal relative links are preserved (the same prefix is stripped from every page). *)
   mld_dir : string option; (* direct-mld build (a manual-only / archived project with no dune build @doc): compile every .mld in this dir straight with odoc (preprocess -> compile -> link -> html-generate). The pages are the manual; the landing index.html is a real page (no redirect). *)
   mld_package : string; (* odoc --package for the direct-mld compile (the src subtree) *)
@@ -93,7 +93,9 @@ val parse_siblings : Sexp.t list -> (string * string list) list
 val parse_client_server : Sexp.t list -> cs_side list
 ```
 ```ocaml
-val parse_hosted : Sexp.t list -> (string * (string * bool * string)) list
+val parse_hosted : 
+  Sexp.t list ->
+  (string * (string * Resolve.layout * string)) list
 ```
 ```ocaml
 val parse_blog : Sexp.t list -> blog option
