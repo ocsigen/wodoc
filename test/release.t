@@ -47,3 +47,12 @@ Versions are ordered numerically, not alphabetically (10.0.0 > 2.0.0):
   wodoc release: froze dev -> 10.0.0, latest -> 10.0.0
   $ cat site/versions.json
   {"latest":"10.0.0","list":["dev","10.0.0","2.0.0","1.0.0"]}
+
+A stale project-root redirect left by an older doc setup (e.g. lwt carried a
+`latest/manual/manual` leftover on gh-pages) is OVERWRITTEN, not preserved:
+
+  $ printf '<meta http-equiv="refresh" content="0; url=latest/manual/manual"/>\n' > site/index.html
+  $ wodoc release --site site --version 10.0.1
+  wodoc release: froze dev -> 10.0.1, latest -> 10.0.1
+  $ grep -o 'url=[^"]*' site/index.html
+  url=latest/index.html

@@ -1062,12 +1062,14 @@ let release ~site ~from ~version =
        (Printf.sprintf "ln -sfn %s %s" (Filename.quote version)
           (Filename.quote (Filename.concat site "latest"))));
   (* the project-root redirect points at the stable [latest] symlink, so it does
-     not change between releases; write it once if missing. *)
+     not change between releases. Always (over)write it: a project migrated from
+     an older doc setup may carry a STALE root redirect on gh-pages (e.g. lwt's
+     [latest/manual/manual] leftover) that a "write only if missing" would keep
+     forever. It is a generated artifact, never customised, so overwriting is
+     safe. *)
   let idx = Filename.concat site "index.html" in
-  if not (Sys.file_exists idx)
-  then
-    write_file idx
-      "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body></body>\n</html>\n";
+  write_file idx
+    "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body></body>\n</html>\n";
   (* GitHub Pages: serve the static odoc/wodoc site as-is. Without this, Pages runs
      Jekyll, which is slow on large API sites and skips underscore-prefixed odoc
      directories. Written once at the site root if missing. *)
