@@ -29,6 +29,10 @@ on:
         default: false
 
 # Don't run on forks: deployment targets ocsigen/wodoc's gh-pages.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-deploy:
     if: github.repository == 'ocsigen/wodoc'
