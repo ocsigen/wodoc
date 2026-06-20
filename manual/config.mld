@@ -13,7 +13,7 @@ A minimal config (wodoc's own — this very site):
 {@text[
 (project wodoc)
 (title Wodoc)
-(pub /wodoc)
+(url-prefix /wodoc)
 (packages wodoc)
 (landing wodoc/index.html)
 
@@ -39,7 +39,7 @@ wodoc build --config doc/wodoc --out <site>/<label> \
   |--------|---------|
   | [(project <id>)] | {b required} — package / project id, e.g. [ocsipersist] |
   | [(title <label>)] | sub-project label shown by the logo (default: the project id) |
-  | [(pub <path>)] | absolute publish base for the version selector, e.g. [/ocsipersist] (default [/<project>]) |
+  | [(url-prefix <path>)] | absolute publish base for the version selector, e.g. [/ocsipersist] (default [/<project>]) |
   | [(menu-current <id>)] | which project to highlight in the shared top menu (default: the project id) |
   | [(packages <p> …)] | the odoc output subtrees to assemble, in order; empty = every subtree odoc produced |
   | [(landing <path>)] | where the version-root [index.html] redirects, e.g. [ocsipersist/index.html] |

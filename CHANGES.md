@@ -12,6 +12,14 @@ no theme configuration:
   absolute/URL href is used verbatim; omitting it ships the built-in theme.
 - The highlight starter is always linked relatively (no shared absolute path).
 
+Config simplifications (breaking):
+
+- `(client-server …)` now implies `(odoc-driver <project>)` — declare only the
+  client/server block, not both.
+- `mld-package` folded into `(mld-dir <dir> [<package>])` (the package is the
+  optional second atom).
+- The `pub` stanza is renamed `url-prefix`.
+
 ## 0.1
 
 First release: an odoc driver that builds complete, styled websites from `.mld`

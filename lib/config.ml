@@ -59,8 +59,9 @@ type cs_side =
 type t =
   { project : string  (** package / project id, e.g. "ocsipersist" *)
   ; title : string  (** sub-project label by the logo, e.g. "Ocsipersist" *)
-  ; pub : string
-    (** absolute publish base for the version selector, e.g. "/ocsipersist" *)
+  ; url_prefix : string
+    (** absolute URL path the site is published at, e.g. "/ocsipersist"; used by
+          the version selector to switch versions *)
   ; menu_current : string  (** project id highlighted in the shared top menu *)
   ; packages : string list  (** odoc output subtrees to assemble, in order *)
   ; landing : string
@@ -265,7 +266,7 @@ let of_string s =
   in
   { project
   ; title = Sexp.field_atom_default "title" project stanzas
-  ; pub = Sexp.field_atom_default "pub" ("/" ^ project) stanzas
+  ; url_prefix = Sexp.field_atom_default "url-prefix" ("/" ^ project) stanzas
   ; menu_current = Sexp.field_atom_default "menu-current" project stanzas
   ; packages =
       Sexp.field_atoms "packages" stanzas

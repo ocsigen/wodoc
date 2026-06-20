@@ -14,7 +14,7 @@
 
 (project wodoc)
 (title Wodoc)
-(pub /wodoc)
+(url-prefix /wodoc)
 (packages wodoc)
 (landing wodoc/index.html)
 

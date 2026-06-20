@@ -251,7 +251,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
 </body>
 </html>
 |}
-    (esc c.title) css_links hl body_extra extra_script c.pub
+    (esc c.title) css_links hl body_extra extra_script c.url_prefix
 
 (* the version <select> block (shared by the normal and per-side left columns).
    The entry that the [latest] symlink targets is rendered with value "latest"
@@ -785,7 +785,7 @@ let run
   let assemble_page =
     match c.client_server with
     | [] ->
-        let tmpl = replace_hole (template c) "pub" c.pub in
+        let tmpl = replace_hole (template c) "pub" c.url_prefix in
         (* left nav: version selector + on-this-page + the config-declared
            [(nav …)] sections. *)
         let nav = leftnav ~latest c vs in
@@ -843,7 +843,7 @@ let run
               let t =
                 replace_hole
                   (template ~body_extra ~extra_script:script c)
-                  "pub" c.pub
+                  "pub" c.url_prefix
               in
               Hashtbl.add tcache side t; t
         in
@@ -917,7 +917,7 @@ let run
      blog works for any project type. *)
   (match c.blog with
   | Some _ when blog_posts <> [] ->
-      let tmpl = replace_hole (template c) "pub" c.pub in
+      let tmpl = replace_hole (template c) "pub" c.url_prefix in
       let nav = leftnav ~latest c vs in
       let nav_paths = nav_entry_paths c in
       let work = "_wodoc-blog" in

@@ -11,7 +11,7 @@ wodoc's own placement/indexing without invoking odoc's backends.
   $ cat > doc/wodoc <<'EOF'
   > (project demo)
   > (title Demo)
-  > (pub /demo)
+  > (url-prefix /demo)
   > (packages demo)
   > (landing demo/index.html)
   > (nav
@@ -79,7 +79,7 @@ llms-full.txt concatenates every page for single-shot ingestion:
 A project can opt out of the whole Markdown pipeline with (markdown false): no
 .md twins, no llms.txt, and no <link rel="alternate"> on the pages.
 
-  $ printf '(project demo)\n(title Demo)\n(pub /demo)\n(packages demo)\n(landing demo/index.html)\n(markdown false)\n' > doc/wodoc
+  $ printf '(project demo)\n(title Demo)\n(url-prefix /demo)\n(packages demo)\n(landing demo/index.html)\n(markdown false)\n' > doc/wodoc
   $ wodoc build --config doc/wodoc --src src --md-src md --out off/dev \
   >   --menu menu.html --label dev 2>/dev/null
   $ test -e off/dev/demo/index.md && echo twin || echo "no twin"

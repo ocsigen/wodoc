@@ -12,7 +12,7 @@
 
 (project myproj)            ; the opam/dune package name; also the URL path segment
 (title "My Project")        ; shown in <title> and as the menu's {{subproject}} label
-(pub /myproj)               ; absolute URL prefix where the site is served, e.g.
+(url-prefix /myproj)               ; absolute URL prefix where the site is served, e.g.
                             ; https://my.example/myproj/<version>/…  (see README:
                             ; /css/ must resolve at the DOMAIN ROOT, not under (pub))
 (packages myproj)           ; the odoc package(s) to assemble; omit to assemble every

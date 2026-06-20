@@ -31,7 +31,7 @@ manual ([`manual/building-a-site.mld`](../../manual/building-a-site.mld)).
    cp examples/starter/deploy.yml   .github/workflows/doc.yml
    ```
 
-2. Edit `doc/wodoc`: set `(project …)`, `(title …)`, `(pub …)`, `(packages …)`,
+2. Edit `doc/wodoc`: set `(project …)`, `(title …)`, `(url-prefix …)`, `(packages …)`,
    the `(landing …)` page and the `(nav …)` entries to your project.
 
 3. Build and preview the site locally:
@@ -52,7 +52,7 @@ The starter config sets the theme with **relative** paths
 each build and links it per-version. The highlighter is local too
 (`(highlight wodoc-highlight.js)`). The result is a **self-contained** site that
 works wherever you serve it — including a plain GitHub project page
-(`you.github.io/PROJECT/`). Just set `(pub /PROJECT)` to match the path the site
+(`you.github.io/PROJECT/`). Just set `(url-prefix /PROJECT)` to match the path the site
 is served at, so the version selector switches correctly.
 
 If you instead omit `(css …)`, wodoc falls back to the Ocsigen-hosted defaults

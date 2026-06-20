@@ -30,7 +30,7 @@ A wodoc site is made of these ingredients; each is covered below.
 {1 The shape of a built site}
 
 [wodoc build --out <dir> --label <v>] writes {e one version} of the site into
-[<dir>]. Deployed, the tree looks like this (here [(pub /myproj)], one package):
+[<dir>]. Deployed, the tree looks like this (here [(url-prefix /myproj)], one package):
 
 {@text[
 /myproj/
@@ -40,23 +40,23 @@ A wodoc site is made of these ingredients; each is covered below.
       index.html       <- the home page
       tutorial.html
       Myproj/index.html
+    wodoc.css          <- the theme (built-in default, or your (css …))
     wodoc-highlight.js
     versions.json      <- the version manifest (drives the <select>)
   1.0.0/               <- a frozen release (wodoc release)
   latest -> 1.0.0      <- a symlink
-/css/                  <- the stylesheet, at the DOMAIN ROOT (see Theming)
 ]}
 
-Internal links are version-relative, so a frozen version keeps working forever;
-only the version [<select>], the stylesheet and the highlighter are referenced by
-absolute path. Remember that last point — it shapes deployment (see
-{{!deployment}Versioning and deployment}).
+Everything a page references — the theme, the highlighter, internal links — is
+version-relative, so the site is self-contained and a frozen version keeps working
+forever. (Only the version [<select>] uses the absolute [(url-prefix)] to switch
+versions.)
 
 {1 [wodoc build]: what it generates, what you supply}
 
 The turn-key {{!page-"commands"}[wodoc build]} runs [dune build @doc] and then
-assembles every page. It {b generates almost everything}; you supply only the
-top menu and the stylesheet.
+assembles every page. It {b generates almost everything} — including a default
+theme and top bar — so a basic site needs no theming setup at all.
 
 {t
   | Part | Who provides it |
@@ -143,11 +143,10 @@ List several to document them side by side:
 ]}
 
 A {b client/server} project (libraries that share module names, e.g. an Eliom
-app) is built through [odoc_driver] instead of [dune build @doc] — declare it with
-[(odoc-driver <pkg>)] and a [(client-server …)] block; wodoc then gives every
-page its side's API nav, a body colour and a client/server switch. See the
-[(client-server …)] and [(odoc-driver …)] stanzas in
-{{!page-"config"}Configuration}.
+app) is built through [odoc_driver] instead of [dune build @doc]. Just declare a
+[(client-server …)] block (it implies [(odoc-driver <project>)]); wodoc then gives
+every page its side's API nav, a body colour and a client/server switch. See the
+[(client-server …)] stanza in {{!page-"config"}Configuration}.
 
 {1 Theming: customising the look}
 

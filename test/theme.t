@@ -8,7 +8,7 @@ checks wodoc's own template/asset placement without invoking odoc.
   $ cat > doc/wodoc <<'EOF'
   > (project demo)
   > (title Demo)
-  > (pub /demo)
+  > (url-prefix /demo)
   > (packages demo)
   > (landing demo/index.html)
   > (nav (section "Manual" (link "Introduction" "demo/index.html")))
