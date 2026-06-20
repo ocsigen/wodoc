@@ -10,7 +10,7 @@ full site (header, menus, version selector). Any OCaml project can use it.
 
 ## Installation
 
-wodoc is not on the opam repository yet — pin it from git:
+Pin wodoc from git:
 
 ```
 opam pin add wodoc git+https://github.com/ocsigen/wodoc.git
@@ -18,9 +18,9 @@ opam pin add wodoc git+https://github.com/ocsigen/wodoc.git
 
 (or `opam pin add wodoc .` from a clone). This also pins the `odoc` family
 (`odoc`, `odoc-driver`, …) to the small fork wodoc needs, via the `pin-depends`
-in [`wodoc.opam`](wodoc.opam) — no manual setup. It needs OCaml ≥ 5.1 (pulled in
-by `odoc-driver`). At run time it shells out to `odoc`/`odoc_driver` and to
-`curl` (for `--menu <URL>`).
+in [`wodoc.opam`](wodoc.opam) — no manual setup; `odoc-driver` pulls in the
+OCaml version it requires. At run time wodoc shells out to `odoc`/`odoc_driver`
+and to `curl` (for `--menu <URL>`).
 
 ## How it works
 
@@ -204,12 +204,13 @@ wodoc render [--strip-anchors] <odoc.html>
 
 wodoc assemble --template <tmpl.html> [--current <id>] [--base <b>] [--menu <f>]
                [--subproject <s>] [--menu-current <id>] [--leftnav <f>]
-               [--no-preamble] [--flat] [--keep-anchors]
-               [--blog-config <c>] [--blog-base <b>] <odoc.html>
+               [--no-preamble] [--flat] [--keep-anchors] [--byline <t>]
+               [--mdlink <href>] [--blog-config <c>] [--blog-base <b>] <odoc.html>
     wrap rendered odoc HTML in a site template (fills {{title}}/{{preamble}}/
     {{toc}}/{{content}}/{{menu}}/{{leftnav}} and marks the current entry;
-    --blog-config expands a {%wodoc:blog-latest%} marker with that blog's
-    latest-posts fragment)
+    --byline inserts a meta line after the title; --mdlink advertises the page's
+    Markdown twin with <link rel=alternate>; --blog-config expands a
+    {%wodoc:blog-latest%} marker with that blog's latest-posts fragment)
 
 wodoc nav  --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--skip-title <t>]..
     render an API module navigation fragment from a curated odoc index (used by
@@ -256,9 +257,15 @@ carry the same listing with `--blog-config`/`--blog-base`, its full left-nav
 block with `wodoc blog-nav`, and an Atom feed (for OCaml Planet and the like)
 with `wodoc blog-feed`. See the [Configuration](manual/config.mld) manual.
 
-## Status
+## Markdown & llms.txt
 
-Early work in progress.
+Alongside the HTML, `wodoc build` emits a **Markdown twin** of every page and an
+**`llms.txt`** index (plus `llms-full.txt`) per project, so the docs stay
+readable by plain-text tools and LLMs. Each HTML page advertises its twin with a
+`<link rel="alternate" type="text/markdown">`. This is on by default; add
+`(markdown false)` to the `doc/wodoc` config to turn it off. (On the low-level
+path, `wodoc assemble --mdlink <href>` adds the `<link rel=alternate>` to a
+single page.)
 
 ## License
 

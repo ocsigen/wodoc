@@ -15,6 +15,7 @@ maintainer: ["The Ocsigen team"]
 authors: ["The Ocsigen team"]
 license: "MIT"
 homepage: "https://github.com/ocsigen/wodoc"
+doc: "https://ocsigen.org/wodoc/latest/"
 bug-reports: "https://github.com/ocsigen/wodoc/issues"
 depends: [
   "dune" {>= "3.0"}

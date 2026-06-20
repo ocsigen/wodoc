@@ -1,6 +1,6 @@
 # Changes
 
-## Unreleased
+## 1.0
 
 First release: an odoc driver that builds complete, styled websites from `.mld`
 and `.mli` sources. It provides:
@@ -8,7 +8,9 @@ and `.mli` sources. It provides:
 - `Preprocess`: rewrite `{%wodoc:..%}` markers into `{%html:<!--wodoc:..-->%}`
   so stock odoc preserves them as HTML comments.
 - `Render`: turn the markers in odoc's HTML output into real, correctly nested
-  HTML — containers (`div`/`a`/`span`/`end`), multi-level attribute injection
+  HTML — containers (`div`/`a`/`span`, the semantic blocks
+  `section`/`header`/`nav`/`article`/`aside`/`footer`, and `end`), multi-level
+  attribute injection
   (`@ S0 | S1 | S2`, html_of_wiki's `@@` equivalent: successive nesting levels — e.g.
   table / row / cell — mirroring html_of_wiki's `@@a@b@c@@`; each section may
   start with a 1-based sibling index to reach the Nth row/cell rather than the
@@ -90,6 +92,12 @@ and `.mli` sources. It provides:
   home) can carry the same listing with `--blog-config`/`--blog-base`. For such a
   build, `wodoc blog-nav` prints the left-nav block and `wodoc blog-feed` prints
   an Atom feed of the posts (syndication, e.g. OCaml Planet).
+- Markdown twin & `llms.txt`: alongside the HTML, `wodoc build` emits a Markdown
+  twin of every page (odoc's markdown backend) and an `llms.txt`/`llms-full.txt`
+  index per project, so the docs stay readable by plain-text tools and LLMs. Each
+  HTML page advertises its twin with `<link rel="alternate" type="text/markdown">`
+  (low-level: `wodoc assemble --mdlink`). On by default; `(markdown false)` in the
+  config turns it off.
 - `wodoc requalify-xrefs`: post-pass over a co-located multi-project site that
   fixes flat cross-project links to a wrapped library (`Eliom_content` →
   `Eliom/Content`) — `odoc_driver --remap` names the reference by the flat path
