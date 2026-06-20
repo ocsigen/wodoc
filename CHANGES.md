@@ -1,5 +1,17 @@
 # Changes
 
+## 1.0
+
+Simplified setup — `wodoc build` now produces a styled, self-contained site with
+no theme configuration:
+
+- A built-in default theme is shipped as `wodoc.css` and a default top bar is
+  generated, both linked by per-version relative paths (the site works at any
+  deploy path). `--menu` is now optional (it overrides the default bar), and the
+  stylesheet is chosen by `(css …)` — a relative href is copied into the build, an
+  absolute/URL href is used verbatim; omitting it ships the built-in theme.
+- The highlight starter is always linked relatively (no shared absolute path).
+
 ## 0.1
 
 First release: an odoc driver that builds complete, styled websites from `.mld`

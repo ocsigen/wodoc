@@ -18,6 +18,10 @@
 (packages wodoc)
 (landing wodoc/index.html)
 
+; This site is hosted on ocsigen.org with the shared Ocsigen chrome, so use the
+; central stylesheet (served at /css/) rather than wodoc's built-in default theme.
+(css /css/style.css /css/ocsigen-odoc.css)
+
 (nav
  (section "Manual"
   (link "Overview" wodoc/index.html index)

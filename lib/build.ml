@@ -160,14 +160,12 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
      every project AND every (even frozen) version without a rebuild. A project
      that ships its own (highlight <file>) override keeps the per-build local
      copy instead. *)
-  let hl =
-    match c.highlight with
-    | Some _ -> "  <script src=\"{{base}}/wodoc-highlight.js\"></script>\n"
-    | None -> "  <script src=\"/doc/wodoc-highlight.js\"></script>\n"
-  in
-  (* the stylesheet <link>s from the config's (css …): absolute/URL hrefs verbatim,
-     relative ones made per-page relative with the {{base}} hole (and shipped into
-     the output by Build.run), so a project's theme works at any deploy path. *)
+  (* the highlight starter is always shipped per build and linked relatively *)
+  let hl = "  <script src=\"{{base}}/wodoc-highlight.js\"></script>\n" in
+  (* the stylesheet <link>s. With no (css …) configured, ship and link the
+     built-in default theme (wodoc.css). Otherwise honour the configured hrefs:
+     a relative one is made per-page relative with {{base}} (and copied into the
+     output by Build.run), an absolute (/…) or URL one is emitted verbatim. *)
   let css_links =
     String.concat ""
       (List.map
@@ -178,7 +176,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
               else "{{base}}/" ^ href
             in
             Printf.sprintf "  <link rel=\"stylesheet\" href=\"%s\"/>\n" h)
-         c.css)
+         (if c.css = [] then ["wodoc.css"] else c.css))
   in
   Printf.sprintf
     {|<!DOCTYPE html>
@@ -693,7 +691,8 @@ let run
       ~set_latest
   =
   mkdir_p out;
-  let menu_html = read_menu menu in
+  (* no --menu given: use the built-in default top bar (Theme.menu) *)
+  let menu_html = if menu = "" then Theme.menu else read_menu menu in
   let subproject =
     Printf.sprintf "<p class=\"logo-subproject\">%s</p>" (esc c.title)
   in
@@ -1009,24 +1008,28 @@ let run
               (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
                  (Filename.quote d)))))
     c.static_copy;
-  (* stylesheets named in (css …): a relative href that names a file next to the
-     config is shipped into the output (preserving sub-paths) and served per
-     version, so the themed site is self-contained and works at any deploy path.
-     Absolute (/…) or URL hrefs are left to the site to serve. *)
-  List.iter
-    (fun href ->
-       if not ((String.length href > 0 && href.[0] = '/') || is_url href)
-       then
-         let csrc = Filename.concat assets_dir href in
-         if Sys.file_exists csrc
-         then (
-           let d = Filename.concat out href in
-           mkdir_p (Filename.dirname d);
-           ignore
-             (Sys.command
-                (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
-                   (Filename.quote d)))))
-    c.css;
+  (* the stylesheet: with no (css …) configured, ship the built-in default theme
+     as wodoc.css; otherwise copy each configured RELATIVE css file (found next to
+     the config) into the output, served per-version — so the themed site is
+     self-contained and works at any deploy path. Absolute/URL hrefs are left to
+     the site to serve. *)
+  if c.css = []
+  then write_file (Filename.concat out "wodoc.css") Theme.css
+  else
+    List.iter
+      (fun href ->
+         if not ((String.length href > 0 && href.[0] = '/') || is_url href)
+         then
+           let csrc = Filename.concat assets_dir href in
+           if Sys.file_exists csrc
+           then (
+             let d = Filename.concat out href in
+             mkdir_p (Filename.dirname d);
+             ignore
+               (Sys.command
+                  (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
+                     (Filename.quote d)))))
+      c.css;
   (* assets: odoc's bundled highlighter + the project's highlight starter *)
   let sf = Filename.temp_file "wodoc-sf" "" in
   Sys.remove sf;

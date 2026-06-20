@@ -66,19 +66,22 @@ top menu and the stylesheet.
   | the page content (odoc HTML, with your [{%wodoc:…%}] markers rendered) | {b generated} |
   | Markdown twins, [llms.txt], the landing redirect, [versions.json] | {b generated} |
   | the highlighter ([highlight.pack.js] and [wodoc-highlight.js]) | {b shipped} by wodoc |
-  | the {b top menu} fragment ([--menu]) | {b you} (a file or URL) |
-  | the {b stylesheet} ([/css/style.css], [/css/ocsigen-odoc.css]) | {b you} (host it at the root) |
+  | the {b top bar} | {b generated} default; override with [--menu] (a file or URL) |
+  | the {b stylesheet / theme} | {b shipped} default [wodoc.css]; override with [(css …)] |
   | static assets (images, examples) | {b you} (via config; see below) |
 }
 
-So a minimal build is:
+So the minimal build is just:
 
 {@text[
-wodoc build --config doc/wodoc --out _site/dev --label dev --menu doc/menu.html
+wodoc build --config doc/wodoc --out _site/dev --label dev
 ]}
 
-[--menu] is {b required}. The rest of this page is about filling in the two
-columns you own.
+That already produces a {b styled, self-contained site} — a built-in theme and a
+top bar are shipped and linked by per-version relative paths, so it works at any
+deploy path. The rest of this page is about the pieces you may want to customise:
+the home page, the navigation, and — when you outgrow the built-in look — the
+theme and the top bar.
 
 {1 The home page}
 
@@ -146,16 +149,18 @@ page its side's API nav, a body colour and a client/server switch. See the
 [(client-server …)] and [(odoc-driver …)] stanzas in
 {{!page-"config"}Configuration}.
 
-{1 Theming: the menu and the stylesheet}
+{1 Theming: customising the look}
 
-This is the part you must set up yourself, and — for now — the fiddliest one.
+[wodoc build] ships a built-in theme and a default top bar (the section above),
+so you can skip this entirely and still get a styled site. Customise when you
+outgrow the defaults.
 
-{2 The top menu ([--menu])}
+{2 The top bar ([--menu])}
 
-[--menu] takes an HTML {e fragment} (a local file or an [http(s)] URL fetched with
-curl) that wodoc injects at the top of every page. It may contain holes wodoc
-fills: [{{subproject}}] (your title) and [{{base}}] (the per-page relative path to
-the version root). A minimal menu is just your header markup:
+Pass [--menu <file|URL>] to replace the default bar with your own HTML {e fragment}
+(a local file or an [http(s)] URL fetched with curl), injected at the top of every
+page. It may contain holes wodoc fills: [{{subproject}}] (your title) and
+[{{base}}] (the per-page relative path to the version root). A minimal menu:
 
 {@text[
 <header class="site-header">
@@ -165,22 +170,19 @@ the version root). A minimal menu is just your header markup:
 </header>
 ]}
 
-{2 The stylesheet}
+{2 The stylesheet ([(css …)])}
 
-The generated template links the stylesheets named in the config's [(css …)]
-stanza, and does {e not} link odoc's own [odoc.css] — so your stylesheets carry
-the whole look. Choose how they are served:
+By default wodoc links its built-in theme ([wodoc.css], shipped per-version). The
+[(css …)] stanza replaces it; the template does {e not} link odoc's own [odoc.css],
+so your stylesheets carry the whole look. Choose how they are served:
 
-- [(css style.css ocsigen-odoc.css …)] — {b relative} hrefs: wodoc copies each
-  file (found next to the config) into every build and links it per-version, so
-  the site is {b self-contained} and works at any deploy path (recommended);
+- [(css style.css …)] — {b relative} hrefs: wodoc copies each file (found next to
+  the config) into every build and links it per-version, so the site stays
+  {b self-contained} and works at any deploy path;
 - [(css /css/style.css …)] or a full URL — {b absolute} hrefs, emitted verbatim,
-  which you must serve yourself (the Ocsigen default points at [/css/…] on the
-  domain root);
-- omit [(css …)] to keep the Ocsigen-hosted default
-  ([/css/style.css], [/css/ocsigen-odoc.css]).
+  which you serve yourself (e.g. a shared site-wide stylesheet at the domain root).
 
-Whichever you pick, the stylesheets must style both the chrome and the content:
+A custom stylesheet must style both the chrome and the content:
 
 - the chrome wodoc emits — [.wodoc-page], [.project-page]/[.twocols]/[.leftcol]/
   [.rightcol], the navigation ([.api-nav], [.api-section], [.ml2]/[.ml3]/…,

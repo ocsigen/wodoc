@@ -506,7 +506,9 @@ let () =
                 in
                 "_build/default/_doc/_html", md_src))
       in
-      Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu:(req "menu")
+      (* --menu is optional: without it, Build uses the built-in default header *)
+      let menu = Option.value ~default:"" (List.assoc_opt "menu" flags) in
+      Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu
         ~assets_dir:(Filename.dirname cfg) ~local ~set_latest
   | _ :: "requalify-xrefs" :: args ->
       (* Post-pass over a co-located multi-project site: rewrite flat

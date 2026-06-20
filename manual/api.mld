@@ -17,6 +17,7 @@ Wodoc.Config
 Wodoc.Build
 Wodoc.Blog
 Wodoc.Llms
+Wodoc.Theme
 }
 
 {1 Where to start}
@@ -36,3 +37,5 @@ Wodoc.Llms
   section and a "latest posts" landing fragment.
 - {!Wodoc.Llms} — generate the [llms.txt] / [llms-full.txt] index from the
   Markdown twin tree (the LLM-friendly view of a built site).
+- {!Wodoc.Theme} — the built-in default assets (theme stylesheet, top bar)
+  shipped when a project configures none.
