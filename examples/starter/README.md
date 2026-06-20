@@ -15,8 +15,8 @@ manual ([`manual/building-a-site.mld`](../../manual/building-a-site.mld)).
 |---|---|---|
 | [`wodoc`](wodoc) | `doc/wodoc` | the declarative build config (project, packages, landing, nav) |
 | [`menu.html`](menu.html) | `doc/menu.html` | the top-menu fragment injected as `{{menu}}` (passed via `--menu`) |
-| [`css/style.css`](css/style.css) | served at `/css/style.css` | page layout + chrome theme |
-| [`css/ocsigen-odoc.css`](css/ocsigen-odoc.css) | served at `/css/ocsigen-odoc.css` | the odoc **content** theme |
+| [`css/style.css`](css/style.css) | `doc/css/style.css` | page layout + chrome theme (shipped into each build) |
+| [`css/ocsigen-odoc.css`](css/ocsigen-odoc.css) | `doc/css/ocsigen-odoc.css` | the odoc **content** theme (shipped into each build) |
 | [`deploy.yml`](deploy.yml) | `.github/workflows/doc.yml` | build + publish to `gh-pages` |
 
 ## Quick start
@@ -34,42 +34,31 @@ manual ([`manual/building-a-site.mld`](../../manual/building-a-site.mld)).
 2. Edit `doc/wodoc`: set `(project …)`, `(title …)`, `(pub …)`, `(packages …)`,
    the `(landing …)` page and the `(nav …)` entries to your project.
 
-3. Build the site locally:
+3. Build and preview the site locally:
 
    ```
-   wodoc build --config doc/wodoc --out _site/dev --label dev \
-               --menu doc/menu.html --local
-   ```
-
-   `--local` fetches nothing here (your assets are local), but it prints the exact
-   command to preview the site — because the pages use absolute paths (`/css/…`),
-   serve the **parent** of the version directory and put the CSS at its root:
-
-   ```
-   cp -r doc/css _site/css
+   wodoc build --config doc/wodoc --out _site/dev --label dev --menu doc/menu.html
    (cd _site && python3 -m http.server)
    # then open http://localhost:8000/dev/
    ```
 
-## The one thing to know: `/css/` lives at the domain root
+   The theme is shipped inside `_site/dev/` and linked relatively, so it just
+   works — no assets to host separately.
 
-The page template wodoc generates links the stylesheet by **absolute** path
-(`/css/style.css`, `/css/ocsigen-odoc.css`). So the CSS must be reachable at the
-**root of the domain**, not under your project's path. In practice:
+## Self-contained by default (works at any path)
 
-- **Works:** a user/org pages site (`you.github.io`) or a project repo with a
-  **custom domain** (a `CNAME`), where gh-pages is served at the domain root. The
-  `deploy.yml` here publishes both the version directories and `/css/` at that
-  root.
-- **Does not work out of the box:** a plain project page
-  (`you.github.io/PROJECT/`), where `/css/…` resolves to `you.github.io/css/`
-  (outside your repo). Use a custom domain, or host the two CSS files at whatever
-  serves your domain root.
+The starter config sets the theme with **relative** paths
+(`(css css/style.css css/ocsigen-odoc.css)`), so wodoc copies the stylesheet into
+each build and links it per-version. The highlighter is local too
+(`(highlight wodoc-highlight.js)`). The result is a **self-contained** site that
+works wherever you serve it — including a plain GitHub project page
+(`you.github.io/PROJECT/`). Just set `(pub /PROJECT)` to match the path the site
+is served at, so the version selector switches correctly.
 
-The same applies to the version selector (it switches on the absolute `(pub)`
-prefix) and to the default highlighter — which is why the starter config sets
-`(highlight wodoc-highlight.js)` to ship a **local** copy instead of the
-Ocsigen-hosted `/doc/wodoc-highlight.js`.
+If you instead omit `(css …)`, wodoc falls back to the Ocsigen-hosted defaults
+(`/css/style.css`, `/css/ocsigen-odoc.css`) — absolute paths that then require you
+to serve `/css/` at the **domain root** (a `you.github.io` user/org site or a
+custom domain).
 
 ## Releasing a version
 

@@ -19,6 +19,13 @@
                             ; subtree `dune build @doc` produces
 (landing myproj/index.html) ; the page the version root redirects to (your home page)
 
+; The theme. These RELATIVE paths make the site self-contained: wodoc copies the
+; files into each build (here at <version>/css/…) and links them per-version, so
+; the site works at any deploy path — including a plain GitHub project page
+; (you.github.io/myproj/). (The default, if you omit (css …), is the absolute
+; Ocsigen-hosted /css/style.css + /css/ocsigen-odoc.css, which need a domain root.)
+(css css/style.css css/ocsigen-odoc.css)
+
 ; Ship the syntax-highlight starter LOCALLY: with (highlight …) set, every page
 ; loads {{base}}/wodoc-highlight.js (a relative, per-version copy) instead of the
 ; Ocsigen-hosted /doc/wodoc-highlight.js. Drop your own doc/wodoc-highlight.js next

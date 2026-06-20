@@ -167,10 +167,20 @@ the version root). A minimal menu is just your header markup:
 
 {2 The stylesheet}
 
-The generated template links {b two stylesheets by absolute path},
-[/css/style.css] and [/css/ocsigen-odoc.css], and does {e not} link odoc's own
-[odoc.css]. So nothing is styled until you provide those two files and host them
-at the site's {b domain root}. They must style:
+The generated template links the stylesheets named in the config's [(css …)]
+stanza, and does {e not} link odoc's own [odoc.css] — so your stylesheets carry
+the whole look. Choose how they are served:
+
+- [(css style.css ocsigen-odoc.css …)] — {b relative} hrefs: wodoc copies each
+  file (found next to the config) into every build and links it per-version, so
+  the site is {b self-contained} and works at any deploy path (recommended);
+- [(css /css/style.css …)] or a full URL — {b absolute} hrefs, emitted verbatim,
+  which you must serve yourself (the Ocsigen default points at [/css/…] on the
+  domain root);
+- omit [(css …)] to keep the Ocsigen-hosted default
+  ([/css/style.css], [/css/ocsigen-odoc.css]).
+
+Whichever you pick, the stylesheets must style both the chrome and the content:
 
 - the chrome wodoc emits — [.wodoc-page], [.project-page]/[.twocols]/[.leftcol]/
   [.rightcol], the navigation ([.api-nav], [.api-section], [.ml2]/[.ml3]/…,
@@ -235,12 +245,14 @@ A build is one version directory; releases are frozen snapshots:
   the version [<select>] reads [versions.json] at load time, so even old pages
   list the current set.
 
-Deploy the tree to GitHub Pages (or any static host). {b The one constraint:}
-because the stylesheet (and the version-switch [(pub)] prefix, and the shared
-highlighter) use absolute paths, the site must be served from a {b domain root} —
-a [you.github.io] user/org site, or a project repo with a custom domain
-([CNAME]). On a plain project page ([you.github.io/PROJECT/]) the absolute
-[/css/…] would resolve outside your repo and 404.
+Deploy the tree to GitHub Pages (or any static host). With a {b relative}
+[(css …)] theme and a local [(highlight …)] (as in the starter), the site is
+self-contained and deploys at {b any path} — a [you.github.io] site, a custom
+domain, or a plain project page ([you.github.io/PROJECT/]) — as long as [(pub)]
+matches the path it is served at (so the version selector switches correctly). If
+you keep the {e absolute} stylesheet default instead, then [/css/] must be served
+at the {b domain root} (a user/org site or a custom domain), since
+[you.github.io/PROJECT/] would resolve [/css/…] outside your repo.
 
 Worked CI examples:
 

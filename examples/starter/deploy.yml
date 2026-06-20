@@ -10,14 +10,11 @@
 # Each run replaces only its own <label>/ directory; the other version
 # directories already on gh-pages are preserved.
 #
-# IMPORTANT — serving /css/: the wodoc template links /css/style.css and
-# /css/ocsigen-odoc.css by ABSOLUTE path, so the CSS must live at the DOMAIN
-# ROOT. This workflow publishes the whole site (versions + /css/) to the root of
-# the gh-pages branch, which works when that branch is served at a domain root:
-# a user/org pages repo (you.github.io) or a project repo with a custom domain
-# (CNAME). On a plain project page (you.github.io/PROJECT/) the absolute /css/
-# would resolve to you.github.io/css/ and 404 — use a custom domain instead.
-# See examples/starter/README.md.
+# The starter config ships its theme with RELATIVE (css …) paths, so wodoc copies
+# it into each build and the site is self-contained — it works at any deploy path,
+# including a plain GitHub project page (you.github.io/PROJECT/). (If you switch to
+# the absolute Ocsigen default for the stylesheet, you must instead serve /css/ at
+# the domain root.) See examples/starter/README.md.
 # ===========================================================================
 name: Documentation
 
@@ -69,25 +66,15 @@ jobs:
           opam exec -- wodoc build \
             --config doc/wodoc --out "_site/$LABEL" --label "$LABEL" \
             --menu doc/menu.html
-          # Ship the theme at the site root so the absolute /css/ links resolve.
-          mkdir -p _site/css
-          cp doc/css/style.css doc/css/ocsigen-odoc.css _site/css/
 
-      # Two scoped deploys so other version directories are never touched:
-      # one replaces this version's <label>/ dir, the other the shared /css/.
+      # Deploy only this version's directory; clean is scoped to target-folder, so
+      # the other version directories already on gh-pages are preserved.
       - name: Deploy this version
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: _site/${{ env.LABEL }}
           target-folder: ${{ env.LABEL }}
-          clean: true
-      - name: Deploy the shared theme (/css/)
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: _site/css
-          target-folder: css
           clean: true
 
       - name: Repoint 'latest' (releases only)
