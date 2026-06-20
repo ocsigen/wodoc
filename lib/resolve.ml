@@ -274,12 +274,14 @@ let dep_base relroot side dir layout pkg =
   | Subdir -> b ^ "/" ^ pkg
 
 (* The deployed manual-page URL for a hosted project. Manual pages sit at the
-   version root for odoc_driver projects ([Multilib]) and under [<pkg>/]
-   otherwise ([Root]/[Subdir]). [page] is the page path relative to that
-   location (e.g. ["config.html"] or ["server-state.html#scopes"]). *)
+   version root for [Multilib] and [Root] projects (their odoc pages deploy
+   flat, e.g. [eliom/latest/intro.html], [ocsigenserver/latest/config.html]),
+   and under [<pkg>/] for [Subdir] projects whose nested layout is kept
+   (e.g. [tyxml/latest/tyxml/index.html]). [page] is the page path relative to
+   that location (e.g. ["config.html"] or ["server-state.html#scopes"]). *)
 let hosted_page_url relroot dir layout pkg page =
   let prefix =
-    match layout with Multilib -> "" | Root | Subdir -> pkg ^ "/"
+    match layout with Multilib | Root -> "" | Subdir -> pkg ^ "/"
   in
   Printf.sprintf "%s/%s/latest/%s%s" relroot dir prefix page
 
