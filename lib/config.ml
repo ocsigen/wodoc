@@ -246,6 +246,15 @@ let of_string s =
     | Some p -> p
     | None -> raise (Sexp.Error "missing (project ...)")
   in
+  let client_server = parse_client_server stanzas in
+  (* a client/server project is built with odoc_driver (its sides share module
+     names, so [dune build @doc] would collide): imply [(odoc-driver <project>)]
+     when it is omitted, so the project only declares [(client-server …)]. *)
+  let odoc_driver =
+    match Sexp.field_atom "odoc-driver" stanzas with
+    | Some _ as d -> d
+    | None -> if client_server = [] then None else Some project
+  in
   { project
   ; title = Sexp.field_atom_default "title" project stanzas
   ; pub = Sexp.field_atom_default "pub" ("/" ^ project) stanzas
@@ -257,12 +266,12 @@ let of_string s =
       Sexp.field_atom_default "landing" (project ^ "/index.html") stanzas
   ; highlight = Sexp.field_atom "highlight" stanzas
   ; profile = Sexp.field_atom "profile" stanzas
-  ; odoc_driver = Sexp.field_atom "odoc-driver" stanzas
+  ; odoc_driver
   ; doc_manual = Sexp.field_atom "doc-manual" stanzas = Some "true"
   ; manual_files = Sexp.field_atom "manual-files" stanzas
   ; siblings = parse_siblings stanzas
   ; nav = parse_nav stanzas
-  ; client_server = parse_client_server stanzas
+  ; client_server
   ; hosted = parse_hosted stanzas
   ; manual_root =
       Sexp.field_atom "manual-root" stanzas = Some "true"

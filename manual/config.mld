@@ -162,8 +162,9 @@ longer be recompiled, or a manual image.
 
 A client/server project (eliom, ocsigen-toolkit, ocsigen-start) builds its API
 as two or three libraries of one package that share module names
-([<pkg>.server] / [<pkg>.client] / [<pkg>.ppx], built with
-[(odoc-driver <pkg>)]). The [(client-server …)] block lists one side per
+([<pkg>.server] / [<pkg>.client] / [<pkg>.ppx]). Declaring [(client-server …)]
+implies [(odoc-driver <project>)] (these shared names would collide under
+[dune build @doc]), so you need not repeat it. The block lists one side per
 library:
 
 {@text[
