@@ -23,7 +23,7 @@ Best-effort converter from extended wikicréole to odoc `.mld` with wodoc marker
 ```ocaml
 module Llms : sig ... end
 ```
-Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that [`Build`](./Wodoc-Build.md) produces in the output directory.
+Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that [`Wodoc.Build`](./Wodoc-Build.md) produces in the output directory.
 
 ```ocaml
 module Nav : sig ... end

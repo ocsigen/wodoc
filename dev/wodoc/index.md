@@ -13,10 +13,11 @@ It can even host an **ultra-simple blog** on your site — dated `.mld` posts, a
 ## Manual
 
 - [How it works](./overview.md) — the pipeline and the one-source/two-outputs trick
+- [Building a complete site](./building-a-site.md) — home page, pages, navigation, theme, multiple projects, deployment
 - [Directives](./directives.md) — the `{%wodoc:…%}` reference (classes, containers, tables)
 - [Authoring](./authoring.md) — what survives on ocaml.org, what is wodoc-only
 - [Configuration](./config.md) — the `doc/wodoc` file: navigation, layout, versions.json
-- [Commands](./commands.md) — `preprocess`, `render`, `assemble`, `nav`, `resolve-refs`, `convert`
+- [Commands](./commands.md) — `build` (turn-key), plus `preprocess`, `render`, `assemble`, `nav`, `resolve-refs`, `convert`
 - [Adding a blog](./blog.md) — dated `.mld` posts, the navigation list, the feed
 
 ## API reference
@@ -24,6 +25,6 @@ It can even host an **ultra-simple blog** on your site — dated `.mld` posts, a
 wodoc is also an OCaml library: the same passes the `wodoc` command-line tool chains are exposed as modules. See the [API overview](./api.md), or jump to [`Wodoc.Preprocess`](./Wodoc-Preprocess.md), [`Wodoc.Render`](./Wodoc-Render.md), [`Wodoc.Assemble`](./Wodoc-Assemble.md), [`Wodoc.Nav`](./Wodoc-Nav.md), [`Wodoc.Resolve`](./Wodoc-Resolve.md) and [`Wodoc.Convert`](./Wodoc-Convert.md).
 
 
-## Status
+## About
 
-Early work in progress. wodoc is developed in the [ocsigen/wodoc](https://github.com/ocsigen/wodoc) repository and distributed under the MIT license.
+wodoc is developed in the [ocsigen/wodoc](https://github.com/ocsigen/wodoc) repository and distributed under the MIT license.

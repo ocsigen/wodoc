@@ -44,6 +44,8 @@ The same sources take two paths. Each arrow is the command that performs the tra
 ```
 The turn-key [`wodoc build`](./commands.md) command drives this whole pipeline from one declarative `doc/wodoc` config: it runs `dune build @doc` and chains `preprocess | odoc | render | assemble` for every page (adding the navigation and cross-package link resolution), using [`convert`](./commands.md) once up front to bring a legacy wikicréole manual over to `.mld`.
 
+Alongside the HTML, `wodoc build` also emits a **Markdown twin** of every page and an `llms.txt` index, so the same documentation stays readable by plain-text tools and LLMs (on by default; see [Commands](./commands.md) and the `(markdown …)` config stanza).
+
 
 ## Why rewrite the markers to HTML comments?
 

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Building a complete site — Wodoc</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../wodoc/building-a-site.md"/>
+  <script src="../highlight.pack.js"></script>
+  <script src="/doc/wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Wodoc</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#what-&quot;a-complete-website&quot;-means">What &quot;a complete website&quot; means</a></li><li><a href="#the-shape-of-a-built-site">The shape of a built site</a></li><li><a href="#wodoc-build:-what-it-generates,-what-you-supply">wodoc build: what it generates, what you supply</a></li><li><a href="#the-home-page">The home page</a></li><li><a href="#general-(prose)-pages">General (prose) pages</a></li><li><a href="#the-left-navigation">The left navigation</a></li><li><a href="#api-docs:-one-package-or-several">API docs: one package or several</a></li><li><a href="#theming:-the-menu-and-the-stylesheet">Theming: the menu and the stylesheet</a><ul><li><a href="#the-top-menu-(--menu)">The top menu (--menu)</a></li><li><a href="#the-stylesheet">The stylesheet</a></li></ul></li><li><a href="#several-projects-that-cross-link">Several projects that cross-link</a></li><li><a href="#a-blog">A blog</a></li><li><a href="#markdown-and-llms.txt-for-ai-tools">Markdown and llms.txt for AI tools</a></li><li><a href="#deployment">Versioning and deployment</a></li><li><a href="#a-copy-paste-starter">A copy-paste starter</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="wodoc/index.html"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3 current" data-wodoc-page="wodoc/building-a-site.html"><a href="../wodoc/building-a-site.html">Building a complete site</a></li>
+<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../wodoc/commands.html">Commands</a></li>
+<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../wodoc/blog.html">Adding a blog</a></li>
+</ul>
+</nav>
+<nav class="api-nav">
+<h3>API</h3>
+<ul class="api-section">
+<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  <nav class="odoc-toc odoc-local-toc"><ul><li><a href="#what-&quot;a-complete-website&quot;-means">What &quot;a complete website&quot; means</a></li><li><a href="#the-shape-of-a-built-site">The shape of a built site</a></li><li><a href="#wodoc-build:-what-it-generates,-what-you-supply">wodoc build: what it generates, what you supply</a></li><li><a href="#the-home-page">The home page</a></li><li><a href="#general-(prose)-pages">General (prose) pages</a></li><li><a href="#the-left-navigation">The left navigation</a></li><li><a href="#api-docs:-one-package-or-several">API docs: one package or several</a></li><li><a href="#theming:-the-menu-and-the-stylesheet">Theming: the menu and the stylesheet</a><ul><li><a href="#the-top-menu-(--menu)">The top menu (--menu)</a></li><li><a href="#the-stylesheet">The stylesheet</a></li></ul></li><li><a href="#several-projects-that-cross-link">Several projects that cross-link</a></li><li><a href="#a-blog">A blog</a></li><li><a href="#markdown-and-llms.txt-for-ai-tools">Markdown and llms.txt for AI tools</a></li><li><a href="#deployment">Versioning and deployment</a></li><li><a href="#a-copy-paste-starter">A copy-paste starter</a></li></ul></nav>
+</div>
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<ul class="api-section">
+<li class="ml3" data-wodoc-page="wodoc/index.html"><a href="../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../wodoc/overview.html">How it works</a></li>
+<li class="ml3 current" data-wodoc-page="wodoc/building-a-site.html"><a href="../wodoc/building-a-site.html">Building a complete site</a></li>
+<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../wodoc/commands.html">Commands</a></li>
+<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../wodoc/blog.html">Adding a blog</a></li>
+</ul>
+</nav>
+<nav class="api-nav">
+<h3>API</h3>
+<ul class="api-section">
+<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1 id="building-a-complete-site">Building a complete site</h1><p>odoc gives you an API reference. wodoc turns the same sources into a <b>complete website</b>: a styled home page, prose chapters, the API of one or several packages, a shared top menu, a generated left navigation, a version selector, an optional blog, Markdown twins for AI tools, and a deployable versioned tree — all from one declarative <a href="config.html" title="config"><code>doc/wodoc</code></a> config and a single <code>wodoc build</code>.</p><p>This page is the end-to-end walkthrough. It assumes you have read <a href="overview.html" title="overview">How it works</a> and points to <a href="config.html" title="config">Configuration</a> and <a href="commands.html" title="commands">Commands</a> for the exhaustive reference of every stanza and flag. A <b>copy-paste starter</b> (a menu, a stylesheet and a CI workflow) lives in <a href="https://github.com/ocsigen/wodoc/tree/master/examples/starter"><code>examples/starter</code></a> — clone it and adjust the names rather than starting from a blank page.</p></header>
+        <div class="odoc-content"><h2 id="what-&quot;a-complete-website&quot;-means">What &quot;a complete website&quot; means</h2><p>A wodoc site is made of these ingredients; each is covered below.</p><ul><li>a <b>home / landing page</b> — your styled front page, not the bare API index;</li><li><b>prose pages</b> — chapters, tutorials, guides (plain <code>.mld</code> files);</li><li>the <b>API</b> — the <code>.mli</code> of one package, or several packages side by side;</li><li>a <b>top menu</b> — the site-wide header (your brand, links), shared by every page;</li><li>a <b>left navigation</b> — generated from the config, with the current entry marked;</li><li>a <b>version selector</b> — <code>dev</code>, released versions and <code>latest</code>, from a manifest;</li><li>a <b>theme</b> — the stylesheet that makes all of the above look like a site;</li><li>optionally a <b>blog</b> and <b>Markdown twins</b> for AI tools;</li><li>a <b>deployment</b> — a versioned tree published to (typically) GitHub Pages.</li></ul><h2 id="the-shape-of-a-built-site">The shape of a built site</h2><p><code>wodoc build --out &lt;dir&gt; --label &lt;v&gt;</code> writes <em>one version</em> of the site into <code>&lt;dir&gt;</code>. Deployed, the tree looks like this (here <code>(pub /myproj)</code>, one package):</p><pre class="language-text"><code>/myproj/
+  dev/                 &lt;- a build (--label dev)
+    index.html         &lt;- redirect to the landing page
+    myproj/            &lt;- the package's pages (manual + API)
+      index.html       &lt;- the home page
+      tutorial.html
+      Myproj/index.html
+    wodoc-highlight.js
+    versions.json      &lt;- the version manifest (drives the &lt;select&gt;)
+  1.0.0/               &lt;- a frozen release (wodoc release)
+  latest -&gt; 1.0.0      &lt;- a symlink
+/css/                  &lt;- the stylesheet, at the DOMAIN ROOT (see Theming)</code></pre><p>Internal links are version-relative, so a frozen version keeps working forever; only the version <code>&lt;select&gt;</code>, the stylesheet and the highlighter are referenced by absolute path. Remember that last point — it shapes deployment (see <a href="#deployment" title="deployment">Versioning and deployment</a>).</p><h2 id="wodoc-build:-what-it-generates,-what-you-supply"><code>wodoc build</code>: what it generates, what you supply</h2><p>The turn-key <a href="commands.html" title="commands"><code>wodoc build</code></a> runs <code>dune build @doc</code> and then assembles every page. It <b>generates almost everything</b>; you supply only the top menu and the stylesheet.</p><table class="odoc-table"><tr><th><p>Part</p></th><th><p>Who provides it</p></th></tr><tr><td><p>the HTML page template (head, two-column body, scripts)</p></td><td><p><b>generated</b></p></td></tr><tr><td><p>the left navigation, &quot;on this page&quot;, version <code>&lt;select&gt;</code> and its script</p></td><td><p><b>generated</b> (from the config)</p></td></tr><tr><td><p>the page content (odoc HTML, with your <code>{%wodoc:…%}</code> markers rendered)</p></td><td><p><b>generated</b></p></td></tr><tr><td><p>Markdown twins, <code>llms.txt</code>, the landing redirect, <code>versions.json</code></p></td><td><p><b>generated</b></p></td></tr><tr><td><p>the highlighter (<code>highlight.pack.js</code> and <code>wodoc-highlight.js</code>)</p></td><td><p><b>shipped</b> by wodoc</p></td></tr><tr><td><p>the <b>top menu</b> fragment (<code>--menu</code>)</p></td><td><p><b>you</b> (a file or URL)</p></td></tr><tr><td><p>the <b>stylesheet</b> (<code>/css/style.css</code>, <code>/css/ocsigen-odoc.css</code>)</p></td><td><p><b>you</b> (host it at the root)</p></td></tr><tr><td><p>static assets (images, examples)</p></td><td><p><b>you</b> (via config; see below)</p></td></tr></table><p>So a minimal build is:</p><pre class="language-text"><code>wodoc build --config doc/wodoc --out _site/dev --label dev --menu doc/menu.html</code></pre><p><code>--menu</code> is <b>required</b>. The rest of this page is about filling in the two columns you own.</p><h2 id="the-home-page">The home page</h2><p>The landing page is just one of your <code>.mld</code> pages, assembled like any other — so you style it with the full <a href="directives.html" title="directives">directive set</a> (<code>{%wodoc:div%}</code>, <code>{%wodoc:@ class=…%}</code>, <code>{%wodoc:img%}</code>, the semantic block containers…) to make a real front page rather than a wall of text.</p><p>Point the config's <code>(landing …)</code> stanza at it:</p><pre class="language-text"><code>(landing myproj/index.html)</code></pre><p><code>wodoc build</code> then writes a tiny <code>index.html</code> at the version root that redirects to that page, so <code>/myproj/dev/</code> lands on your home page. (A <a href="config.html" title="config">manual-only project</a> whose landing <em>is</em> the root <code>index.html</code> gets a real page there instead of a redirect.)</p><h2 id="general-(prose)-pages">General (prose) pages</h2><p>Any <code>.mld</code> file compiled by <code>dune build @doc</code> becomes a page: write chapters, tutorials and guides as ordinary odoc pages and list them in the navigation (next section). Keep them <b>portable</b> — see <a href="authoring.html" title="authoring">Authoring</a> for which constructs survive on ocaml.org and which are wodoc-only chrome. Migrating an old wikicréole manual? Run <a href="commands.html" title="commands"><code>wodoc convert</code></a> once to bootstrap the <code>.mld</code> files, then review them.</p><h2 id="the-left-navigation">The left navigation</h2><p>The left column is declared, not hand-written, in the config's <code>(nav …)</code> stanza:</p><pre class="language-text"><code>(nav
+ (section &quot;Manual&quot;
+  (link &quot;Overview&quot; myproj/index.html index)
+  (link &quot;Tutorial&quot; myproj/tutorial.html tutorial)
+  (group &quot;Advanced&quot;
+   (link &quot;Internals&quot; myproj/internals.html internals)))
+ (api-section &quot;API&quot;
+  (link &quot;API overview&quot; myproj/Myproj/index.html Myproj)))</code></pre><p>Each <code>(link &quot;Label&quot; &lt;path&gt; &lt;id&gt;)</code> gives the visible label, a version-relative path and the page's odoc <code>&lt;id&gt;</code> — wodoc marks the matching entry <code>current</code> on each page automatically (longest-prefix match, so you never hand-maintain &quot;current&quot; flags). <code>(group …)</code> nests a sub-heading; <code>(section …)</code> is a manual block, <code>(api-section …)</code> an API block. A project whose versions have <em>different</em> manuals can pass a per-version navigation with <code>wodoc build --nav &lt;file&gt;</code> (same syntax). The full grammar is in <a href="config.html" title="config">Configuration</a>.</p><h2 id="api-docs:-one-package-or-several">API docs: one package or several</h2><p>For a single library, <code>(packages myproj)</code> assembles its <code>dune build @doc</code> output. List several to document them side by side:</p><pre class="language-text"><code>(packages myproj myproj-lwt myproj-unix)</code></pre><p>A <b>client/server</b> project (libraries that share module names, e.g. an Eliom app) is built through <code>odoc_driver</code> instead of <code>dune build @doc</code> — declare it with <code>(odoc-driver &lt;pkg&gt;)</code> and a <code>(client-server …)</code> block; wodoc then gives every page its side's API nav, a body colour and a client/server switch. See the <code>(client-server …)</code> and <code>(odoc-driver …)</code> stanzas in <a href="config.html" title="config">Configuration</a>.</p><h2 id="theming:-the-menu-and-the-stylesheet">Theming: the menu and the stylesheet</h2><p>This is the part you must set up yourself, and — for now — the fiddliest one.</p><h3 id="the-top-menu-(--menu)">The top menu (<code>--menu</code>)</h3><p><code>--menu</code> takes an HTML <em>fragment</em> (a local file or an <code>http(s)</code> URL fetched with curl) that wodoc injects at the top of every page. It may contain holes wodoc fills: <code>{{subproject}}</code> (your title) and <code>{{base}}</code> (the per-page relative path to the version root). A minimal menu is just your header markup:</p><pre class="language-text"><code>&lt;header class=&quot;site-header&quot;&gt;
+  &lt;a class=&quot;site-brand&quot; href=&quot;/&quot;&gt;My Project&lt;/a&gt;
+  {{subproject}}
+  &lt;nav class=&quot;site-nav&quot;&gt;&lt;a href=&quot;{{base}}/index.html&quot;&gt;Docs&lt;/a&gt;&lt;/nav&gt;
+&lt;/header&gt;</code></pre><h3 id="the-stylesheet">The stylesheet</h3><p>The generated template links <b>two stylesheets by absolute path</b>, <code>/css/style.css</code> and <code>/css/ocsigen-odoc.css</code>, and does <em>not</em> link odoc's own <code>odoc.css</code>. So nothing is styled until you provide those two files and host them at the site's <b>domain root</b>. They must style:</p><ul><li>the chrome wodoc emits — <code>.wodoc-page</code>, <code>.project-page</code>/<code>.twocols</code>/<code>.leftcol</code>/ <code>.rightcol</code>, the navigation (<code>.api-nav</code>, <code>.api-section</code>, <code>.ml2</code>/<code>.ml3</code>/…, <code>li.current</code>), <code>.docversion</code>/<code>.wodoc-version</code>, <code>.page-toc</code>, <code>.cs-switch</code> and the blog <code>.wodoc-blog-*</code> classes;</li><li>the odoc <b>content</b> — <code>.odoc-preamble</code>/<code>.odoc-content</code>, headings, code blocks (highlight.js <code>.hljs-*</code> tokens), tables and declaration specs.</li></ul><p>The <a href="https://github.com/ocsigen/wodoc/tree/master/examples/starter/css">starter stylesheet</a> covers all of these — copy it and recolour. (If you would rather reuse odoc's stock theme for the content, note that <code>odoc.css</code> <em>is</em> shipped next to each version, so you can link or <code>@import</code> it from your <code>/css/ocsigen-odoc.css</code>.)</p><p>Syntax highlighting: wodoc always ships <code>wodoc-highlight.js</code> in each build, but the template only loads it locally when the config sets <code>(highlight &lt;file&gt;)</code> — otherwise it loads the shared <code>/doc/wodoc-highlight.js</code>. Set <code>(highlight wodoc-highlight.js)</code> (the starter does) so your site uses its own local copy.</p><h2 id="several-projects-that-cross-link">Several projects that cross-link</h2><p>A site can host several <em>independent</em> projects (each its own <code>wodoc build</code>, deployed into a shared tree) whose docs cross-reference each other. odoc points such cross-references at ocaml.org; the <code>(hosted …)</code> stanza rewrites them into relative links to the sibling project, given how that project is deployed:</p><pre class="language-text"><code>(hosted (myproj myproj multilib Myproj)
+        (otherproj otherproj root &quot;&quot;)
+        (bigproj bigproj subdir &quot;&quot;))</code></pre><p>The layout token is <code>multilib</code> (one <code>&lt;pkg&gt;.&lt;lib&gt;/</code> subtree per library), <code>root</code> (a single package at the version root) or <code>subdir</code> (a <code>&lt;pkg&gt;/</code> subtree per package, e.g. js_of_ocaml, tyxml). See <code>(hosted …)</code> in <a href="config.html" title="config">Configuration</a> and <a href="commands.html" title="commands"><code>wodoc requalify-xrefs</code></a>.</p><h2 id="a-blog">A blog</h2><p>Drop dated <code>.mld</code> posts (<code>YYYY-MM-DD-slug.mld</code>) in a directory, add a <code>(blog …)</code> stanza, and <code>wodoc build</code> lists them in the navigation, expands a &quot;latest posts&quot; widget on the landing and can emit an Atom feed for syndication. The full recipe is on its own page: <a href="blog.html" title="blog">Adding a blog</a>.</p><h2 id="markdown-and-llms.txt-for-ai-tools">Markdown and llms.txt for AI tools</h2><p>By default <code>wodoc build</code> also emits, next to every HTML page, a <b>Markdown twin</b> and a per-project <code>llms.txt</code> / <code>llms-full.txt</code> index (the <a href="https://llmstxt.org">llms.txt</a> convention), and adds a <code>&lt;link rel=&quot;alternate&quot; type=&quot;text/markdown&quot;&gt;</code> to each page. This keeps your docs readable by plain-text tooling and LLMs at no extra effort. Turn it off with <code>(markdown false)</code> in the config.</p><h2 id="deployment">Versioning and deployment</h2><p>A build is one version directory; releases are frozen snapshots:</p><ul><li><b>CI builds <code>dev/</code></b> on each push — <code>wodoc build --out _site/dev --label dev</code>.</li><li><b>A release freezes it</b>: <a href="commands.html" title="commands"><code>wodoc release</code></a> <code>--site &lt;gh-pages&gt; --version 1.0.0</code> copies <code>dev/</code> to <code>1.0.0/</code>, repoints the <code>latest</code> symlink and refreshes <code>versions.json</code>. Frozen pages are never rebuilt; the version <code>&lt;select&gt;</code> reads <code>versions.json</code> at load time, so even old pages list the current set.</li></ul><p>Deploy the tree to GitHub Pages (or any static host). <b>The one constraint:</b> because the stylesheet (and the version-switch <code>(pub)</code> prefix, and the shared highlighter) use absolute paths, the site must be served from a <b>domain root</b> — a <code>you.github.io</code> user/org site, or a project repo with a custom domain (<code>CNAME</code>). On a plain project page (<code>you.github.io/PROJECT/</code>) the absolute <code>/css/…</code> would resolve outside your repo and 404.</p><p>Worked CI examples:</p><ul><li>a generic gh-pages workflow: <a href="https://github.com/ocsigen/wodoc/blob/master/examples/starter/deploy.yml"><code>examples/starter/deploy.yml</code></a>;</li><li>wodoc's own (it dogfoods itself): <a href="https://github.com/ocsigen/wodoc/blob/master/.github/workflows/doc.yml"><code>.github/workflows/doc.yml</code></a> and <a href="https://github.com/ocsigen/wodoc/blob/master/doc/README.md"><code>doc/README.md</code></a>.</li></ul><h2 id="a-copy-paste-starter">A copy-paste starter</h2><p>Rather than assemble the menu, stylesheet and workflow by hand, start from <a href="https://github.com/ocsigen/wodoc/tree/master/examples/starter"><code>examples/starter</code></a>: copy <code>wodoc</code>, <code>menu.html</code>, <code>css/</code> and <code>deploy.yml</code> into your project, change the names, and you have a themed, versioned, deployable site. Its <a href="https://github.com/ocsigen/wodoc/blob/master/examples/starter/README.md">README</a> is the five-minute version of this page.</p></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/wodoc";
+    // Switch version: keep the current page, swapping only the version segment.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      location.href =
+        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

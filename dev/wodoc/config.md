@@ -81,7 +81,7 @@ wodoc build --config doc/wodoc --out <site>/<v> --label <v> \
 odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`resolve-refs`](./commands.md) and [`Wodoc.Resolve`](./Wodoc-Resolve.md)).
 
 - `(sibling <Module> <seg/seg/…>) …` — cross-*package* references to a sibling library built in the same tree; maps a top module to its odoc directory path.
-- `(hosted (<pkg> <dir> <multi?> <Wrapper>) …)` — cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<multi?>` is `true` for a multi-library package, `<Wrapper>` its wrapper module (or `""`).
+- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)` — cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module (or `""`).
 
 ## Build inputs and assets
 
@@ -92,7 +92,7 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`
 | `(doc-manual true)` | also build the `@doc-manual` alias (examples) |
 | `(manual-files <pkg>)` | package dir that receives `manual/files` (examples, images) |
 | `(highlight <file>)` | a project-specific syntax-highlight starter to ship as `wodoc-highlight.js`; without it, wodoc ships a built-in default covering eliom / lwt / js\_of\_ocaml syntax |
-| `(markdown false)` | turn off the Markdown twins  `llms.txt` index (on by default; see [Commands](./commands.md)) |
+| `(markdown false)` | turn off the Markdown twins and `llms.txt` index (on by default; see [Commands](./commands.md)) |
 
 ## Layout variants
 

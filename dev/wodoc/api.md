@@ -15,6 +15,7 @@ wodoc is both a command-line tool and an OCaml library. The library exposes one 
 [`Wodoc.Config`](./Wodoc-Config.md) 
 [`Wodoc.Build`](./Wodoc-Build.md) 
 [`Wodoc.Blog`](./Wodoc-Blog.md) 
+[`Wodoc.Llms`](./Wodoc-Llms.md) Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that Wodoc.Build produces in the output directory.
 
 ## Where to start
 
@@ -27,3 +28,4 @@ wodoc is both a command-line tool and an OCaml library. The library exposes one 
 - [`Wodoc.Config`](./Wodoc-Config.md) — parse the declarative [`doc/wodoc`](./config.md) file.
 - [`Wodoc.Build`](./Wodoc-Build.md) — the turn-key `wodoc build`: assemble a whole site from it.
 - [`Wodoc.Blog`](./Wodoc-Blog.md) — the ultra-simple blog: dated `.mld` posts, a generated nav section and a "latest posts" landing fragment.
+- [`Wodoc.Llms`](./Wodoc-Llms.md) — generate the `llms.txt` / `llms-full.txt` index from the Markdown twin tree (the LLM-friendly view of a built site).

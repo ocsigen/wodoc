@@ -5,6 +5,7 @@
 ## Manual
 - [Wodoc](wodoc/index.md)
 - [How wodoc works](wodoc/overview.md)
+- [Building a complete site](wodoc/building-a-site.md)
 - [Directives](wodoc/directives.md)
 - [Authoring: what survives on ocaml.org](wodoc/authoring.md)
 - [Configuration: the `doc/wodoc` file](wodoc/config.md)

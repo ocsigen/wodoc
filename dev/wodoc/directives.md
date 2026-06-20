@@ -5,16 +5,17 @@ Every wodoc extension is written as a raw-markup target, `{%wodoc:DIRECTIVE%}`. 
 
 | Directive | Effect |
 | --- | --- |
-| `div class=…` / `a class=… href=…` / `span class=…` … `end` | open / close a container |
+| `div` / `span` / `a href=…` / `section` / `header` / `nav` / `article` / `aside` / `footer` (each takes `class=…`) … `end` | open / close a container |
 | `@ key=val …` | add attributes to the **next element** (the `@@` equivalent; `class` is merged) |
 | `@ S0 \| S1 \| S2 …` | add attributes at successive nesting levels (see below) |
 | `img src=… class=… alt=…` | a self-contained `<img>` |
+| `blog-latest` | expand into the blog's "latest posts" list (see [Adding a blog](./blog.md)) |
 **Several classes**, HTML-style, are written space-separated inside quotes — `{%wodoc:@ class="card big shadow"%}`. The quotes are required: without them the space ends the value, so `class=card big shadow` would keep only `card`. The classes are merged with any class odoc already put on the element (e.g. `{%wodoc:@ class="pricing wide"%}` on a table yields `class="odoc-table pricing wide"`).
 
 
 ## Containers
 
-`{%wodoc:div class=card%}` … `{%wodoc:end%}` wraps everything between the two markers in a `<div class="card">`. The same form works for `span` (inline) and `a` (a link around a whole block, which native odoc cannot express):
+`{%wodoc:div class=card%}` … `{%wodoc:end%}` wraps everything between the two markers in a `<div class="card">`. The same form works for `span` (inline), `a` (a link around a whole block, which native odoc cannot express) and the HTML5 semantic blocks `section`, `header`, `nav`, `article`, `aside` and `footer` (e.g. `{%wodoc:section class=hero%}` … `{%wodoc:end%}` emits a `<section class="hero">`):
 
 ```text
 {%wodoc:a class=main-page-project-link href=../eliom/%}

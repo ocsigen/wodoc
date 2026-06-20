@@ -26,11 +26,12 @@ Turn the markers in odoc's HTML into real, nested HTML: containers, classes, ima
 wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
                [--keep-anchors] [--base <b>] [--menu <f>] [--subproject <s>]
                [--menu-current <id>] [--leftnav <f>]
-               [--blog-config <c>] [--blog-base <b>] [--byline <t>] <odoc.html>
+               [--blog-config <c>] [--blog-base <b>] [--byline <t>]
+               [--mdlink <href>] <odoc.html>
 ```
 Wrap rendered odoc HTML in a site template, filling the `{{title}}`, `{{preamble}}`, `{{toc}}` and `{{content}}` holes and marking the current navigation entry. `assemble` runs `render` internally, so a typical per-page build is just `preprocess` → odoc → `assemble`.
 
-A site usually shares one menu across every page and project: `--menu <f>` fills a `{{menu}}` hole with that fragment, `--subproject <s>` its `{{subproject}}` label, `--menu-current <id>` highlights the current project in it (scoped to the menu), and `--leftnav <f>` fills every `{{leftnav}}` hole (left column and mobile drawer) from one source. `--base <b>` fills `{{base}}` (the relative path to the doc root). `--byline <t>` inserts a `<p class="wodoc-blog-meta">` just after the page title (e.g. a blog post's "date — author"). `--blog-config <c>` expands a `{%wodoc:blog-latest%}` marker on the page with the latest-posts fragment of the blog declared in config `<c>` (so a page built through this low-level path — e.g. a site home — can carry the blog listing, like `wodoc build` does for the turn-key path), `--blog-base <b>` giving the relative path from the page to the blog root. See [`Wodoc.Assemble`](./Wodoc-Assemble.md) and [the `(blog …)` stanza](./config.md).
+A site usually shares one menu across every page and project: `--menu <f>` fills a `{{menu}}` hole with that fragment, `--subproject <s>` its `{{subproject}}` label, `--menu-current <id>` highlights the current project in it (scoped to the menu), and `--leftnav <f>` fills every `{{leftnav}}` hole (left column and mobile drawer) from one source. `--base <b>` fills `{{base}}` (the relative path to the doc root). `--byline <t>` inserts a `<p class="wodoc-blog-meta">` just after the page title (e.g. a blog post's "date — author"). `--mdlink <href>` adds a `<link rel="alternate" type="text/markdown">` advertising the page's Markdown twin. `--blog-config <c>` expands a `{%wodoc:blog-latest%}` marker on the page with the latest-posts fragment of the blog declared in config `<c>` (so a page built through this low-level path — e.g. a site home — can carry the blog listing, like `wodoc build` does for the turn-key path), `--blog-base <b>` giving the relative path from the page to the blog root. See [`Wodoc.Assemble`](./Wodoc-Assemble.md) and [the `(blog …)` stanza](./config.md).
 
 
 ## `wodoc nav`
@@ -56,16 +57,18 @@ Link references odoc left dead, rewriting the given files *in place*. With `--si
 ## `wodoc convert`
 
 ```text
-wodoc convert <file.wiki>
+wodoc convert [--odoc-refs] [--api-side <side>] <file.wiki>
 ```
-A best-effort wikicréole → `.mld` converter to migrate an existing manual: headings, lists, links, code blocks, `{%wodoc:%}` markers for classes and containers, and odoc references from `<<a_api>>`/`<<a_manual>>`. The output is meant to be reviewed by hand. See [`Wodoc.Convert`](./Wodoc-Convert.md).
+A best-effort wikicréole → `.mld` converter to migrate an existing manual: headings, lists, links, code blocks, `{%wodoc:%}` markers for classes and containers, and odoc references from `<<a_api>>`/`<<a_manual>>`. The output is meant to be reviewed by hand. `--odoc-refs` emits native odoc references (`{!M}`) for `a_api` links instead of relative HTML links — for a manual built in the same package as its API. `--api-side <side>` sets the default API side for a sided (client/server) manual. See [`Wodoc.Convert`](./Wodoc-Convert.md).
 
 
 ## `wodoc build`
 
+For the end-to-end picture — home page, prose pages, navigation, theme, multiple projects and deployment — see [Building a complete site](./building-a-site.md).
+
 ```text
 wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]
-            [--src <odoc _html>] [--latest] [--local]
+            [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]
 ```
 `--menu` takes the shared site menu as a local file *or* an `http(s)` URL (fetched with curl) — so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
 
