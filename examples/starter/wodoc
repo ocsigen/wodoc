@@ -1,37 +1,22 @@
 ; ---------------------------------------------------------------------------
 ; Starter `wodoc build` configuration for a single-package project.
 ;
-; Copy this file to doc/wodoc in your project, copy the menu.html and css/
-; next to it, then build with:
+; Copy this file to doc/wodoc in your project and build with:
 ;
-;   wodoc build --config doc/wodoc --out _site/dev --label dev --menu doc/menu.html
+;   wodoc build --config doc/wodoc --out _site/dev --label dev
 ;
-; See examples/starter/README.md and the "Building a complete site" manual page
-; for the full walkthrough (including deployment).
+; That already gives a styled, self-contained site: wodoc ships a default theme
+; and top bar, linked by per-version relative paths (works at any deploy path).
+; To customise the look, see the menu.html and css/ examples next to this file
+; and the README. Full walkthrough: the "Building a complete site" manual page.
 ; ---------------------------------------------------------------------------
 
 (project myproj)            ; the opam/dune package name; also the URL path segment
-(title "My Project")        ; shown in <title> and as the menu's {{subproject}} label
-(url-prefix /myproj)               ; absolute URL prefix where the site is served, e.g.
-                            ; https://my.example/myproj/<version>/…  (see README:
-                            ; /css/ must resolve at the DOMAIN ROOT, not under (pub))
+(title "My Project")        ; shown in <title> and the top bar
+(url-prefix /myproj)        ; the URL path the site is served at (for the version selector)
 (packages myproj)           ; the odoc package(s) to assemble; omit to assemble every
                             ; subtree `dune build @doc` produces
 (landing myproj/index.html) ; the page the version root redirects to (your home page)
-
-; The theme. These RELATIVE paths make the site self-contained: wodoc copies the
-; files into each build (here at <version>/css/…) and links them per-version, so
-; the site works at any deploy path — including a plain GitHub project page
-; (you.github.io/myproj/). (The default, if you omit (css …), is the absolute
-; Ocsigen-hosted /css/style.css + /css/ocsigen-odoc.css, which need a domain root.)
-(css css/style.css css/ocsigen-odoc.css)
-
-; Ship the syntax-highlight starter LOCALLY: with (highlight …) set, every page
-; loads {{base}}/wodoc-highlight.js (a relative, per-version copy) instead of the
-; Ocsigen-hosted /doc/wodoc-highlight.js. Drop your own doc/wodoc-highlight.js next
-; to this file to customise it; if that file is absent wodoc ships its built-in
-; default (eliom / lwt / js_of_ocaml ppx aware) under that name anyway.
-(highlight wodoc-highlight.js)
 
 ; The left navigation. One (section …) per manual group and one (api-section …)
 ; for the API. Each (link "Label" <path> <id>):
@@ -44,3 +29,9 @@
   (link "Tutorial" myproj/tutorial.html tutorial))
  (api-section "API"
   (link "API overview" myproj/Myproj/index.html Myproj)))
+
+; --- Optional: use your own theme/menu instead of the built-in defaults --------
+; The menu.html and css/ files next to this config are examples. To use them,
+; uncomment the line below (relative hrefs are copied per-version, so the site
+; stays self-contained) and pass --menu doc/menu.html to `wodoc build`:
+;   (css css/style.css css/ocsigen-odoc.css)

@@ -1,10 +1,10 @@
 # wodoc starter
 
-A copy-paste starting point for building a complete documentation **website** for
-your own (non-Ocsigen) project with [wodoc](../../README.md). It gives you the
-three things `wodoc build` does not generate for you — a top menu, a stylesheet,
-and a deploy workflow — so you can go from `dune build @doc` to a themed,
-versioned, deployable site.
+A copy-paste starting point for a complete documentation **website** with
+[wodoc](../../README.md). The default path is zero-config: `wodoc build` ships a
+theme and a top bar, so you go from `dune build @doc` to a themed, versioned,
+deployable site with just a config and a CI workflow. The `menu.html` and `css/`
+files here are *optional* examples, for when you want your own look.
 
 For the full walkthrough see the **Building a complete site** page of the wodoc
 manual ([`manual/building-a-site.mld`](../../manual/building-a-site.mld)).
@@ -14,51 +14,49 @@ manual ([`manual/building-a-site.mld`](../../manual/building-a-site.mld)).
 | File | Goes to | Purpose |
 |---|---|---|
 | [`wodoc`](wodoc) | `doc/wodoc` | the declarative build config (project, packages, landing, nav) |
-| [`menu.html`](menu.html) | `doc/menu.html` | the top-menu fragment injected as `{{menu}}` (passed via `--menu`) |
-| [`css/style.css`](css/style.css) | `doc/css/style.css` | page layout + chrome theme (shipped into each build) |
-| [`css/ocsigen-odoc.css`](css/ocsigen-odoc.css) | `doc/css/ocsigen-odoc.css` | the odoc **content** theme (shipped into each build) |
 | [`deploy.yml`](deploy.yml) | `.github/workflows/doc.yml` | build + publish to `gh-pages` |
+| [`menu.html`](menu.html) | `doc/menu.html` | *optional* — a custom top-bar fragment (use with `--menu`) |
+| [`css/`](css) | `doc/css/` | *optional* — a custom theme (use with the `(css …)` stanza) |
 
 ## Quick start
 
-1. Copy the files into your project:
+1. Copy the config and workflow into your project:
 
    ```
-   mkdir -p doc/css
-   cp examples/starter/wodoc        doc/wodoc
-   cp examples/starter/menu.html    doc/menu.html
-   cp examples/starter/css/*.css    doc/css/
-   cp examples/starter/deploy.yml   .github/workflows/doc.yml
+   cp examples/starter/wodoc      doc/wodoc
+   cp examples/starter/deploy.yml .github/workflows/doc.yml
    ```
 
-2. Edit `doc/wodoc`: set `(project …)`, `(title …)`, `(url-prefix …)`, `(packages …)`,
-   the `(landing …)` page and the `(nav …)` entries to your project.
+2. Edit `doc/wodoc`: set `(project …)`, `(title …)`, `(url-prefix …)`,
+   `(packages …)`, the `(landing …)` page and the `(nav …)` entries.
 
-3. Build and preview the site locally:
+3. Build and preview:
 
    ```
-   wodoc build --config doc/wodoc --out _site/dev --label dev --menu doc/menu.html
+   wodoc build --config doc/wodoc --out _site/dev --label dev
    (cd _site && python3 -m http.server)
    # then open http://localhost:8000/dev/
    ```
 
-   The theme is shipped inside `_site/dev/` and linked relatively, so it just
-   works — no assets to host separately.
+   The built-in theme and top bar are shipped inside `_site/dev/` and linked
+   relatively, so the site is self-contained and works at any deploy path —
+   including a plain GitHub project page (`you.github.io/PROJECT/`); just set
+   `(url-prefix /PROJECT)` so the version selector switches correctly.
 
-## Self-contained by default (works at any path)
+## Customising the theme and menu (optional)
 
-The starter config sets the theme with **relative** paths
-(`(css css/style.css css/ocsigen-odoc.css)`), so wodoc copies the stylesheet into
-each build and links it per-version. The highlighter is local too
-(`(highlight wodoc-highlight.js)`). The result is a **self-contained** site that
-works wherever you serve it — including a plain GitHub project page
-(`you.github.io/PROJECT/`). Just set `(url-prefix /PROJECT)` to match the path the site
-is served at, so the version selector switches correctly.
+To replace the built-in look, copy the example assets next to your config:
 
-If you instead omit `(css …)`, wodoc falls back to the Ocsigen-hosted defaults
-(`/css/style.css`, `/css/ocsigen-odoc.css`) — absolute paths that then require you
-to serve `/css/` at the **domain root** (a `you.github.io` user/org site or a
-custom domain).
+```
+mkdir -p doc/css
+cp examples/starter/menu.html doc/menu.html
+cp examples/starter/css/*.css doc/css/
+```
+
+Then uncomment `(css css/style.css css/ocsigen-odoc.css)` in `doc/wodoc`
+(relative paths are copied per-version, keeping the site self-contained) and add
+`--menu doc/menu.html` to the build command. Absolute `(css /css/…)` hrefs are
+emitted verbatim instead — then you serve `/css/` at the domain root yourself.
 
 ## Releasing a version
 

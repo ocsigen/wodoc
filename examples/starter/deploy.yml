@@ -64,8 +64,9 @@ jobs:
       - name: Build the documentation site
         run: |
           opam exec -- wodoc build \
-            --config doc/wodoc --out "_site/$LABEL" --label "$LABEL" \
-            --menu doc/menu.html
+            --config doc/wodoc --out "_site/$LABEL" --label "$LABEL"
+          # (uses wodoc's built-in theme + top bar; add --menu doc/menu.html and a
+          #  (css …) stanza to use the custom examples shipped in this starter)
 
       # Deploy only this version's directory; clean is scoped to target-folder, so
       # the other version directories already on gh-pages are preserved.
