@@ -1,0 +1,39 @@
+; ---------------------------------------------------------------------------
+; Starter `wodoc build` configuration for a single-package project.
+;
+; Copy this file to doc/wodoc in your project, copy the menu.html and css/
+; next to it, then build with:
+;
+;   wodoc build --config doc/wodoc --out _site/dev --label dev --menu doc/menu.html
+;
+; See examples/starter/README.md and the "Building a complete site" manual page
+; for the full walkthrough (including deployment).
+; ---------------------------------------------------------------------------
+
+(project myproj)            ; the opam/dune package name; also the URL path segment
+(title "My Project")        ; shown in <title> and as the menu's {{subproject}} label
+(pub /myproj)               ; absolute URL prefix where the site is served, e.g.
+                            ; https://my.example/myproj/<version>/…  (see README:
+                            ; /css/ must resolve at the DOMAIN ROOT, not under (pub))
+(packages myproj)           ; the odoc package(s) to assemble; omit to assemble every
+                            ; subtree `dune build @doc` produces
+(landing myproj/index.html) ; the page the version root redirects to (your home page)
+
+; Ship the syntax-highlight starter LOCALLY: with (highlight …) set, every page
+; loads {{base}}/wodoc-highlight.js (a relative, per-version copy) instead of the
+; Ocsigen-hosted /doc/wodoc-highlight.js. Drop your own doc/wodoc-highlight.js next
+; to this file to customise it; if that file is absent wodoc ships its built-in
+; default (eliom / lwt / js_of_ocaml ppx aware) under that name anyway.
+(highlight wodoc-highlight.js)
+
+; The left navigation. One (section …) per manual group and one (api-section …)
+; for the API. Each (link "Label" <path> <id>):
+;   <path> is relative to the version root (e.g. myproj/tutorial.html),
+;   <id>   is the page's odoc name, used to highlight the current entry.
+; Adjust the module path (Myproj) to your library's top module.
+(nav
+ (section "Manual"
+  (link "Overview" myproj/index.html index)
+  (link "Tutorial" myproj/tutorial.html tutorial))
+ (api-section "API"
+  (link "API overview" myproj/Myproj/index.html Myproj)))

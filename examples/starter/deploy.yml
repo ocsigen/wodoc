@@ -1,0 +1,103 @@
+# ===========================================================================
+# Generic GitHub Actions workflow to build a wodoc site and publish it to the
+# gh-pages branch. Copy this to .github/workflows/doc.yml in your project and
+# adjust the marked lines.
+#
+#   - push to main  -> rebuild and deploy the "dev" docs (dev/).
+#   - manual run    -> build any version (e.g. a release tag) and optionally
+#                      repoint "latest" at it.
+#
+# Each run replaces only its own <label>/ directory; the other version
+# directories already on gh-pages are preserved.
+#
+# IMPORTANT — serving /css/: the wodoc template links /css/style.css and
+# /css/ocsigen-odoc.css by ABSOLUTE path, so the CSS must live at the DOMAIN
+# ROOT. This workflow publishes the whole site (versions + /css/) to the root of
+# the gh-pages branch, which works when that branch is served at a domain root:
+# a user/org pages repo (you.github.io) or a project repo with a custom domain
+# (CNAME). On a plain project page (you.github.io/PROJECT/) the absolute /css/
+# would resolve to you.github.io/css/ and 404 — use a custom domain instead.
+# See examples/starter/README.md.
+# ===========================================================================
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      label:
+        description: "Version label / output directory (e.g. dev, 1.0.0)"
+        required: true
+        default: dev
+      ref:
+        description: "Git ref to build (branch or tag). Defaults to the label."
+        required: false
+        default: ""
+      set_latest:
+        description: "Also repoint 'latest' at this build"
+        type: boolean
+        default: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      LABEL: ${{ github.event.inputs.label || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.event.inputs.label || github.sha }}
+          fetch-depth: 0
+
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5"
+
+      - name: Install dependencies, odoc and wodoc
+        run: |
+          opam install . --deps-only --with-doc
+          opam install odoc
+          # Until wodoc is on the opam repository, pin it from git:
+          opam pin add -y wodoc git+https://github.com/ocsigen/wodoc.git
+          # (once released:  opam install wodoc )
+
+      - name: Build the documentation site
+        run: |
+          opam exec -- wodoc build \
+            --config doc/wodoc --out "_site/$LABEL" --label "$LABEL" \
+            --menu doc/menu.html
+          # Ship the theme at the site root so the absolute /css/ links resolve.
+          mkdir -p _site/css
+          cp doc/css/style.css doc/css/ocsigen-odoc.css _site/css/
+
+      # Two scoped deploys so other version directories are never touched:
+      # one replaces this version's <label>/ dir, the other the shared /css/.
+      - name: Deploy this version
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: _site/${{ env.LABEL }}
+          target-folder: ${{ env.LABEL }}
+          clean: true
+      - name: Deploy the shared theme (/css/)
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: _site/css
+          target-folder: css
+          clean: true
+
+      - name: Repoint 'latest' (releases only)
+        if: ${{ github.event.inputs.set_latest == 'true' }}
+        run: |
+          tmp="$(mktemp -d)"
+          git clone --depth 1 --branch gh-pages \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$tmp"
+          ln -sfn "$LABEL" "$tmp/latest"
+          git -C "$tmp" add latest
+          git -C "$tmp" -c user.email=ci@example.com -c user.name="Docs CI" \
+            commit -m "doc: latest -> $LABEL" || true
+          git -C "$tmp" push

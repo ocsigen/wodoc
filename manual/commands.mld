@@ -103,6 +103,9 @@ for a sided (client/server) manual. See {!Wodoc.Convert}.
 
 {1 [wodoc build]}
 
+For the end-to-end picture — home page, prose pages, navigation, theme, multiple
+projects and deployment — see {{!page-"building-a-site"}Building a complete site}.
+
 {@text[
 wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]
             [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]

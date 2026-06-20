@@ -1,0 +1,14 @@
+<!-- Top-menu fragment for `wodoc build --menu doc/menu.html`. wodoc injects it
+     at the top of every page and fills its holes: subproject (a
+     <p class="logo-subproject">title</p> element) and base (the per-page relative
+     path to the version root). Style .site-* / .logo-subproject in css/style.css;
+     replace the brand and links with your own. -->
+<header class="site-header">
+  <a class="site-brand" href="/">My Project</a>
+  {{subproject}}
+  <nav class="site-nav">
+    <a href="{{base}}/index.html">Docs</a>
+    <a href="https://github.com/me/myproj">GitHub</a>
+    <a href="https://opam.ocaml.org/packages/myproj/">opam</a>
+  </nav>
+</header>

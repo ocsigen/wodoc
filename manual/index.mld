@@ -22,6 +22,7 @@ syndication. See {{!page-"blog"}Adding a blog}.
 {1 Manual}
 
 - {{!page-"overview"}How it works} — the pipeline and the one-source/two-outputs trick
+- {{!page-"building-a-site"}Building a complete site} — home page, pages, navigation, theme, multiple projects, deployment
 - {{!page-"directives"}Directives} — the [{%wodoc:…%}] reference (classes, containers, tables)
 - {{!page-"authoring"}Authoring} — what survives on ocaml.org, what is wodoc-only
 - {{!page-"config"}Configuration} — the [doc/wodoc] file: navigation, layout, versions.json

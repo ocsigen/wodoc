@@ -22,6 +22,7 @@
  (section "Manual"
   (link "Overview" wodoc/index.html index)
   (link "How it works" wodoc/overview.html overview)
+  (link "Building a complete site" wodoc/building-a-site.html building-a-site)
   (link "Directives" wodoc/directives.html directives)
   (link "Authoring" wodoc/authoring.html authoring)
   (link "Configuration" wodoc/config.html config)

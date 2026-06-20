@@ -1,0 +1,99 @@
+/* ===========================================================================
+   wodoc starter theme — part 2 of 2: the odoc CONTENT.
+
+   The wodoc-generated template links this file by absolute path
+   (/css/ocsigen-odoc.css) and does NOT link odoc's own odoc.css, so the page
+   content is unstyled unless a theme like this one provides it. (odoc.css IS
+   shipped next to each version, as odoc.css, if you would rather @import or link
+   it; this file is a self-contained alternative.)
+
+   It styles the article: typography, links, code blocks (highlight.pack.js),
+   tables, lists and odoc declaration specs. Pair it with style.css (the chrome).
+   ======================================================================== */
+
+.odoc-preamble, .odoc-content { font-size: 1rem; }
+.odoc-preamble { margin-bottom: 1.5rem; }
+
+/* --- headings ------------------------------------------------------------ */
+.odoc-content h1, .odoc-preamble h1 { font-size: 2rem; line-height: 1.25; margin: 0 0 1rem; }
+.odoc-content h2 { font-size: 1.5rem; margin: 2.2rem 0 0.8rem; padding-bottom: 0.2rem; border-bottom: 1px solid var(--border); }
+.odoc-content h3 { font-size: 1.2rem; margin: 1.8rem 0 0.6rem; }
+.odoc-content h4 { font-size: 1.05rem; margin: 1.4rem 0 0.5rem; }
+
+/* odoc's per-heading hover anchor (kept unless --strip-anchors) */
+.odoc-content .anchor { color: var(--muted); padding-right: 0.3rem; opacity: 0; }
+.odoc-content :hover > .anchor { opacity: 1; }
+
+/* --- text, lists, quotes ------------------------------------------------- */
+.odoc-content p { margin: 0.8rem 0; }
+.odoc-content ul, .odoc-content ol { margin: 0.8rem 0; padding-left: 1.4rem; }
+.odoc-content li { margin: 0.25rem 0; }
+.odoc-content blockquote {
+  margin: 1rem 0;
+  padding: 0.2rem 1rem;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+.odoc-content img { max-width: 100%; }
+
+/* --- code ---------------------------------------------------------------- */
+.odoc-content code, .odoc-content pre, .spec, .odoc-spec {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+.odoc-content code {
+  background: var(--code-bg);
+  padding: 0.12em 0.35em;
+  border-radius: 4px;
+}
+.odoc-content pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;            /* wide code scrolls, never breaks the layout */
+  line-height: 1.45;
+}
+.odoc-content pre code { background: none; padding: 0; border-radius: 0; }
+
+/* highlight.pack.js token colours (shipped highlight.pack.js + wodoc-highlight.js) */
+.hljs-keyword, .hljs-type { color: #8250df; }
+.hljs-string, .hljs-char { color: #0a7d33; }
+.hljs-comment { color: var(--muted); font-style: italic; }
+.hljs-number, .hljs-literal { color: #b35900; }
+.hljs-title, .hljs-function { color: #1f5fbf; }
+
+/* wodoc's server/client/shared code side-colouring (from {%wodoc:@ class=…%}) */
+.server-code { border-left: 3px solid #b35900; }
+.client-code { border-left: 3px solid #1f5fbf; }
+.shared-code { border-left: 3px solid #2f6f4f; }
+
+/* --- declaration specs (the API: val/type/module signatures) ------------- */
+.spec, .odoc-spec {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+  margin: 0.8rem 0;
+  overflow-x: auto;
+}
+.spec .keyword, .odoc-spec .keyword { color: #8250df; }
+
+/* --- tables -------------------------------------------------------------- */
+.odoc-content table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+  display: block;
+  overflow-x: auto;            /* wide tables scroll within the article */
+}
+.odoc-content th, .odoc-content td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+}
+.odoc-content th { background: var(--sidebar-bg); }
+
+/* --- horizontal rule ----------------------------------------------------- */
+.odoc-content hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
