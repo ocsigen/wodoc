@@ -165,6 +165,21 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
     | Some _ -> "  <script src=\"{{base}}/wodoc-highlight.js\"></script>\n"
     | None -> "  <script src=\"/doc/wodoc-highlight.js\"></script>\n"
   in
+  (* the stylesheet <link>s from the config's (css …): absolute/URL hrefs verbatim,
+     relative ones made per-page relative with the {{base}} hole (and shipped into
+     the output by Build.run), so a project's theme works at any deploy path. *)
+  let css_links =
+    String.concat ""
+      (List.map
+         (fun href ->
+            let h =
+              if (String.length href > 0 && href.[0] = '/') || is_url href
+              then href
+              else "{{base}}/" ^ href
+            in
+            Printf.sprintf "  <link rel=\"stylesheet\" href=\"%s\"/>\n" h)
+         c.css)
+  in
   Printf.sprintf
     {|<!DOCTYPE html>
 <html>
@@ -172,9 +187,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>{{title}} — %s</title>
-  <link rel="stylesheet" href="/css/style.css"/>
-  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
-{{mdlink}}  <script src="{{base}}/highlight.pack.js"></script>
+%s{{mdlink}}  <script src="{{base}}/highlight.pack.js"></script>
 %s</head>
 <body class="wodoc-page wodoc-doc%s">
   {{menu}}
@@ -240,7 +253,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
 </body>
 </html>
 |}
-    (esc c.title) hl body_extra extra_script c.pub
+    (esc c.title) css_links hl body_extra extra_script c.pub
 
 (* the version <select> block (shared by the normal and per-side left columns).
    The entry that the [latest] symlink targets is rendered with value "latest"
@@ -996,6 +1009,24 @@ let run
               (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
                  (Filename.quote d)))))
     c.static_copy;
+  (* stylesheets named in (css …): a relative href that names a file next to the
+     config is shipped into the output (preserving sub-paths) and served per
+     version, so the themed site is self-contained and works at any deploy path.
+     Absolute (/…) or URL hrefs are left to the site to serve. *)
+  List.iter
+    (fun href ->
+       if not ((String.length href > 0 && href.[0] = '/') || is_url href)
+       then
+         let csrc = Filename.concat assets_dir href in
+         if Sys.file_exists csrc
+         then (
+           let d = Filename.concat out href in
+           mkdir_p (Filename.dirname d);
+           ignore
+             (Sys.command
+                (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
+                   (Filename.quote d)))))
+    c.css;
   (* assets: odoc's bundled highlighter + the project's highlight starter *)
   let sf = Filename.temp_file "wodoc-sf" "" in
   Sys.remove sf;

@@ -114,6 +114,12 @@ type t =
     (** emit the Markdown twin of every page + the [llms.txt]/[llms-full.txt]
           index (for AI/LLM consumption). On by default; [(markdown false)] turns
           it off. *)
+  ; css : string list
+    (** stylesheet hrefs for the page [<head>]. Each is emitted verbatim when
+          absolute ([/…]) or a URL, else made per-page relative ([{{base}}/…]) and,
+          when it names a file next to the config, copied into the output — so a
+          project can ship a self-contained theme that works at any deploy path.
+          Defaults to the Ocsigen-hosted ["/css/style.css"; "/css/ocsigen-odoc.css"]. *)
   }
 
 let parse_entry = function
@@ -269,4 +275,9 @@ let of_string s =
   ; static_copy = parse_static_copy stanzas
   ; blog = parse_blog stanzas
   ; (* Markdown twins + llms.txt are on by default; only (markdown false) disables *)
-    markdown = Sexp.field_atom "markdown" stanzas <> Some "false" }
+    markdown = Sexp.field_atom "markdown" stanzas <> Some "false"
+  ; css =
+      (* default keeps the Ocsigen-hosted theme; (css …) overrides the whole list *)
+      (match Sexp.field_atoms "css" stanzas with
+       | [] -> ["/css/style.css"; "/css/ocsigen-odoc.css"]
+       | l -> l) }
