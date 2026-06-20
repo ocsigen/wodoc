@@ -38,8 +38,8 @@ keeps its ocaml.org link.
 
 A cross-package PAGE reference (`{!/pkg/page-x}`) odoc could not resolve renders
 as an `xref-unresolved` span titled `/pkg/path`. It is rewritten to the project's
-deployed manual page: at the version root for a `multilib` (odoc_driver) project,
-under `<pkg>/` for `root`/`subdir` ones. A `.section` suffix becomes an anchor; a
+deployed manual page: at the version root for `multilib`/`root` projects, under
+`<pkg>/` for a `subdir` one. A `.section` suffix becomes an anchor; a
 non-hosted target keeps its span.
 
   $ cat > pages.html <<'HTML'
@@ -58,14 +58,14 @@ non-hosted target keeps its span.
 
   $ cat pages.html
   <a href="../../../eliom/latest/server-services.html">services</a>
-  <a href="../../../ocsigenserver/latest/ocsigenserver/config.html">config</a>
+  <a href="../../../ocsigenserver/latest/config.html">config</a>
   <a href="../../../tyxml/latest/tyxml/ppx.html">ppx syntax</a>
   <a href="../../../eliom/latest/server-state.html#scopes">scopes</a>
   <span class="xref-unresolved" title="/nothosted/foo">other</span>
 
 A RESOLVED cross-package reference to a manual PAGE (odoc emitted an absolute
 `…/doc/<name>.html` with no '/') deploys like the page references above, not like
-a module: at the version root for `multilib`, under `<pkg>/` for `root`/`subdir`.
+a module: at the version root for `multilib`/`root`, under `<pkg>/` for `subdir`.
 Module pages (`<Mod>/…/index.html`) keep the module layout.
 
   $ cat > res.html <<'HTML'
@@ -83,7 +83,7 @@ Module pages (`<Mod>/…/index.html`) keep the module layout.
   >   res.html
 
   $ cat res.html
-  <a href="../../../ocsigenserver/latest/ocsigenserver/config.html">cfg page</a>
+  <a href="../../../ocsigenserver/latest/config.html">cfg page</a>
   <a href="../../../ocsigenserver/latest/Ocsigen_server/index.html">cfg mod</a>
   <a href="../../../eliom/latest/server-services.html">srv page</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">srv mod</a>
