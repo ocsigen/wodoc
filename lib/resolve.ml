@@ -273,6 +273,16 @@ let dep_base relroot side dir layout pkg =
   | Root -> b
   | Subdir -> b ^ "/" ^ pkg
 
+(* The deployed manual-page URL for a hosted project. Manual pages sit at the
+   version root for odoc_driver projects ([Multilib]) and under [<pkg>/]
+   otherwise ([Root]/[Subdir]). [page] is the page path relative to that
+   location (e.g. ["config.html"] or ["server-state.html#scopes"]). *)
+let hosted_page_url relroot dir layout pkg page =
+  let prefix =
+    match layout with Multilib -> "" | Root | Subdir -> pkg ^ "/"
+  in
+  Printf.sprintf "%s/%s/latest/%s%s" relroot dir prefix page
+
 let resolved_re =
   Str.regexp
     "href=\"https://ocaml\\.org/p/\\([^/\"]+\\)/[^/\"]+/doc/\\([^\"]+\\)\""
@@ -286,21 +296,27 @@ let fix_resolved hosted relroot side s =
        match find_hosted hosted pkg with
        | Some (dir, layout, wrapper)
          when not (String.starts_with ~prefix:"src/" path) ->
-           let path' =
-             match layout with Subdir -> path | _ -> flat_path wrapper path
+           (* A module page is [<Mod>/…/index.html] (always nested); a top-level
+              manual page is [<name>.html] with no '/'. They deploy differently. *)
+           let url =
+             if String.contains path '/'
+             then
+               let path' =
+                 match layout with
+                 | Subdir -> path
+                 | _ -> flat_path wrapper path
+               in
+               dep_base relroot side dir layout pkg ^ "/" ^ path'
+             else hosted_page_url relroot dir layout pkg path
            in
-           Printf.sprintf "href=\"%s/%s\""
-             (dep_base relroot side dir layout pkg)
-             path'
+           Printf.sprintf "href=\"%s\"" url
        | _ -> m0)
     s
 
 (* A cross-package PAGE reference [{!/pkg/page-x}] that odoc could not resolve
    renders as an [xref-unresolved] span titled ["/pkg/path"] (leading '/', the
    "page-" prefix dropped, '/'-separated sub-pages, an optional ".section"
-   anchor on the last segment). Map it to the hosted project's deployed manual
-   page. Manual pages sit at the version root for odoc_driver projects
-   ([Multilib]) and under [<pkg>/] otherwise ([Root]/[Subdir]). *)
+   anchor on the last segment). Map it to the hosted project's deployed page. *)
 let page_link hosted relroot raw =
   match String.split_on_char '/' raw with
   | "" :: pkg :: (_ :: _ as rest) -> (
@@ -315,12 +331,7 @@ let page_link hosted relroot raw =
               , "#" ^ String.sub path (i + 1) (String.length path - i - 1) )
           | None -> path, ""
         in
-        let prefix =
-          match layout with Multilib -> "" | Root | Subdir -> pkg ^ "/"
-        in
-        Some
-          (Printf.sprintf "%s/%s/latest/%s%s.html%s" relroot dir prefix file
-             anchor))
+        Some (hosted_page_url relroot dir layout pkg (file ^ ".html" ^ anchor)))
   | _ -> None
 
 let fix_dep_spans hosted relroot side self s =

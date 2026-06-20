@@ -62,3 +62,29 @@ non-hosted target keeps its span.
   <a href="../../../tyxml/latest/tyxml/ppx.html">ppx syntax</a>
   <a href="../../../eliom/latest/server-state.html#scopes">scopes</a>
   <span class="xref-unresolved" title="/nothosted/foo">other</span>
+
+A RESOLVED cross-package reference to a manual PAGE (odoc emitted an absolute
+`…/doc/<name>.html` with no '/') deploys like the page references above, not like
+a module: at the version root for `multilib`, under `<pkg>/` for `root`/`subdir`.
+Module pages (`<Mod>/…/index.html`) keep the module layout.
+
+  $ cat > res.html <<'HTML'
+  > <a href="https://ocaml.org/p/ocsigenserver/7.0/doc/config.html">cfg page</a>
+  > <a href="https://ocaml.org/p/ocsigenserver/7.0/doc/Ocsigen_server/index.html">cfg mod</a>
+  > <a href="https://ocaml.org/p/eliom/12.0/doc/server-services.html">srv page</a>
+  > <a href="https://ocaml.org/p/eliom/12.0/doc/Eliom_content/index.html">srv mod</a>
+  > <a href="https://ocaml.org/p/tyxml/4.6.0/doc/ppx.html">ppx page</a>
+  > HTML
+
+  $ wodoc resolve-refs --relroot ../../.. --side server --self x \
+  >   --hosted ocsigenserver=ocsigenserver:root: \
+  >   --hosted eliom=eliom:multilib:Eliom \
+  >   --hosted tyxml=tyxml:subdir: \
+  >   res.html
+
+  $ cat res.html
+  <a href="../../../ocsigenserver/latest/ocsigenserver/config.html">cfg page</a>
+  <a href="../../../ocsigenserver/latest/Ocsigen_server/index.html">cfg mod</a>
+  <a href="../../../eliom/latest/server-services.html">srv page</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">srv mod</a>
+  <a href="../../../tyxml/latest/tyxml/ppx.html">ppx page</a>
