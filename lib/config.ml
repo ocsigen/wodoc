@@ -255,6 +255,14 @@ let of_string s =
     | Some _ as d -> d
     | None -> if client_server = [] then None else Some project
   in
+  (* (mld-dir <dir> [<package>]): direct-mld build of a directory of [.mld] pages;
+     the optional second atom is the odoc [--package] for the compile. *)
+  let mld_dir, mld_package =
+    match Sexp.fields "mld-dir" stanzas with
+    | (Sexp.Atom dir :: rest) :: _ -> (
+        Some dir, match rest with Sexp.Atom pkg :: _ -> pkg | _ -> "")
+    | _ -> None, ""
+  in
   { project
   ; title = Sexp.field_atom_default "title" project stanzas
   ; pub = Sexp.field_atom_default "pub" ("/" ^ project) stanzas
@@ -276,8 +284,8 @@ let of_string s =
   ; manual_root =
       Sexp.field_atom "manual-root" stanzas = Some "true"
       || Sexp.fields "manual-root" stanzas <> []
-  ; mld_dir = Sexp.field_atom "mld-dir" stanzas
-  ; mld_package = Sexp.field_atom_default "mld-package" "" stanzas
+  ; mld_dir
+  ; mld_package
   ; flat =
       Sexp.field_atom "flat" stanzas = Some "true"
       || Sexp.fields "flat" stanzas <> []

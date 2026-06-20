@@ -276,9 +276,9 @@ so the uniform strip keeps them valid.
 
 A project with no buildable library API — an archived project (ocsimore) or a
 tool whose libraries are internal (html_of_wiki) — has nothing for [dune build
-@doc] to render. Point [(mld-dir <dir>)] at a directory of [.mld] pages and wodoc
-builds them straight with odoc (preprocess → compile → link → html-generate, no
-dune), [(mld-package <pkg>)] giving the odoc package. The pages {e are} the
+@doc] to render. Point [(mld-dir <dir> [<package>])] at a directory of [.mld]
+pages and wodoc builds them straight with odoc (preprocess → compile → link →
+html-generate, no dune); the optional second atom is the odoc package. The pages {e are} the
 manual: the landing [index.html] is a real page (no redirect). The left nav is
 the config's [(nav …)] sections like any project (in-page anchors are just links
 with a [#fragment]); a project that builds {e several} version directories with

@@ -150,9 +150,9 @@ the layout of odoc-driver projects (eliom) so cross-project links resolve.
 
 A project with no buildable library API (an archived project, or a tool whose
 libraries are internal) has nothing for [dune build @doc] to render. Point
-[(mld-dir <dir>)] at a directory of [.mld] pages and wodoc compiles them
-straight with odoc (preprocess → compile → link → html-generate, no dune);
-[(mld-package <pkg>)] gives the odoc package. The pages {e are} the manual, so
+[(mld-dir <dir> [<package>])] at a directory of [.mld] pages and wodoc compiles
+them straight with odoc (preprocess → compile → link → html-generate, no dune);
+the optional second atom is the odoc [--package]. The pages {e are} the manual, so
 the landing [index.html] is a real page (no redirect). Add [(flat)] when the
 first content straddles odoc's preamble boundary. [(static-copy <src> [<dest>])]
 (repeatable) copies a tree in verbatim — e.g. a frozen API snapshot that can no
