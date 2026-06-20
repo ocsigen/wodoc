@@ -57,6 +57,11 @@ from one declarative [doc/wodoc] config: it runs [dune build @doc] and chains
 cross-package link resolution), using {{!page-"commands"}[convert]} once up front
 to bring a legacy wikicréole manual over to [.mld].
 
+Alongside the HTML, [wodoc build] also emits a {b Markdown twin} of every page
+and an [llms.txt] index, so the same documentation stays readable by plain-text
+tools and LLMs (on by default; see {{!page-"commands"}Commands} and the
+[(markdown …)] config stanza).
+
 {1 Why rewrite the markers to HTML comments?}
 
 This is a deliberate trick to work around a limitation of odoc (the absence of

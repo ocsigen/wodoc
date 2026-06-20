@@ -1,5 +1,5 @@
 (** Generate the LLM-friendly index files for a built project doc, from the
-    Markdown twin tree that {!Build} produces in the output directory.
+    Markdown twin tree that {!Wodoc.Build} produces in the output directory.
 
     Follows the [llms.txt] convention (llmstxt.org): a single H1 with the project
     name, a blockquote summary, then sections listing the Markdown pages. *)

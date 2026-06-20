@@ -25,7 +25,7 @@ syndication. See {{!page-"blog"}Adding a blog}.
 - {{!page-"directives"}Directives} — the [{%wodoc:…%}] reference (classes, containers, tables)
 - {{!page-"authoring"}Authoring} — what survives on ocaml.org, what is wodoc-only
 - {{!page-"config"}Configuration} — the [doc/wodoc] file: navigation, layout, versions.json
-- {{!page-"commands"}Commands} — [preprocess], [render], [assemble], [nav], [resolve-refs], [convert]
+- {{!page-"commands"}Commands} — [build] (turn-key), plus [preprocess], [render], [assemble], [nav], [resolve-refs], [convert]
 - {{!page-"blog"}Adding a blog} — dated [.mld] posts, the navigation list, the feed
 
 {1 API reference}
@@ -35,8 +35,8 @@ chains are exposed as modules. See the {{!page-"api"}API overview}, or jump to
 {!Wodoc.Preprocess}, {!Wodoc.Render}, {!Wodoc.Assemble}, {!Wodoc.Nav},
 {!Wodoc.Resolve} and {!Wodoc.Convert}.
 
-{1 Status}
+{1 About}
 
-Early work in progress. wodoc is developed in the
+wodoc is developed in the
 {{:https://github.com/ocsigen/wodoc}ocsigen/wodoc} repository and distributed
 under the MIT license.

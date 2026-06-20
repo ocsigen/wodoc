@@ -16,6 +16,7 @@ Wodoc.Convert
 Wodoc.Config
 Wodoc.Build
 Wodoc.Blog
+Wodoc.Llms
 }
 
 {1 Where to start}
@@ -33,3 +34,5 @@ Wodoc.Blog
 - {!Wodoc.Build} — the turn-key [wodoc build]: assemble a whole site from it.
 - {!Wodoc.Blog} — the ultra-simple blog: dated [.mld] posts, a generated nav
   section and a "latest posts" landing fragment.
+- {!Wodoc.Llms} — generate the [llms.txt] / [llms-full.txt] index from the
+  Markdown twin tree (the LLM-friendly view of a built site).
