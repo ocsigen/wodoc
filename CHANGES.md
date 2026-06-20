@@ -16,8 +16,8 @@ Config simplifications (breaking):
 
 - `(client-server …)` now implies `(odoc-driver <project>)` — declare only the
   client/server block, not both.
-- `mld-package` folded into `(mld-dir <dir> [<package>])` (the package is the
-  optional second atom).
+- `(mld-dir <dir> [<package>])` can carry the odoc package inline; `mld-package`
+  still sets it when the directory is passed on the CLI (`--mld-dir`).
 - The `pub` stanza is renamed `url-prefix`.
 
 ## 0.1

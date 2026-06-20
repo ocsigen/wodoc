@@ -257,12 +257,15 @@ let of_string s =
     | None -> if client_server = [] then None else Some project
   in
   (* (mld-dir <dir> [<package>]): direct-mld build of a directory of [.mld] pages;
-     the optional second atom is the odoc [--package] for the compile. *)
+     the optional second atom is the odoc [--package]. When the dir is supplied on
+     the CLI ([--mld-dir], for a per-version manual) the package is still taken
+     from a standalone [(mld-package <pkg>)]. *)
   let mld_dir, mld_package =
     match Sexp.fields "mld-dir" stanzas with
-    | (Sexp.Atom dir :: rest) :: _ -> (
-        Some dir, match rest with Sexp.Atom pkg :: _ -> pkg | _ -> "")
-    | _ -> None, ""
+    | (Sexp.Atom dir :: Sexp.Atom pkg :: _) :: _ -> Some dir, pkg
+    | (Sexp.Atom dir :: _) :: _ ->
+        Some dir, Sexp.field_atom_default "mld-package" "" stanzas
+    | _ -> None, Sexp.field_atom_default "mld-package" "" stanzas
   in
   { project
   ; title = Sexp.field_atom_default "title" project stanzas
