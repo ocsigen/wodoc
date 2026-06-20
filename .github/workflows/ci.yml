@@ -1,0 +1,44 @@
+# Build wodoc and run its test suite on every push and pull request.
+# `opam install . --deps-only` honours the pin-depends in wodoc.opam, so the
+# forked odoc family (needed by the odoc_driver client/server path) is pinned and
+# built automatically — no manual setup.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# Cancel superseded runs of the same ref (a new push aborts the previous build).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        ocaml-compiler: ["5.4.0"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Install dependencies (pulls the pinned odoc fork)
+        run: opam install . --deps-only --with-test --with-doc
+
+      - name: Build
+        run: opam exec -- dune build
+
+      - name: Test
+        run: opam exec -- dune runtest
+
+      - name: Build the documentation (warnings are not fatal)
+        run: opam exec -- dune build @doc
