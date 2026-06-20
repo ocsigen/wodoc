@@ -16,6 +16,7 @@ wodoc is both a command-line tool and an OCaml library. The library exposes one 
 [`Wodoc.Build`](./Wodoc-Build.md) 
 [`Wodoc.Blog`](./Wodoc-Blog.md) 
 [`Wodoc.Llms`](./Wodoc-Llms.md) Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that Wodoc.Build produces in the output directory.
+[`Wodoc.Theme`](./Wodoc-Theme.md) Built-in default assets shipped by wodoc build, so it produces a styled, self-contained site with no theme setup. Each is overridable: the stylesheet via the (css …) config stanza, the top menu via --menu.
 
 ## Where to start
 
@@ -29,3 +30,4 @@ wodoc is both a command-line tool and an OCaml library. The library exposes one 
 - [`Wodoc.Build`](./Wodoc-Build.md) — the turn-key `wodoc build`: assemble a whole site from it.
 - [`Wodoc.Blog`](./Wodoc-Blog.md) — the ultra-simple blog: dated `.mld` posts, a generated nav section and a "latest posts" landing fragment.
 - [`Wodoc.Llms`](./Wodoc-Llms.md) — generate the `llms.txt` / `llms-full.txt` index from the Markdown twin tree (the LLM-friendly view of a built site).
+- [`Wodoc.Theme`](./Wodoc-Theme.md) — the built-in default assets (theme stylesheet, top bar) shipped when a project configures none.

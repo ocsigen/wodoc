@@ -27,4 +27,5 @@
 - [Module `Wodoc.Render`](wodoc/Wodoc-Render.md)
 - [Module `Wodoc.Resolve`](wodoc/Wodoc-Resolve.md)
 - [Module `Wodoc.Sexp`](wodoc/Wodoc-Sexp.md)
+- [Module `Wodoc.Theme`](wodoc/Wodoc-Theme.md)
 - [Module `Wodoc`](wodoc/Wodoc.md)

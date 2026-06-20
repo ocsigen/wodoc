@@ -67,10 +67,10 @@ A best-effort wikicréole → `.mld` converter to migrate an existing manual: he
 For the end-to-end picture — home page, prose pages, navigation, theme, multiple projects and deployment — see [Building a complete site](./building-a-site.md).
 
 ```text
-wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]
+wodoc build --config <doc/wodoc> --out <dir> [--menu <menu.html|URL>] [--label <v>]
             [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]
 ```
-`--menu` takes the shared site menu as a local file *or* an `http(s)` URL (fetched with curl) — so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
+`--menu` is optional: without it, wodoc generates a default top bar. Pass it to use your own shared site menu — a local file *or* an `http(s)` URL (fetched with curl), so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
 
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 
@@ -148,7 +148,7 @@ A single-package `dune build @doc` project puts BOTH its manual and its API unde
 
 ### Manual-only / archived projects (no `dune build @doc`)
 
-A project with no buildable library API — an archived project (ocsimore) or a tool whose libraries are internal (html\_of\_wiki) — has nothing for `dune build @doc` to render. Point `(mld-dir <dir>)` at a directory of `.mld` pages and wodoc builds them straight with odoc (preprocess → compile → link → html-generate, no dune), `(mld-package <pkg>)` giving the odoc package. The pages *are* the manual: the landing `index.html` is a real page (no redirect). The left nav is the config's `(nav …)` sections like any project (in-page anchors are just links with a `#fragment`); a project that builds *several* version directories with different manuals passes each version's nav with `--nav <file>` (same `(nav …)` syntax) instead. Add `(flat)` if the first content straddles odoc's preamble boundary. `(static-copy <src> <dest>)…` copies trees in verbatim — e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
+A project with no buildable library API — an archived project (ocsimore) or a tool whose libraries are internal (html\_of\_wiki) — has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc builds them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc package. The pages *are* the manual: the landing `index.html` is a real page (no redirect). The left nav is the config's `(nav …)` sections like any project (in-page anchors are just links with a `#fragment`); a project that builds *several* version directories with different manuals passes each version's nav with `--nav <file>` (same `(nav …)` syntax) instead. Add `(flat)` if the first content straddles odoc's preamble boundary. `(static-copy <src> <dest>)…` copies trees in verbatim — e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
 
 The syntax-highlight starter is shipped automatically as `wodoc-highlight.js`: a plain-OCaml default built into wodoc, or — for a project whose code blocks use extra syntax (a ppx, a client/server split) — the file given by `(highlight …)` in the config. So a project without special syntax ships no JavaScript at all. See [`Wodoc.Build`](./Wodoc-Build.md).
 

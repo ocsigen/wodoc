@@ -8,7 +8,7 @@ A minimal config (wodoc's own — this very site):
 ```text
 (project wodoc)
 (title Wodoc)
-(pub /wodoc)
+(url-prefix /wodoc)
 (packages wodoc)
 (landing wodoc/index.html)
 
@@ -32,7 +32,7 @@ wodoc build --config doc/wodoc --out <site>/<label> \
 | --- | --- |
 | `(project <id>)` | **required** — package / project id, e.g. `ocsipersist` |
 | `(title <label>)` | sub-project label shown by the logo (default: the project id) |
-| `(pub <path>)` | absolute publish base for the version selector, e.g. `/ocsipersist` (default `/<project>`) |
+| `(url-prefix <path>)` | absolute publish base for the version selector, e.g. `/ocsipersist` (default `/<project>`) |
 | `(menu-current <id>)` | which project to highlight in the shared top menu (default: the project id) |
 | `(packages <p> …)` | the odoc output subtrees to assemble, in order; empty \= every subtree odoc produced |
 | `(landing <path>)` | where the version-root `index.html` redirects, e.g. `ocsipersist/index.html` |
@@ -93,7 +93,7 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`
 | `(manual-files <pkg>)` | package dir that receives `manual/files` (examples, images) |
 | `(highlight <file>)` | a project-specific syntax-highlight starter to ship as `wodoc-highlight.js`; without it, wodoc ships a built-in default covering eliom / lwt / js\_of\_ocaml syntax |
 | `(markdown false)` | turn off the Markdown twins and `llms.txt` index (on by default; see [Commands](./commands.md)) |
-| `(css <href> …)` | the page stylesheets. A relative href is copied into the build and linked per-version (self-contained, works at any path); an absolute (`/…`) or URL href is emitted verbatim. Default: `/css/style.css` and `/css/ocsigen-odoc.css` |
+| `(css <href> …)` | the page stylesheets. A relative href is copied into the build and linked per-version (self-contained, works at any path); an absolute (`/…`) or URL href is emitted verbatim. Omitted → wodoc ships its built-in default theme as `wodoc.css` |
 
 ## Layout variants
 
@@ -105,12 +105,12 @@ A single-package `dune build @doc` project puts both its manual and its API unde
 
 ### Manual-only / archived projects — `(mld-dir …)`
 
-A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for `dune build @doc` to render. Point `(mld-dir <dir>)` at a directory of `.mld` pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); `(mld-package <pkg>)` gives the odoc package. The pages *are* the manual, so the landing `index.html` is a real page (no redirect). Add `(flat)` when the first content straddles odoc's preamble boundary. `(static-copy <src> [<dest>])` (repeatable) copies a tree in verbatim — e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
+A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc `--package`. (When the directory is passed on the CLI with `--mld-dir` — for a per-version manual — set the package with a standalone `(mld-package <pkg>)` instead.) The pages *are* the manual, so the landing `index.html` is a real page (no redirect). Add `(flat)` when the first content straddles odoc's preamble boundary. `(static-copy <src> [<dest>])` (repeatable) copies a tree in verbatim — e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
 
 
 ## Client/server projects — `(client-server …)`
 
-A client/server project (eliom, ocsigen-toolkit, ocsigen-start) builds its API as two or three libraries of one package that share module names (`<pkg>.server` / `<pkg>.client` / `<pkg>.ppx`, built with `(odoc-driver <pkg>)`). The `(client-server …)` block lists one side per library:
+A client/server project (eliom, ocsigen-toolkit, ocsigen-start) builds its API as two or three libraries of one package that share module names (`<pkg>.server` / `<pkg>.client` / `<pkg>.ppx`). Declaring `(client-server …)` implies `(odoc-driver <project>)` (these shared names would collide under `dune build @doc`), so you need not repeat it. The block lists one side per library:
 
 ```text
 (client-server

@@ -48,3 +48,7 @@ Link cross-package "sibling" references odoc left unresolved.
 ```ocaml
 module Sexp : sig ... end
 ```
+```ocaml
+module Theme : sig ... end
+```
+Built-in default assets shipped by `wodoc build`, so it produces a styled, self-contained site with no theme setup. Each is overridable: the stylesheet via the `(css …)` config stanza, the top menu via `--menu`.

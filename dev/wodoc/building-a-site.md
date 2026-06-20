@@ -6,6 +6,80 @@ odoc gives you an API reference. wodoc turns the same sources into a **complete 
 This page is the end-to-end walkthrough. It assumes you have read [How it works](./overview.md) and points to [Configuration](./config.md) and [Commands](./commands.md) for the exhaustive reference of every stanza and flag. A **copy-paste starter** (a menu, a stylesheet and a CI workflow) lives in [`examples/starter`](https://github.com/ocsigen/wodoc/tree/master/examples/starter) — clone it and adjust the names rather than starting from a blank page.
 
 
+## Quickstart
+
+From an existing dune project with a public library (say package `demo`, whose top module is `Demo`, with documented `.mli`), three steps give you a styled site.
+
+
+### 1\. Add a documentation page
+
+odoc builds the `.mld` pages of a package declared with a `(documentation …)` stanza:
+
+```text
+mkdir doc
+cat > doc/dune <<'EOF'
+(documentation (package demo))
+EOF
+cat > doc/index.mld <<'EOF'
+{0 Demo}
+
+Welcome to {b Demo}. See the {!Demo} API.
+EOF
+```
+
+### 2\. Write the wodoc config
+
+```text
+cat > doc/wodoc <<'EOF'
+(project demo)
+(title "Demo")
+(url-prefix /demo)
+(packages demo)
+(landing demo/index.html)
+(nav
+ (section "Manual" (link "Home" demo/index.html index))
+ (api-section "API" (link "Demo" demo/Demo/index.html Demo)))
+EOF
+```
+
+### 3\. Build and preview
+
+```text
+wodoc build --config doc/wodoc --out _site/dev --label dev
+(cd _site && python3 -m http.server)
+# then open http://localhost:8000/dev/
+```
+`wodoc build` runs `dune build @doc` itself and assembles every page. The result is a complete, **styled, self-contained** site — no menu file, no stylesheet to host. (Customise later with `--menu` and `(css …)`; see [Theming](./#theming).)
+
+
+### Add a blog
+
+Write a dated post — the filename date is the publication date, `@author` the author, the first heading the title, the first paragraph the excerpt:
+
+```text
+mkdir doc/blog
+cat > doc/blog/2026-01-15-hello.mld <<'EOF'
+{0 Hello, world}
+
+@author Jane Doe
+
+Our very first post, announcing the demo.
+EOF
+```
+Declare the blog in `doc/wodoc` and drop a "latest posts" marker on the landing (`{%html:<!--wodoc-blog-latest-->%}` is the form that survives odoc):
+
+```text
+# append to doc/wodoc:
+(blog (dir blog) (out blog) (heading "Blog") (latest 5))
+```
+```text
+# add to doc/index.mld where the list should appear:
+{1 Latest posts}
+{%html:<!--wodoc-blog-latest-->%}
+```
+Rebuild with the same `wodoc build` command: the post is built at `blog/`, listed in a generated left-nav section, and the marker expands into a styled list. See [Adding a blog](./blog.md) for the Atom feed and the navigation block.
+
+
 ## What "a complete website" means
 
 A wodoc site is made of these ingredients; each is covered below.
@@ -22,7 +96,7 @@ A wodoc site is made of these ingredients; each is covered below.
 
 ## The shape of a built site
 
-`wodoc build --out <dir> --label <v>` writes *one version* of the site into `<dir>`. Deployed, the tree looks like this (here `(pub /myproj)`, one package):
+`wodoc build --out <dir> --label <v>` writes *one version* of the site into `<dir>`. Deployed, the tree looks like this (here `(url-prefix /myproj)`, one package):
 
 ```text
 /myproj/
@@ -32,18 +106,18 @@ A wodoc site is made of these ingredients; each is covered below.
       index.html       <- the home page
       tutorial.html
       Myproj/index.html
+    wodoc.css          <- the theme (built-in default, or your (css …))
     wodoc-highlight.js
     versions.json      <- the version manifest (drives the <select>)
   1.0.0/               <- a frozen release (wodoc release)
   latest -> 1.0.0      <- a symlink
-/css/                  <- the stylesheet, at the DOMAIN ROOT (see Theming)
 ```
-Internal links are version-relative, so a frozen version keeps working forever; only the version `<select>`, the stylesheet and the highlighter are referenced by absolute path. Remember that last point — it shapes deployment (see [Versioning and deployment](./#deployment)).
+Everything a page references — the theme, the highlighter, internal links — is version-relative, so the site is self-contained and a frozen version keeps working forever. (Only the version `<select>` uses the absolute `(url-prefix)` to switch versions.)
 
 
 ## `wodoc build`: what it generates, what you supply
 
-The turn-key [`wodoc build`](./commands.md) runs `dune build @doc` and then assembles every page. It **generates almost everything**; you supply only the top menu and the stylesheet.
+The turn-key [`wodoc build`](./commands.md) runs `dune build @doc` and then assembles every page. It **generates almost everything** — including a default theme and top bar — so a basic site needs no theming setup at all.
 
 | Part | Who provides it |
 | --- | --- |
@@ -52,15 +126,15 @@ The turn-key [`wodoc build`](./commands.md) runs `dune build @doc` and then asse
 | the page content (odoc HTML, with your `{%wodoc:…%}` markers rendered) | **generated** |
 | Markdown twins, `llms.txt`, the landing redirect, `versions.json` | **generated** |
 | the highlighter (`highlight.pack.js` and `wodoc-highlight.js`) | **shipped** by wodoc |
-| the **top menu** fragment (`--menu`) | **you** (a file or URL) |
-| the **stylesheet** (`/css/style.css`, `/css/ocsigen-odoc.css`) | **you** (host it at the root) |
+| the **top bar** | **generated** default; override with `--menu` (a file or URL) |
+| the **stylesheet / theme** | **shipped** default `wodoc.css`; override with `(css …)` |
 | static assets (images, examples) | **you** (via config; see below) |
-So a minimal build is:
+So the minimal build is just:
 
 ```text
-wodoc build --config doc/wodoc --out _site/dev --label dev --menu doc/menu.html
+wodoc build --config doc/wodoc --out _site/dev --label dev
 ```
-`--menu` is **required**. The rest of this page is about filling in the two columns you own.
+That already produces a **styled, self-contained site** — a built-in theme and a top bar are shipped and linked by per-version relative paths, so it works at any deploy path. The rest of this page is about the pieces you may want to customise: the home page, the navigation, and — when you outgrow the built-in look — the theme and the top bar.
 
 
 ## The home page
@@ -104,17 +178,17 @@ For a single library, `(packages myproj)` assembles its `dune build @doc` output
 ```text
 (packages myproj myproj-lwt myproj-unix)
 ```
-A **client/server** project (libraries that share module names, e.g. an Eliom app) is built through `odoc_driver` instead of `dune build @doc` — declare it with `(odoc-driver <pkg>)` and a `(client-server …)` block; wodoc then gives every page its side's API nav, a body colour and a client/server switch. See the `(client-server …)` and `(odoc-driver …)` stanzas in [Configuration](./config.md).
+A **client/server** project (libraries that share module names, e.g. an Eliom app) is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(client-server …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its side's API nav, a body colour and a client/server switch. See the `(client-server …)` stanza in [Configuration](./config.md).
 
 
-## Theming: the menu and the stylesheet
+## Theming: customising the look
 
-This is the part you must set up yourself, and — for now — the fiddliest one.
+`wodoc build` ships a built-in theme and a default top bar (the section above), so you can skip this entirely and still get a styled site. Customise when you outgrow the defaults.
 
 
-### The top menu (`--menu`)
+### The top bar (`--menu`)
 
-`--menu` takes an HTML *fragment* (a local file or an `http(s)` URL fetched with curl) that wodoc injects at the top of every page. It may contain holes wodoc fills: `{{subproject}}` (your title) and `{{base}}` (the per-page relative path to the version root). A minimal menu is just your header markup:
+Pass `--menu <file|URL>` to replace the default bar with your own HTML *fragment* (a local file or an `http(s)` URL fetched with curl), injected at the top of every page. It may contain holes wodoc fills: `{{subproject}}` (your title) and `{{base}}` (the per-page relative path to the version root). A minimal menu:
 
 ```text
 <header class="site-header">
@@ -124,14 +198,13 @@ This is the part you must set up yourself, and — for now — the fiddliest one
 </header>
 ```
 
-### The stylesheet
+### The stylesheet (`(css …)`)
 
-The generated template links the stylesheets named in the config's `(css …)` stanza, and does *not* link odoc's own `odoc.css` — so your stylesheets carry the whole look. Choose how they are served:
+By default wodoc links its built-in theme (`wodoc.css`, shipped per-version). The `(css …)` stanza replaces it; the template does *not* link odoc's own `odoc.css`, so your stylesheets carry the whole look. Choose how they are served:
 
-- `(css style.css ocsigen-odoc.css …)` — **relative** hrefs: wodoc copies each file (found next to the config) into every build and links it per-version, so the site is **self-contained** and works at any deploy path (recommended);
-- `(css /css/style.css …)` or a full URL — **absolute** hrefs, emitted verbatim, which you must serve yourself (the Ocsigen default points at `/css/…` on the domain root);
-- omit `(css …)` to keep the Ocsigen-hosted default (`/css/style.css`, `/css/ocsigen-odoc.css`).
-Whichever you pick, the stylesheets must style both the chrome and the content:
+- `(css style.css …)` — **relative** hrefs: wodoc copies each file (found next to the config) into every build and links it per-version, so the site stays **self-contained** and works at any deploy path;
+- `(css /css/style.css …)` or a full URL — **absolute** hrefs, emitted verbatim, which you serve yourself (e.g. a shared site-wide stylesheet at the domain root).
+A custom stylesheet must style both the chrome and the content:
 
 - the chrome wodoc emits — `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.cs-switch` and the blog `.wodoc-blog-*` classes;
 - the odoc **content** — `.odoc-preamble`/`.odoc-content`, headings, code blocks (highlight.js `.hljs-*` tokens), tables and declaration specs.
