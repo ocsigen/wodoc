@@ -54,8 +54,7 @@ EOF
 
 {@text[
 wodoc build --config doc/wodoc --out _site/dev --label dev
-(cd _site && python3 -m http.server)
-# then open http://localhost:8000/dev/
+# the result is in _site/
 ]}
 
 [wodoc build] runs [dune build @doc] itself and assembles every page. The result
