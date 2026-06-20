@@ -295,6 +295,34 @@ let fix_resolved hosted relroot side s =
        | _ -> m0)
     s
 
+(* A cross-package PAGE reference [{!/pkg/page-x}] that odoc could not resolve
+   renders as an [xref-unresolved] span titled ["/pkg/path"] (leading '/', the
+   "page-" prefix dropped, '/'-separated sub-pages, an optional ".section"
+   anchor on the last segment). Map it to the hosted project's deployed manual
+   page. Manual pages sit at the version root for odoc_driver projects
+   ([Multilib]) and under [<pkg>/] otherwise ([Root]/[Subdir]). *)
+let page_link hosted relroot raw =
+  match String.split_on_char '/' raw with
+  | "" :: pkg :: (_ :: _ as rest) -> (
+    match find_hosted hosted pkg with
+    | None -> None
+    | Some (dir, layout, _) ->
+        let path = String.concat "/" rest in
+        let file, anchor =
+          match String.rindex_opt path '.' with
+          | Some i ->
+              ( String.sub path 0 i
+              , "#" ^ String.sub path (i + 1) (String.length path - i - 1) )
+          | None -> path, ""
+        in
+        let prefix =
+          match layout with Multilib -> "" | Root | Subdir -> pkg ^ "/"
+        in
+        Some
+          (Printf.sprintf "%s/%s/latest/%s%s.html%s" relroot dir prefix file
+             anchor))
+  | _ -> None
+
 let fix_dep_spans hosted relroot side self s =
   let wrappers = List.map (fun (pkg, (_, _, w)) -> w, pkg) hosted in
   global_sub span_re
@@ -305,73 +333,78 @@ let fix_dep_spans hosted relroot side self s =
        let trailing = Str.matched_group 4 whole in
        let label = visible ^ trailing in
        let raw = String.trim (if title <> "" then title else label) in
-       let kind, after =
-         if Str.string_match kind_re raw 0
-         then Str.matched_group 1 raw, Str.match_end ()
-         else "", 0
-       in
-       let name =
-         strip_parens (String.sub raw after (String.length raw - after))
-       in
-       let toks =
-         List.filter (fun t -> t <> "") (String.split_on_char '.' name)
-       in
-       match toks with
-       | [] -> m0
-       | head :: _ -> (
-         match
-           List.find_opt
-             (fun (w, _) ->
-                head = w || String.starts_with ~prefix:(w ^ "_") head)
-             wrappers
-         with
-         | None -> m0 (* dep we do not host: leave as text *)
-         | Some (wrapper, pkg) ->
-             if pkg = self
-             then m0 (* self ref: keep text *)
-             else
-               let modhead, rest =
-                 if head = wrapper
-                 then
-                   match toks with
-                   | _ :: m :: tl -> flat_module wrapper m, tl
-                   | _ -> "", []
-                 else head, List.tl toks
-               in
-               if modhead = ""
-               then m0
-               else begin
-                 let last =
-                   match rest with
-                   | [] -> ""
-                   | _ -> List.nth rest (List.length rest - 1)
-                 in
-                 let but_last l =
-                   match l with
-                   | [] -> []
-                   | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
-                 in
-                 let dirs, anchor =
-                   if
-                     rest <> []
-                     && (kind = "val" || kind = "method"
-                        || kind = ""
-                           && String.length last > 0
-                           && is_lower last.[0])
-                   then but_last rest, "#val-" ^ last
-                   else if rest <> [] && kind = "type"
-                   then but_last rest, "#type-" ^ last
-                   else rest, ""
-                 in
-                 let dir, layout, _ = List.assoc pkg hosted in
-                 let url =
-                   dep_base relroot side dir layout pkg
-                   ^ "/" ^ modhead
-                   ^ String.concat "" (List.map (fun d -> "/" ^ d) dirs)
-                   ^ "/index.html" ^ anchor
-                 in
-                 Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
-               end))
+       match page_link hosted relroot raw with
+       | Some url ->
+           Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
+       | None -> (
+           let kind, after =
+             if Str.string_match kind_re raw 0
+             then Str.matched_group 1 raw, Str.match_end ()
+             else "", 0
+           in
+           let name =
+             strip_parens (String.sub raw after (String.length raw - after))
+           in
+           let toks =
+             List.filter (fun t -> t <> "") (String.split_on_char '.' name)
+           in
+           match toks with
+           | [] -> m0
+           | head :: _ -> (
+             match
+               List.find_opt
+                 (fun (w, _) ->
+                    head = w || String.starts_with ~prefix:(w ^ "_") head)
+                 wrappers
+             with
+             | None -> m0 (* dep we do not host: leave as text *)
+             | Some (wrapper, pkg) ->
+                 if pkg = self
+                 then m0 (* self ref: keep text *)
+                 else
+                   let modhead, rest =
+                     if head = wrapper
+                     then
+                       match toks with
+                       | _ :: m :: tl -> flat_module wrapper m, tl
+                       | _ -> "", []
+                     else head, List.tl toks
+                   in
+                   if modhead = ""
+                   then m0
+                   else begin
+                     let last =
+                       match rest with
+                       | [] -> ""
+                       | _ -> List.nth rest (List.length rest - 1)
+                     in
+                     let but_last l =
+                       match l with
+                       | [] -> []
+                       | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
+                     in
+                     let dirs, anchor =
+                       if
+                         rest <> []
+                         && (kind = "val" || kind = "method"
+                            || kind = ""
+                               && String.length last > 0
+                               && is_lower last.[0])
+                       then but_last rest, "#val-" ^ last
+                       else if rest <> [] && kind = "type"
+                       then but_last rest, "#type-" ^ last
+                       else rest, ""
+                     in
+                     let dir, layout, _ = List.assoc pkg hosted in
+                     let url =
+                       dep_base relroot side dir layout pkg
+                       ^ "/" ^ modhead
+                       ^ String.concat "" (List.map (fun d -> "/" ^ d) dirs)
+                       ^ "/index.html" ^ anchor
+                     in
+                     Printf.sprintf "<a href=\"%s\">%s</a>" url
+                       (html_escape label)
+                   end)))
     s
 
 let deps ~hosted ~relroot ~side ~self s =

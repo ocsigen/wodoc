@@ -35,3 +35,30 @@ keeps its ocaml.org link.
   <a href="../../../reactiveData/latest/ReactiveData/index.html">rd</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">eliom</a>
   <a href="https://ocaml.org/p/react/1.2.2/doc/React/index.html">react</a>
+
+A cross-package PAGE reference (`{!/pkg/page-x}`) odoc could not resolve renders
+as an `xref-unresolved` span titled `/pkg/path`. It is rewritten to the project's
+deployed manual page: at the version root for a `multilib` (odoc_driver) project,
+under `<pkg>/` for `root`/`subdir` ones. A `.section` suffix becomes an anchor; a
+non-hosted target keeps its span.
+
+  $ cat > pages.html <<'HTML'
+  > <span class="xref-unresolved" title="/eliom/server-services">services</span>
+  > <span class="xref-unresolved" title="/ocsigenserver/config">config</span>
+  > <span class="xref-unresolved" title="/tyxml/ppx">ppx syntax</span>
+  > <span class="xref-unresolved" title="/eliom/server-state.scopes">scopes</span>
+  > <span class="xref-unresolved" title="/nothosted/foo">other</span>
+  > HTML
+
+  $ wodoc resolve-refs --relroot ../../.. --side server --self ocsigen-toolkit \
+  >   --hosted eliom=eliom:multilib:Eliom \
+  >   --hosted ocsigenserver=ocsigenserver:root: \
+  >   --hosted tyxml=tyxml:subdir: \
+  >   pages.html
+
+  $ cat pages.html
+  <a href="../../../eliom/latest/server-services.html">services</a>
+  <a href="../../../ocsigenserver/latest/ocsigenserver/config.html">config</a>
+  <a href="../../../tyxml/latest/tyxml/ppx.html">ppx syntax</a>
+  <a href="../../../eliom/latest/server-state.html#scopes">scopes</a>
+  <span class="xref-unresolved" title="/nothosted/foo">other</span>
