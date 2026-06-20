@@ -1,6 +1,6 @@
 # Changes
 
-## 1.0
+## 0.1
 
 First release: an odoc driver that builds complete, styled websites from `.mld`
 and `.mli` sources. It provides:
