@@ -78,6 +78,18 @@ jobs:
           target-folder: ${{ env.LABEL }}
           clean: true
 
+      # GitHub Pages must NOT run Jekyll: the Markdown twins can contain content
+      # (e.g. {%…%}) that Jekyll's Liquid parser rejects. A .nojekyll at the site
+      # root disables it. (clean above is scoped to <label>/, so this persists.)
+      - name: Disable Jekyll (.nojekyll at the site root)
+        run: mkdir -p _ghroot && touch _ghroot/.nojekyll
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: _ghroot
+          target-folder: .
+          clean: false
+
       - name: Repoint 'latest' (releases only)
         if: ${{ github.event.inputs.set_latest == 'true' }}
         run: |
