@@ -66,6 +66,7 @@ type t = {
   static_copy : (string * string) list; (* verbatim copies into the output: (source path, dest under <out>) — e.g. a frozen API snapshot, or a manual image *)
   blog : blog option; (* an optional (blog …) section (see blog) *)
   markdown : bool; (* emit the Markdown twin of every page + the llms.txt/llms-full.txt index (for AI/LLM consumption). On by default; (markdown false) turns it off. *)
+  css : string list; (* stylesheet hrefs for the page <head>. Each is emitted verbatim when absolute (/…) or a URL, else made per-page relative ({{base}}/…) and, when it names a file next to the config, copied into the output — so a project can ship a self-contained theme that works at any deploy path. Defaults to the Ocsigen-hosted "/css/style.css"; "/css/ocsigen-odoc.css". *)
 }
 ```
 ```ocaml

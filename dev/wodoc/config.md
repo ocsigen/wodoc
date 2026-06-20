@@ -93,6 +93,7 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`
 | `(manual-files <pkg>)` | package dir that receives `manual/files` (examples, images) |
 | `(highlight <file>)` | a project-specific syntax-highlight starter to ship as `wodoc-highlight.js`; without it, wodoc ships a built-in default covering eliom / lwt / js\_of\_ocaml syntax |
 | `(markdown false)` | turn off the Markdown twins and `llms.txt` index (on by default; see [Commands](./commands.md)) |
+| `(css <href> …)` | the page stylesheets. A relative href is copied into the build and linked per-version (self-contained, works at any path); an absolute (`/…`) or URL href is emitted verbatim. Default: `/css/style.css` and `/css/ocsigen-odoc.css` |
 
 ## Layout variants
 
