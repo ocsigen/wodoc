@@ -186,14 +186,14 @@ a project's whole documentation site (it runs `dune build @doc` and assembles
 every page). The lower-level commands it chains are also available individually.
 
 ```
-wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]
+wodoc build --config <doc/wodoc> --out <dir> [--menu <menu.html|URL>] [--label <v>]
             [--src <odoc _html>] [--latest] [--local]
     turn-key: assemble a whole odoc tree into the themed site from a per-project
-    config (project, packages, nav, siblings, …). Replaces a hand-written build
-    script, menu.wiki and template/nav HTML. --menu takes a file or an http(s)
-    URL; --local also fetches the shared /css//img/ assets for offline preview;
-    a default syntax-highlight starter (eliom/lwt/js_of_ocaml ppx) is shipped
-    unless (highlight ...) overrides it.
+    config (project, packages, nav, …). Replaces a hand-written build script,
+    menu.wiki and template/nav HTML. Ships a built-in default theme and top bar
+    (override with the (css ...) stanza and --menu) plus a syntax-highlight
+    starter, all linked by per-version relative paths, so the site is
+    self-contained and works at any deploy path.
 
 wodoc preprocess <file.mld>
     rewrite {%wodoc:..%} markers into {%html:<!--wodoc:..-->%} so stock odoc
