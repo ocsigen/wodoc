@@ -198,9 +198,8 @@ let a_api_ref ?(default_side = "") ?(odoc_refs = false) opener body =
   else
     match project, side with
     | Some proj, _ when proj <> "eliom" ->
-        Printf.sprintf
-          "[[https://ocsigen.org/%s/latest/%s/index.html%s|%s]]" proj path
-          anchor text
+        Printf.sprintf "[[https://ocsigen.org/%s/latest/%s/index.html%s|%s]]"
+          proj path anchor text
     | _, Some side ->
         Printf.sprintf "[[../eliom.%s/%s/index.html%s|%s]]" side path anchor
           text
@@ -442,7 +441,8 @@ let deabbrev url =
           | None -> p, ""
         in
         let page =
-          if page = "" || Filename.check_suffix page ".html" then page
+          if page = "" || Filename.check_suffix page ".html"
+          then page
           else page ^ ".html"
         in
         Printf.sprintf "/%s/latest/%s%s" w page anchor
