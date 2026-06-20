@@ -172,8 +172,7 @@ EOF</code></pre><h3 id="2.-write-the-wodoc-config">2. Write the wodoc config</h3
  (section &quot;Manual&quot; (link &quot;Home&quot; demo/index.html index))
  (api-section &quot;API&quot; (link &quot;Demo&quot; demo/Demo/index.html Demo)))
 EOF</code></pre><h3 id="3.-build-and-preview">3. Build and preview</h3><pre class="language-text"><code>wodoc build --config doc/wodoc --out _site/dev --label dev
-(cd _site &amp;&amp; python3 -m http.server)
-# then open http://localhost:8000/dev/</code></pre><p><code>wodoc build</code> runs <code>dune build @doc</code> itself and assembles every page. The result is a complete, <b>styled, self-contained</b> site — no menu file, no stylesheet to host. (Customise later with <code>--menu</code> and <code>(css …)</code>; see <a href="#theming" title="theming">Theming</a>.)</p><h3 id="add-a-blog">Add a blog</h3><p>Write a dated post — the filename date is the publication date, <code>@author</code> the author, the first heading the title, the first paragraph the excerpt:</p><pre class="language-text"><code>mkdir doc/blog
+# the result is in _site/</code></pre><p><code>wodoc build</code> runs <code>dune build @doc</code> itself and assembles every page. The result is a complete, <b>styled, self-contained</b> site — no menu file, no stylesheet to host. (Customise later with <code>--menu</code> and <code>(css …)</code>; see <a href="#theming" title="theming">Theming</a>.)</p><h3 id="add-a-blog">Add a blog</h3><p>Write a dated post — the filename date is the publication date, <code>@author</code> the author, the first heading the title, the first paragraph the excerpt:</p><pre class="language-text"><code>mkdir doc/blog
 cat &gt; doc/blog/2026-01-15-hello.mld &lt;&lt;'EOF'
 {0 Hello, world}
 
