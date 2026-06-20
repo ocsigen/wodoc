@@ -13,6 +13,89 @@ flag. A {b copy-paste starter} (a menu, a stylesheet and a CI workflow) lives in
 {{:https://github.com/ocsigen/wodoc/tree/master/examples/starter}[examples/starter]} —
 clone it and adjust the names rather than starting from a blank page.
 
+{1 Quickstart}
+
+From an existing dune project with a public library (say package [demo], whose
+top module is [Demo], with documented [.mli]), three steps give you a styled site.
+
+{2 1. Add a documentation page}
+
+odoc builds the [.mld] pages of a package declared with a [(documentation …)]
+stanza:
+
+{@text[
+mkdir doc
+cat > doc/dune <<'EOF'
+(documentation (package demo))
+EOF
+cat > doc/index.mld <<'EOF'
+{0 Demo}
+
+Welcome to {b Demo}. See the {!Demo} API.
+EOF
+]}
+
+{2 2. Write the wodoc config}
+
+{@text[
+cat > doc/wodoc <<'EOF'
+(project demo)
+(title "Demo")
+(url-prefix /demo)
+(packages demo)
+(landing demo/index.html)
+(nav
+ (section "Manual" (link "Home" demo/index.html index))
+ (api-section "API" (link "Demo" demo/Demo/index.html Demo)))
+EOF
+]}
+
+{2 3. Build and preview}
+
+{@text[
+wodoc build --config doc/wodoc --out _site/dev --label dev
+(cd _site && python3 -m http.server)
+# then open http://localhost:8000/dev/
+]}
+
+[wodoc build] runs [dune build @doc] itself and assembles every page. The result
+is a complete, {b styled, self-contained} site — no menu file, no stylesheet to
+host. (Customise later with [--menu] and [(css …)]; see {{!theming}Theming}.)
+
+{2 Add a blog}
+
+Write a dated post — the filename date is the publication date, [@author] the
+author, the first heading the title, the first paragraph the excerpt:
+
+{@text[
+mkdir doc/blog
+cat > doc/blog/2026-01-15-hello.mld <<'EOF'
+{0 Hello, world}
+
+@author Jane Doe
+
+Our very first post, announcing the demo.
+EOF
+]}
+
+Declare the blog in [doc/wodoc] and drop a "latest posts" marker on the landing
+([{%html:<!--wodoc-blog-latest-->%}] is the form that survives odoc):
+
+{@text[
+# append to doc/wodoc:
+(blog (dir blog) (out blog) (heading "Blog") (latest 5))
+]}
+
+{@text[
+# add to doc/index.mld where the list should appear:
+{1 Latest posts}
+{%html:<!--wodoc-blog-latest-->%}
+]}
+
+Rebuild with the same [wodoc build] command: the post is built at [blog/], listed
+in a generated left-nav section, and the marker expands into a styled list. See
+{{!page-"blog"}Adding a blog} for the Atom feed and the navigation block.
+
 {1 What "a complete website" means}
 
 A wodoc site is made of these ingredients; each is covered below.
@@ -148,7 +231,7 @@ app) is built through [odoc_driver] instead of [dune build @doc]. Just declare a
 every page its side's API nav, a body colour and a client/server switch. See the
 [(client-server …)] stanza in {{!page-"config"}Configuration}.
 
-{1 Theming: customising the look}
+{1:theming Theming: customising the look}
 
 [wodoc build] ships a built-in theme and a default top bar (the section above),
 so you can skip this entirely and still get a styled site. Customise when you
