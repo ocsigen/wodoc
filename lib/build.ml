@@ -406,6 +406,10 @@ let version_names ~root ?(extra = []) () =
       Array.to_list (Sys.readdir root)
       |> List.filter (fun d ->
         d <> "latest"
+        (* skip internal/staging dirs (e.g. the _staging copy a release builds
+           from): they are full wodoc builds, so they'd otherwise pass the
+           wodoc-highlight.js test and leak into versions.json. *)
+        && not (String.length d > 0 && d.[0] = '_')
         && Sys.is_directory (Filename.concat root d)
         && Sys.file_exists
              (Filename.concat (Filename.concat root d) "wodoc-highlight.js"))
