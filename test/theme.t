@@ -62,3 +62,43 @@ the built-in theme is not shipped, and the given menu replaces the default bar.
   [1]
   $ grep -o '<nav class="custom-menu">' out2/dev/demo/index.html
   <nav class="custom-menu">
+
+A configured RELATIVE css file that is missing is reported (not silently skipped)
+and not shipped, though the page still links it; a present one is shipped:
+
+  $ cat > doc/wodoc <<'EOF'
+  > (project demo)
+  > (title Demo)
+  > (url-prefix /demo)
+  > (packages demo)
+  > (landing demo/index.html)
+  > (css present.css missing.css)
+  > (nav (section "Manual" (link "Introduction" "demo/index.html")))
+  > EOF
+  $ echo '/* present */' > doc/present.css
+  $ wodoc build --config doc/wodoc --src src --out out3/dev --label dev 2>err.txt
+  $ sed -n 's/.*\(wodoc build: (css missing.css) not found\).*/\1/p' err.txt
+  wodoc build: (css missing.css) not found
+  $ test -f out3/dev/present.css && echo present-shipped
+  present-shipped
+  $ test -f out3/dev/missing.css || echo missing-not-shipped
+  missing-not-shipped
+  $ grep -o '<link rel="stylesheet" href="[^"]*"' out3/dev/demo/index.html
+  <link rel="stylesheet" href="../present.css"
+  <link rel="stylesheet" href="../missing.css"
+
+An empty css href is ignored — it must NOT copy the config directory into the
+output (regression guard for the empty-href case):
+
+  $ cat > doc/wodoc <<'EOF'
+  > (project demo)
+  > (title Demo)
+  > (url-prefix /demo)
+  > (packages demo)
+  > (landing demo/index.html)
+  > (css "")
+  > (nav (section "Manual" (link "Introduction" "demo/index.html")))
+  > EOF
+  $ wodoc build --config doc/wodoc --src src --out out4/dev --label dev 2>/dev/null
+  $ test ! -d out4/dev/doc && echo "config dir not copied"
+  config dir not copied

@@ -17,6 +17,11 @@ let is_url p =
   String.starts_with ~prefix:"http://" p
   || String.starts_with ~prefix:"https://" p
 
+(* an href/path is "external" — emitted verbatim — when absolute ([/…]) or a URL;
+   otherwise it is relative (resolved against the per-page [{{base}}], and shipped
+   into the build when it names a local asset). *)
+let is_external p = (String.length p > 0 && p.[0] = '/') || is_url p
+
 (* "https://host" from "https://host/path…" (the site origin of a URL) *)
 let origin_of url =
   match Str.search_forward (Str.regexp "://") url 0 with
@@ -170,11 +175,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
     String.concat ""
       (List.map
          (fun href ->
-            let h =
-              if (String.length href > 0 && href.[0] = '/') || is_url href
-              then href
-              else "{{base}}/" ^ href
-            in
+            let h = if is_external href then href else "{{base}}/" ^ href in
             Printf.sprintf "  <link rel=\"stylesheet\" href=\"%s\"/>\n" h)
          (if c.css = [] then ["wodoc.css"] else c.css))
   in
@@ -284,10 +285,7 @@ let page_toc =
 
 (* an entry path is emitted verbatim when absolute ([/…]) or a URL, else made
    relative to the version root with the per-page [{{base}}] hole. *)
-let nav_href path =
-  if (String.length path > 0 && path.[0] = '/') || is_url path
-  then path
-  else "{{base}}/" ^ path
+let nav_href path = if is_external path then path else "{{base}}/" ^ path
 
 (* a single config-driven nav entry as an <li> at indent level [ml]. The
    data-wodoc-page key is the entry's own (local) path, so it is UNIQUE per entry:
@@ -296,7 +294,7 @@ let nav_href path =
    get no key (they are never "current"). *)
 let nav_link ml (e : Config.entry) =
   let dwp =
-    if (String.length e.path > 0 && e.path.[0] = '/') || is_url e.path
+    if is_external e.path
     then ""
     else Printf.sprintf " data-wodoc-page=\"%s\"" e.path
   in
@@ -587,7 +585,7 @@ let cs_current sides rel =
 (* the local (relative) entry paths declared in the config nav — the candidates
    for the "current" highlight (cross-project / absolute entries are excluded). *)
 let nav_entry_paths (c : Config.t) =
-  let local p = not ((String.length p > 0 && p.[0] = '/') || is_url p) in
+  let local p = not (is_external p) in
   let rec items acc = function
     | [] -> acc
     | Config.Link e :: t ->
@@ -672,7 +670,7 @@ let md_alternate ~md_src ~base ~rel ~orel =
    preferred Manual ordering for the llms.txt index ({!Llms.write}). Only local
    entries (not absolute/cross-project or URLs) have a twin in this project. *)
 let nav_md_order (c : Config.t) =
-  let local p = p <> "" && p.[0] <> '/' && not (is_url p) in
+  let local p = p <> "" && not (is_external p) in
   let rec items = function
     | [] -> []
     | Config.Link e :: t ->
@@ -1022,7 +1020,9 @@ let run
   else
     List.iter
       (fun href ->
-         if not ((String.length href > 0 && href.[0] = '/') || is_url href)
+         (* ship only relative hrefs that name a real file; absolute/URL hrefs are
+            served by the site, an empty href is ignored. *)
+         if href <> "" && not (is_external href)
          then
            let csrc = Filename.concat assets_dir href in
            if Sys.file_exists csrc
@@ -1032,7 +1032,12 @@ let run
              ignore
                (Sys.command
                   (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
-                     (Filename.quote d)))))
+                     (Filename.quote d))))
+           else
+             prerr_endline
+               (Printf.sprintf
+                  "wodoc build: (css %s) not found next to the config; pages \
+                   link it but it is not shipped" href))
       c.css;
   (* assets: odoc's bundled highlighter + the project's highlight starter *)
   let sf = Filename.temp_file "wodoc-sf" "" in
