@@ -1075,6 +1075,9 @@ val write_file : string -> string -> unit
 val is_url : string -> bool
 ```
 ```ocaml
+val is_external : string -> bool
+```
+```ocaml
 val origin_of : string -> string option
 ```
 ```ocaml
