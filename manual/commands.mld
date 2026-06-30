@@ -288,11 +288,13 @@ content straddles odoc's preamble boundary. [(static-copy <src> <dest>)…] copi
 trees in verbatim — e.g. a frozen API snapshot that can no longer be recompiled,
 or a manual image.
 
-The syntax-highlight starter is shipped automatically as [wodoc-highlight.js]: a
-plain-OCaml default built into wodoc, or — for a project whose code blocks use
-extra syntax (a ppx, a client/server split) — the file given by [(highlight …)]
-in the config. So a project without special syntax ships no JavaScript at all.
-See {!Wodoc.Build}.
+The syntax-highlight starter is always shipped as [wodoc-highlight.js] and loaded
+version-relatively. Its built-in default is {e Ocsigen-oriented}: on top of plain
+OCaml it teaches odoc's bundled [highlight.js] the eliom ([let%client] / [%server]
+/ [%shared] / [%rpc], [~%x] injection), lwt ([let*] / [and*] / [let+]) and
+js_of_ocaml ([##]) syntax, so any Ocsigen project colours correctly with no
+per-project file. A project whose code blocks use yet another syntax overrides the
+shipped file with [(highlight …)] in the config. See {!Wodoc.Build}.
 
 {1 [wodoc blog-nav] and [wodoc blog-feed]}
 
