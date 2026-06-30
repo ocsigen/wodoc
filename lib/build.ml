@@ -159,13 +159,10 @@ let default_highlight =
 (* the per-page template (chrome around the odoc content); {{menu}}, {{leftnav}},
    {{base}}, {{title}}, {{preamble}}, {{content}} are filled by Assemble. *)
 let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
-  (* The highlight starter. By default we load it from a single shared, always-
-     current location on the site (/doc/wodoc-highlight.js) — exactly like the
-     shared /css/ocsigen-odoc.css — so a change to the highlighter propagates to
-     every project AND every (even frozen) version without a rebuild. A project
-     that ships its own (highlight <file>) override keeps the per-build local
-     copy instead. *)
-  (* the highlight starter is always shipped per build and linked relatively *)
+  (* The highlight starter is always shipped per build (Build.run writes
+     wodoc-highlight.js next to each version) and linked version-relatively, so a
+     frozen version keeps the highlighter it was built with. (highlight <file>)
+     only chooses WHICH file is shipped under that name, not where it loads from. *)
   let hl = "  <script src=\"{{base}}/wodoc-highlight.js\"></script>\n" in
   (* the stylesheet <link>s. With no (css …) configured, ship and link the
      built-in default theme (wodoc.css). Otherwise honour the configured hrefs:
