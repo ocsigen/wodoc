@@ -177,11 +177,24 @@ a:hover { text-decoration: underline; }
 }
 .odoc-content pre code { background: none; padding: 0; border-radius: 0; }
 
-.hljs-keyword, .hljs-type { color: #8250df; }
+/* Syntax highlighting (highlight.js tokens). odoc emits <pre class="language-…">
+   and defers colouring to a client-side highlighter; wodoc ships odoc's bundled
+   highlight.js plus wodoc-highlight.js, which adds the Ocsigen syntax extensions.
+   Every class the starter can emit gets a colour here (keep this list in sync with
+   the starter in lib/build.ml — default_highlight). */
+.hljs-keyword, .hljs-type { color: #8250df; }   /* let/fun/match, %ppx, let* / and* */
 .hljs-string, .hljs-char { color: #0a7d33; }
 .hljs-comment { color: var(--muted); font-style: italic; }
 .hljs-number, .hljs-literal { color: #b35900; }
-.hljs-title, .hljs-function { color: #1f5fbf; }
+.hljs-title, .hljs-function { color: #1f5fbf; } /* names bound by let / and        */
+.hljs-operator { color: #8250df; }              /* js_of_ocaml ## and ##.          */
+.hljs-label { color: var(--muted); }            /* labels ~name: / ?name:          */
+.hljs-subst { color: #1f5fbf; font-weight: 600; } /* eliom ~%x client-value injection */
+/* eliom side markers (let%client / %server / %shared / %rpc), coloured per side
+   to match the block borders below. */
+.hljs-eliom-server { color: #b35900; font-weight: 600; }
+.hljs-eliom-client { color: #1f5fbf; font-weight: 600; }
+.hljs-eliom-shared, .hljs-eliom-rpc { color: #2f6f4f; font-weight: 600; }
 
 .server-code { border-left: 3px solid #b35900; }
 .client-code { border-left: 3px solid #1f5fbf; }
