@@ -209,7 +209,7 @@ A custom stylesheet must style both the chrome and the content:
 - the odoc **content** — `.odoc-preamble`/`.odoc-content`, headings, code blocks (highlight.js `.hljs-*` tokens), tables and declaration specs.
 The [starter stylesheet](https://github.com/ocsigen/wodoc/tree/master/examples/starter/css) covers all of these — copy it and recolour. (If you would rather reuse odoc's stock theme for the content, note that `odoc.css` *is* shipped next to each version, so you can link or `@import` it from your `/css/ocsigen-odoc.css`.)
 
-Syntax highlighting: wodoc always ships `wodoc-highlight.js` in each build, but the template only loads it locally when the config sets `(highlight <file>)` — otherwise it loads the shared `/doc/wodoc-highlight.js`. Set `(highlight wodoc-highlight.js)` (the starter does) so your site uses its own local copy.
+Syntax highlighting: wodoc ships `wodoc-highlight.js` in every build and the page template always loads it *version-relatively* (`{{base}}/wodoc-highlight.js`), so a frozen version keeps the highlighter it was built with. By default this is wodoc's built-in starter (it teaches odoc's bundled `highlight.js` the eliom / lwt / js\_of\_ocaml syntax extensions). `(highlight <file>)` only changes *which* file is shipped under that name, not where it is loaded from: set it for a project whose code blocks use yet another syntax.
 
 
 ## Several projects that cross-link
