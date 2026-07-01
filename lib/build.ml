@@ -185,7 +185,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
   <title>{{title}} — %s</title>
 %s{{mdlink}}  <script src="{{base}}/highlight.pack.js"></script>
 %s</head>
-<body class="wodoc-page wodoc-doc%s">
+<body class="wodoc-page wodoc-doc wodoc-project-%s%s">
   {{menu}}
 
   <div class="project-page">
@@ -249,7 +249,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
 </body>
 </html>
 |}
-    (esc c.title) css_links hl body_extra extra_script c.url_prefix
+    (esc c.title) css_links hl c.project body_extra extra_script c.url_prefix
 
 (* the version <select> block (shared by the normal and per-side left columns).
    The entry that the [latest] symlink targets is rendered with value "latest"
