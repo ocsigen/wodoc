@@ -342,6 +342,17 @@ let page_link hosted relroot raw =
         Some (hosted_page_url relroot dir layout pkg (file ^ ".html" ^ anchor)))
   | _ -> None
 
+(* The root module a package exposes, by the dune convention that turns the
+   package name into a module name: [js_of_ocaml-tyxml] -> [Js_of_ocaml_tyxml].
+   Going the other way is ambiguous (jsoo names its sub-packages with dashes, lwt
+   with underscores), so a sub-package a doc references has to be listed in
+   [(hosted ..)] itself. *)
+let module_name_of_pkg pkg =
+  String.capitalize_ascii
+    (String.map
+       (fun c -> if c = '-' then '_' else c)
+       (String.lowercase_ascii pkg))
+
 (* A path component of two characters or more named in all caps is, by OCaml
    convention, a module TYPE, and odoc deploys those under [module-type-<NAME>/].
    The reference title odoc leaves in an unresolved span states a kind for the
@@ -445,8 +456,7 @@ let fix_dep_spans hosted relroot side self s =
                   wrapper module (js_of_ocaml, tyxml, lwt, reactiveData) *)
                match
                  List.find_opt
-                   (fun (pkg, _) ->
-                      String.lowercase_ascii pkg = String.lowercase_ascii head)
+                   (fun (pkg, _) -> module_name_of_pkg pkg = head)
                    hosted
                with
                | Some (pkg, _) -> link pkg head tl

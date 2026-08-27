@@ -120,11 +120,16 @@ last component is taken for a value.
   > <span class="xref-unresolved" title="type Js_of_ocaml.Js.constr">jsoo type</span>
   > <span class="xref-unresolved" title="Js_of_ocaml.Js.string_of_uri">jsoo val</span>
   > <span class="xref-unresolved" title="/js_of_ocaml/overview">jsoo page</span>
+  > <span class="xref-unresolved" title="Js_of_ocaml_tyxml.Tyxml_js">sub-package</span>
   > <span class="xref-unresolved" title="Nothosted.Mod">other</span>
   > HTML
 
+A sub-package is named after its own root module, so referencing one means
+listing it in the table, deployed under the family's directory:
+
   $ wodoc resolve-refs --relroot ../../.. --self tuto \
   >   --hosted js_of_ocaml=js_of_ocaml:subdir: \
+  >   --hosted js_of_ocaml-tyxml=js_of_ocaml:subdir: \
   >   nowrapper.html
 
   $ cat nowrapper.html
@@ -132,6 +137,7 @@ last component is taken for a value.
   <a href="../../../js_of_ocaml/latest/js_of_ocaml/Js_of_ocaml/Js/index.html#type-constr">jsoo type</a>
   <a href="../../../js_of_ocaml/latest/js_of_ocaml/Js_of_ocaml/Js/index.html#val-string_of_uri">jsoo val</a>
   <a href="../../../js_of_ocaml/latest/js_of_ocaml/overview.html">jsoo page</a>
+  <a href="../../../js_of_ocaml/latest/js_of_ocaml-tyxml/Js_of_ocaml_tyxml/Tyxml_js/index.html">sub-package</a>
   <span class="xref-unresolved" title="Nothosted.Mod">other</span>
 
 A component of two characters or more named in all caps is a module type, which
