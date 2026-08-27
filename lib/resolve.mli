@@ -44,17 +44,26 @@ val is_ours :
    hosted:(string * (string * layout * string)) list
   -> siblings:(string * string list) list
   -> self:string
+  -> in_api:bool
+  -> pages:string list
   -> string
   -> bool
-(** [is_ours ~hosted ~siblings ~self raw] is whether the unresolved reference
-    [raw] (as odoc titles its span) is a defect of {e this} documentation rather
-    than one into a dependency the site does not host — whose spans are expected
-    and cannot be repaired locally ([Stdlib], [Ppxlib]). Ours are: a
-    cross-project page reference (leading ['/'] — if its package is missing from
-    [hosted], the table is what is wrong); a lowercase head, i.e. a page of this
-    project ([server-services.scope]) or a value or type of it ([key]); and a
-    module reference the tables cover, except into [self] — a project's reference
-    to a module it does not publish is deliberately left as text. *)
+(** [is_ours ~hosted ~siblings ~self ~in_api ~pages raw] is whether the
+    unresolved reference [raw] (as odoc titles its span) is a defect of {e this}
+    documentation rather than one into a dependency the site does not host —
+    whose spans are expected and cannot be repaired locally ([Stdlib],
+    [Ppxlib]). Ours are:
+
+    - a cross-project page reference (leading ['/']): if its package is missing
+      from [hosted], the table is what is wrong;
+    - a lowercase head, when the page holding it is a manual one ([in_api] is
+      false) or when it names one of [pages], this build's manual pages: a page
+      or section of this project that leads nowhere. A lowercase head on an API
+      page otherwise names a value or type of a signature odoc could not reach —
+      typically what the standard library's functors document ([key], [elt] in an
+      applied [Map.Make]) — which no change here can fix;
+    - a module reference the tables cover, except into [self]: a project's
+      reference to a module it does not publish is deliberately left as text. *)
 
 val deps :
    hosted:(string * (string * layout * string)) list

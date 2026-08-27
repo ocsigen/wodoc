@@ -127,11 +127,12 @@ those; [--strict-refs] is how a doc CI keeps them from shipping.
 
 Only {e repairable} references count. A reference into a dependency the site does
 not host ([Stdlib], [Ppxlib]) is expected and nothing here can fix it, as is a
-project's reference to one of its own modules it does not publish; both are
-counted apart, on one line. What is reported is a cross-project page reference
-(a missing entry in [(hosted …)], or a wrong page name), a reference to a page,
-value or type of this project that leads nowhere, and a module reference into a
-project the tables cover. A reference written with no label degrades to a bare
+project's reference to one of its own modules it does not publish, and as is the
+value or type name a signature odoc could not reach leaves on an API page ([key],
+[elt] in an applied [Map.Make]); those are counted apart, on one line. What is
+reported is a cross-project page reference (a missing entry in [(hosted …)], or a
+wrong page name), a page or section of this project that leads nowhere, and a
+module reference into a project the tables cover. A reference written with no label degrades to a bare
 [<code>], indistinguishable from inline code, so only the labelled shape can be
 reported.
 
