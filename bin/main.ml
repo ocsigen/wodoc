@@ -47,7 +47,7 @@ let generate_markdown ~odocls ~out =
 
 let usage () =
   prerr_endline
-    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>]\n\                 [--blog-config <c>] [--blog-base <b>] [--byline <t>] [--mdlink <href>] <odoc.html>\n\      wrap rendered odoc HTML in a site template (--blog-config expands a\n\      {%wodoc:blog-latest%} marker with that blog's latest-posts fragment;\n\      --byline inserts a meta line after the title)\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc blog-nav --config <doc/wodoc> [--base <b>]\n\      the blog's left-nav block (for assemble --leftnav)\n\  wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]\n\                  [--feed-path /feed.xml] [--title <t>] [--author <a>]\n\      an Atom feed of the blog posts (syndication, e.g. OCaml Planet)\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
+    "wodoc - an odoc driver for complete styled websites\n\nUsage:\n\  wodoc preprocess <file.mld>\n\      rewrite {%wodoc:..%} -> {%html:<!--wodoc:..-->%}\n\  wodoc render <odoc.html>\n\      turn wodoc markers in odoc HTML into real HTML\n\  wodoc assemble --template <tmpl.html> [--current <id>] [--menu <f>]\n\                 [--subproject <s>] [--menu-current <id>] [--leftnav <f>]\n\                 [--blog-config <c>] [--blog-base <b>] [--byline <t>] [--mdlink <href>] <odoc.html>\n\      wrap rendered odoc HTML in a site template (--blog-config expands a\n\      {%wodoc:blog-latest%} marker with that blog's latest-posts fragment;\n\      --byline inserts a meta line after the title)\n\  wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>]\n\            [--skip-title <t>]..\n\      build an API module navigation fragment from a curated odoc index\n\  wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..\n\      link cross-package sibling references (rewrites files in place)\n\  wodoc convert <file.wiki>\n\      best-effort wikicréole -> .mld migration aid (review the output)\n\  wodoc build --config <doc/wodoc> --out <dir> --menu <menu.html|URL> [--label <v>]\n\              [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]\n\              [--strict-refs]\n\      turn-key: assemble a whole odoc tree into the themed site from a config\n\      (--menu accepts a local file or an http(s) URL, fetched with curl;\n\       --local also fetches the shared /css//img/ assets for local preview;\n\       --strict-refs fails the build on a dead ref or a leftover wiki image)\n\  wodoc release --site <gh-pages-dir> --version <v> [--from dev]\n\      freeze <site>/<from> as the stable <site>/<version> + repoint `latest`\n\  wodoc blog-nav --config <doc/wodoc> [--base <b>]\n\      the blog's left-nav block (for assemble --leftnav)\n\  wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]\n\                  [--feed-path /feed.xml] [--title <t>] [--author <a>]\n\      an Atom feed of the blog posts (syndication, e.g. OCaml Planet)\n\  wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..\n\      fix flat cross-project links to wrapped libs (Eliom_content -> Eliom/Content)\n\      by probing the co-located target trees under <root>\n\nExcept resolve-refs, build and release (which write files), each command writes to stdout.";
   exit 2
 
 (* minimal flag parser: returns (assoc of --flag value, positional args) *)
@@ -264,11 +264,14 @@ let () =
              let oc = open_out_bin f in
              output_string oc out; close_out oc))
         files
-  | _ :: "build" :: args ->
+  | _ :: "build" :: args -> (
       let set_latest = List.mem "--latest" args in
       let local = List.mem "--local" args in
+      let strict_refs = List.mem "--strict-refs" args in
       let args =
-        List.filter (fun a -> a <> "--latest" && a <> "--local") args
+        List.filter
+          (fun a -> a <> "--latest" && a <> "--local" && a <> "--strict-refs")
+          args
       in
       let flags, _ = parse_args args in
       let req k =
@@ -333,42 +336,59 @@ let () =
               then (
                 prerr_endline ("wodoc build: no .mld in " ^ dir);
                 exit 1);
+              (* Three passes, not one per page: [odoc link] only resolves a
+                 reference to a page whose .odoc already sits in -I, so
+                 compiling and linking a page at a time leaves every reference
+                 to a not-yet-compiled page dead (alphabetically forward ones,
+                 which is most of them in a fresh build). *)
+              let run e cmd =
+                if Sys.command cmd <> 0
+                then (
+                  prerr_endline ("wodoc build: odoc failed on " ^ e);
+                  exit 1)
+              in
+              let odoc_of e =
+                Filename.concat odoc
+                  ("page-" ^ Filename.remove_extension e ^ ".odoc")
+              in
+              let odocl_of e = odoc_of e ^ "l" in
               List.iter
                 (fun e ->
-                   let name = Filename.remove_extension e in
                    let pp = Filename.concat odoc ("pp-" ^ e) in
                    (let oc = open_out_bin pp in
                     output_string oc
                       (Wodoc.Preprocess.string
                          (read_file (Filename.concat dir e)));
                     close_out oc);
-                   let odocf =
-                     Filename.concat odoc ("page-" ^ name ^ ".odoc")
-                   in
-                   let odoclf =
-                     Filename.concat odoc ("page-" ^ name ^ ".odocl")
-                   in
+                   run e
+                     (Printf.sprintf "odoc compile %s%s -I %s -o %s"
+                        (Filename.quote pp) pkg_flag (Filename.quote odoc)
+                        (Filename.quote (odoc_of e))))
+                mlds;
+              List.iter
+                (fun e ->
+                   run e
+                     (Printf.sprintf "odoc link %s -I %s -o %s"
+                        (Filename.quote (odoc_of e))
+                        (Filename.quote odoc)
+                        (Filename.quote (odocl_of e))))
+                mlds;
+              List.iter
+                (fun e ->
                    (* the markdown twin step is appended unless the project opts
                       out of markdown with (markdown false) *)
                    let md_step =
                      if c.markdown
                      then
                        Printf.sprintf " && odoc markdown-generate %s -o %s"
-                         (Filename.quote odoclf) (Filename.quote md)
+                         (Filename.quote (odocl_of e))
+                         (Filename.quote md)
                      else ""
                    in
-                   let cmd =
-                     Printf.sprintf
-                       "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s%s"
-                       (Filename.quote pp) pkg_flag (Filename.quote odoc)
-                       (Filename.quote odocf) (Filename.quote odocf)
-                       (Filename.quote odoc) (Filename.quote odoclf)
-                       (Filename.quote odoclf) (Filename.quote html) md_step
-                   in
-                   if Sys.command cmd <> 0
-                   then (
-                     prerr_endline ("wodoc build: odoc failed on " ^ e);
-                     exit 1))
+                   run e
+                     (Printf.sprintf "odoc html-generate %s -o %s%s"
+                        (Filename.quote (odocl_of e))
+                        (Filename.quote html) md_step))
                 mlds;
               let md_src = if c.markdown then Some md else None in
               if c.mld_package = ""
@@ -508,8 +528,10 @@ let () =
       in
       (* --menu is optional: without it, Build uses the built-in default header *)
       let menu = Option.value ~default:"" (List.assoc_opt "menu" flags) in
-      Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu
-        ~assets_dir:(Filename.dirname cfg) ~local ~set_latest
+      try
+        Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu
+          ~assets_dir:(Filename.dirname cfg) ~local ~set_latest ~strict_refs
+      with Wodoc.Lint.Dead_markup m -> prerr_endline m; exit 1)
   | _ :: "requalify-xrefs" :: args ->
       (* Post-pass over a co-located multi-project site: rewrite flat
          cross-project links to a wrapped library (Eliom_content) into the

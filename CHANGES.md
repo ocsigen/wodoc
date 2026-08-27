@@ -19,6 +19,24 @@ Config simplifications (breaking):
 - `(mld-dir <dir> [<package>])` can carry the odoc package inline; `mld-package`
   still sets it when the directory is passed on the CLI (`--mld-dir`).
 - The `pub` stanza is renamed `url-prefix`.
+- Direct-mld builds link every page against all the others, so references between
+  the pages of a manual resolve. They used to be compiled and linked one page at
+  a time, which left every reference to a not-yet-compiled page dead.
+
+Cross-project references:
+
+- `(hosted …)` is now honoured by every project, not only the client/server ones:
+  a project without `(client-server)` (a tutorial, tyxml…) had its cross-project
+  references left as plain text. A reference to a `multilib` target from a page
+  with no side of its own now goes to the target's server library.
+- Module references odoc could not resolve now reach module types (a component
+  named in all caps deploys under `module-type-<NAME>/`) and projects declared
+  with no wrapper module, whose own root module names the reference
+  (`Js_of_ocaml.Js.t`, `Lwt.bind`).
+- Every build now reports the markup that was meant to become a link or an image
+  and did not — a dead reference, a wikicréole image the wiki conversion left
+  behind — and `wodoc build --strict-refs` makes that a build failure, for a doc
+  CI to catch it at the source.
 
 ## 0.1
 

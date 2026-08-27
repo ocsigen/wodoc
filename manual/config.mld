@@ -120,7 +120,11 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see
   subtree per library, e.g. eliom), [root] (a single package at the version
   root) or [subdir] (a [<pkg>/] subtree per package, e.g. js_of_ocaml, tyxml);
   [true]/[false] are accepted as legacy aliases for [multilib]/[root].
-  [<Wrapper>] is its wrapper module (or [""]).
+  [<Wrapper>] is its wrapper module, which that project deploys flat
+  ([Eliom.Registration] {i -> } [Eliom_registration]); pass [""] for a project
+  that has none, and references then start with its own root module
+  ([Js_of_ocaml.Js.t]). A reference to a [multilib] target from a page with no
+  client/server side of its own links to the target's server library.
 
 {1 Build inputs and assets}
 
