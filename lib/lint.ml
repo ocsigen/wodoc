@@ -44,32 +44,34 @@ let wiki_images page =
 
 exception Dead_markup of string
 
-(* "3 unresolved references in 2 pages" *)
-let summary diagnostics kind =
+(* "3 unresolved references in 2 pages". The label comes as (singular, plural):
+   a plural cannot be derived from a phrase -- "reference into a dependency this
+   site does not host" pluralises on its first noun, at neither end. *)
+let summary diagnostics (one, many) =
   let pages = List.length diagnostics in
   let items =
     List.fold_left (fun n (_, l) -> n + List.length l) 0 diagnostics
   in
-  Printf.sprintf "%d %s%s in %d page%s" items kind
-    (if items = 1 then "" else "s")
+  Printf.sprintf "%d %s in %d page%s" items
+    (if items = 1 then one else many)
     pages
     (if pages = 1 then "" else "s")
 
-let count diagnostics kind =
+let count diagnostics label =
   match diagnostics with
   | [] -> ()
-  | _ -> prerr_endline ("wodoc: " ^ summary diagnostics kind)
+  | _ -> prerr_endline ("wodoc: " ^ summary diagnostics label)
 
-let report ~strict diagnostics kind =
+let report ~strict diagnostics ((one, _) as label) =
   match diagnostics with
   | [] -> ()
   | _ ->
       List.iter
         (fun (page, items) ->
-           Printf.eprintf "wodoc: %s: %s: %s\n" page kind
+           Printf.eprintf "wodoc: %s: %s: %s\n" page one
              (String.concat ", " items))
         (List.rev diagnostics);
-      let msg = "wodoc: " ^ summary diagnostics kind in
+      let msg = "wodoc: " ^ summary diagnostics label in
       if strict
       then raise (Dead_markup msg)
       else prerr_endline (msg ^ " (--strict-refs makes this fatal)")

@@ -46,7 +46,33 @@ page at a time, which would leave each reference to a not-yet-compiled page dead
   $ grep -c 'href="intro.html"' site/dev/details.html
   1
 
-The same build fails under `--strict-refs`, naming what to fix — and never over a
+A lowercase reference is a page or section of the project when it sits on a manual
+page. On an API page — one under a module directory, i.e. a path segment starting
+with a capital, which a capitalised page name stands in for here — it names a
+value or type of a signature odoc could not reach instead (what the standard
+library's functors document: `key`, `elt` in an applied `Map.Make`), and only
+counts when it names a manual page of this build:
+
+  $ cat > doc/manual/Api.mld <<'XEOF'
+  > {0 Api}
+  > Keyed by {{!key}the key type} of the applied map, and see
+  > {{!page-"details".nowhere}a section of details}.
+  > XEOF
+  $ rm -rf _wodoc-html site
+  $ wodoc build --config doc/wodoc --out site/dev --label dev \
+  >   --mld-dir doc/manual --nav /dev/null 2>&1 | grep 'unresolved reference'
+  wodoc: Api.html: unresolved reference: details.nowhere
+  wodoc: details.html: unresolved reference: gone
+  wodoc: 2 unresolved references in 2 pages (--strict-refs makes this fatal)
+
+`key` is left out of that count: nothing in this build is named `key`, so it is a
+signature odoc could not reach, not a page of ours. `details.nowhere` is in it —
+`details` is one of this build's pages, so the reference is ours and its anchor
+leads nowhere.
+
+  $ rm doc/manual/Api.mld
+
+The build fails under `--strict-refs`, naming what to fix — and never over a
 dependency it cannot reach:
 
   $ rm -rf _wodoc-html site

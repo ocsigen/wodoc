@@ -475,12 +475,16 @@ let fix_dep_spans hosted relroot version side self s =
    Ours are:
    - a cross-project page reference (a leading '/'): if its package is missing
      from the table, the table is what is wrong;
-   - a lowercase head -- a page of this project ([server-services.scope]), or a
-     value or type of it ([key]): either way a reference that leads nowhere;
+   - a lowercase head on a MANUAL page: a page or section of this project that
+     leads nowhere ([server-services.scope]). On an API page, only one naming a
+     manual page of this build ([page-"ppx"] referenced from another package):
+     otherwise it names a value or type of a signature odoc could not reach,
+     typically one the standard library's functors document ([key], [elt] in an
+     applied [Map.Make]), which is not ours to fix;
    - a module reference into a project the tables cover, EXCEPT this project's
      own: a reference to a module it does not publish is deliberately left as
      text, not a defect to report on every build. *)
-let is_ours ~hosted ~siblings ~self raw =
+let is_ours ~hosted ~siblings ~self ~in_api ~pages raw =
   let raw = String.trim raw in
   let after_kind =
     if Str.string_match kind_re raw 0
@@ -491,12 +495,11 @@ let is_ours ~hosted ~siblings ~self raw =
   match String.split_on_char '.' name with
   | [] -> false
   | head :: _ when head = "" -> String.length name > 1 (* a leading '/' *)
+  | head :: _ when is_lower head.[0] -> (not in_api) || List.mem head pages
   | head :: _ -> (
-      is_lower head.[0]
-      ||
-      match hosted_head hosted head with
-      | Some (pkg, _) -> pkg <> self
-      | None -> List.mem_assoc head siblings)
+    match hosted_head hosted head with
+    | Some (pkg, _) -> pkg <> self
+    | None -> List.mem_assoc head siblings)
 
 let deps ~hosted ~relroot ~version ~side ~self s =
   fix_dep_spans hosted relroot version side self

@@ -39,8 +39,10 @@ Cross-project references:
   and did not — a dead reference, a wikicréole image the wiki conversion left
   behind — and `wodoc build --strict-refs` makes that a build failure, for a doc
   CI to catch it at the source. References into a dependency the site does not
-  host (`Stdlib`, `Ppxlib`), and a project's references to its own unpublished
-  modules, are counted apart: expected, and not repairable there.
+  host (`Stdlib`, `Ppxlib`), a project's references to its own unpublished
+  modules, and the value or type names a signature odoc could not reach leaves
+  behind on API pages (`key`, `elt` in an applied `Map.Make`) are counted apart:
+  expected, and not repairable there.
 
 ## 0.1
 

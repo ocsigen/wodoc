@@ -896,8 +896,25 @@ let run
      does not host are counted apart -- expected, and unfixable here. See
      {!Lint}. *)
   let dead_refs = ref [] and dead_images = ref [] and foreign_refs = ref [] in
-  let ours =
+  (* An API page lives under a module directory -- a path segment starting with a
+     capital; every other page is a manual one. That tells a dead page reference
+     apart from a value odoc could not reach inside a signature. *)
+  let in_api rel =
+    List.exists
+      (fun seg -> seg <> "" && seg.[0] >= 'A' && seg.[0] <= 'Z')
+      (String.split_on_char '/' rel)
+  in
+  let pages =
+    List.filter_map
+      (fun rel ->
+         if in_api rel
+         then None
+         else Some (Filename.remove_extension (Filename.basename rel)))
+      rels
+  in
+  let ours rel =
     Resolve.is_ours ~hosted:c.hosted ~siblings:c.siblings ~self:c.project
+      ~in_api:(in_api rel) ~pages
   in
   List.iter
     (fun rel ->
@@ -908,15 +925,19 @@ let run
          | [] -> ()
          | items -> acc := (strip rel, items) :: !acc
        in
-       let dead, foreign = Lint.unresolved_refs ~ours page in
+       let dead, foreign = Lint.unresolved_refs ~ours:(ours (strip rel)) page in
        note dead_refs dead;
        note foreign_refs foreign;
        note dead_images (Lint.wiki_images page);
        write_file dst page)
     rels;
-  Lint.report ~strict:strict_refs !dead_images "leftover wikicréole image";
-  Lint.report ~strict:strict_refs !dead_refs "unresolved reference";
-  Lint.count !foreign_refs "reference into a dependency this site does not host";
+  Lint.report ~strict:strict_refs !dead_images
+    ("leftover wikicréole image", "leftover wikicréole images");
+  Lint.report ~strict:strict_refs !dead_refs
+    ("unresolved reference", "unresolved references");
+  Lint.count !foreign_refs
+    ( "reference into a dependency this site does not host"
+    , "references into dependencies this site does not host" );
   (* the markdown twin tree: odoc's markdown backend emits a flat-module layout
      ([<pkg>/Mod-Sub.md]) parallel to the HTML one, with self-consistent relative
      .md xrefs. Copy it verbatim next to the HTML, applying the same manual-root
