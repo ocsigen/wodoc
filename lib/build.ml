@@ -892,8 +892,13 @@ let run
           resolve_refs ~base ~side page
   in
   (* markup that was meant to become a link or an image and did not: reported on
-     every build, fatal with --strict-refs. See {!Lint}. *)
-  let dead_refs = ref [] and dead_images = ref [] in
+     every build, fatal with --strict-refs. References into dependencies the site
+     does not host are counted apart -- expected, and unfixable here. See
+     {!Lint}. *)
+  let dead_refs = ref [] and dead_images = ref [] and foreign_refs = ref [] in
+  let ours =
+    Resolve.is_ours ~hosted:c.hosted ~siblings:c.siblings ~self:c.project
+  in
   List.iter
     (fun rel ->
        let dst = Filename.concat out (strip rel) in
@@ -903,12 +908,15 @@ let run
          | [] -> ()
          | items -> acc := (strip rel, items) :: !acc
        in
-       note dead_refs (Lint.unresolved_refs page);
+       let dead, foreign = Lint.unresolved_refs ~ours page in
+       note dead_refs dead;
+       note foreign_refs foreign;
        note dead_images (Lint.wiki_images page);
        write_file dst page)
     rels;
   Lint.report ~strict:strict_refs !dead_images "leftover wikicréole image";
   Lint.report ~strict:strict_refs !dead_refs "unresolved reference";
+  Lint.count !foreign_refs "reference into a dependency this site does not host";
   (* the markdown twin tree: odoc's markdown backend emits a flat-module layout
      ([<pkg>/Mod-Sub.md]) parallel to the HTML one, with self-consistent relative
      .md xrefs. Copy it verbatim next to the HTML, applying the same manual-root

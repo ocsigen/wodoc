@@ -40,6 +40,22 @@ val layout_of_string : string -> layout
 (** Parse a [hosted] layout token: ["multilib"]/["true"] -> [Multilib],
     ["subdir"] -> [Subdir], anything else (["root"]/["false"]) -> [Root]. *)
 
+val is_ours :
+   hosted:(string * (string * layout * string)) list
+  -> siblings:(string * string list) list
+  -> self:string
+  -> string
+  -> bool
+(** [is_ours ~hosted ~siblings ~self raw] is whether the unresolved reference
+    [raw] (as odoc titles its span) is a defect of {e this} documentation rather
+    than one into a dependency the site does not host — whose spans are expected
+    and cannot be repaired locally ([Stdlib], [Ppxlib]). Ours are: a
+    cross-project page reference (leading ['/'] — if its package is missing from
+    [hosted], the table is what is wrong); a lowercase head, i.e. a page of this
+    project ([server-services.scope]) or a value or type of it ([key]); and a
+    module reference the tables cover, except into [self] — a project's reference
+    to a module it does not publish is deliberately left as text. *)
+
 val deps :
    hosted:(string * (string * layout * string)) list
   -> relroot:string

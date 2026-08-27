@@ -123,9 +123,17 @@ wrapper script to download it first.
 image and did not: a reference odoc could not resolve and no rewriting pass could
 repair, or a wikicréole image a wiki conversion left behind ([{{file.png|alt}}] —
 odoc has no image syntax, so it survives as literal text). Every build reports
-those; [--strict-refs] is how a doc CI keeps them from shipping. A reference
-written with no label degrades to a bare [<code>], indistinguishable from inline
-code, so only the labelled shape can be reported.
+those; [--strict-refs] is how a doc CI keeps them from shipping.
+
+Only {e repairable} references count. A reference into a dependency the site does
+not host ([Stdlib], [Ppxlib]) is expected and nothing here can fix it, as is a
+project's reference to one of its own modules it does not publish; both are
+counted apart, on one line. What is reported is a cross-project page reference
+(a missing entry in [(hosted …)], or a wrong page name), a reference to a page,
+value or type of this project that leads nowhere, and a module reference into a
+project the tables cover. A reference written with no label degrades to a bare
+[<code>], indistinguishable from inline code, so only the labelled shape can be
+reported.
 
 [--local] makes the build viewable offline: the pages reference the site's shared
 assets by absolute path ([/css/…], [/img/…]) which 404 on a bare build, so
