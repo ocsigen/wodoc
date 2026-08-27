@@ -342,6 +342,48 @@ let page_link hosted relroot raw =
         Some (hosted_page_url relroot dir layout pkg (file ^ ".html" ^ anchor)))
   | _ -> None
 
+(* A path component of two characters or more named in all caps is, by OCaml
+   convention, a module TYPE, and odoc deploys those under [module-type-<NAME>/].
+   The reference title odoc leaves in an unresolved span states a kind for the
+   LAST component only, so that naming convention is the only signal available
+   for the ones in between. One-letter names are genuinely ambiguous
+   ([Eliom_content.Html.D] is a module, [Html_sigs.T] a module type) and are
+   taken for modules, the common case in a manual reference. *)
+let is_module_type_name c =
+  String.length c > 1
+  && String.for_all (fun ch -> not (is_lower ch)) c
+  && String.exists (fun ch -> ch >= 'A' && ch <= 'Z') c
+
+let url_component c = if is_module_type_name c then "module-type-" ^ c else c
+
+(* The deployed URL of module [modhead] of hosted project [pkg]. [rest] holds the
+   reference components below it: nested modules, plus a trailing value or type
+   which becomes an anchor instead of a directory. *)
+let module_url hosted relroot side pkg kind modhead rest =
+  let last =
+    match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1)
+  in
+  let but_last l =
+    match l with
+    | [] -> []
+    | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
+  in
+  let dirs, anchor =
+    if
+      rest <> []
+      && (kind = "val" || kind = "method"
+         || (kind = "" && String.length last > 0 && is_lower last.[0]))
+    then but_last rest, "#val-" ^ last
+    else if rest <> [] && kind = "type"
+    then but_last rest, "#type-" ^ last
+    else rest, ""
+  in
+  let dir, layout, _ = List.assoc pkg hosted in
+  dep_base relroot side dir layout pkg
+  ^ "/" ^ url_component modhead
+  ^ String.concat "" (List.map (fun d -> "/" ^ url_component d) dirs)
+  ^ "/index.html" ^ anchor
+
 let fix_dep_spans hosted relroot side self s =
   let wrappers = List.map (fun (pkg, (_, _, w)) -> w, pkg) hosted in
   global_sub span_re
@@ -367,63 +409,48 @@ let fix_dep_spans hosted relroot side self s =
            let toks =
              List.filter (fun t -> t <> "") (String.split_on_char '.' name)
            in
+           let link pkg modhead rest =
+             if pkg = self || modhead = ""
+             then m0 (* self ref, or nothing left to link: keep text *)
+             else
+               Printf.sprintf "<a href=\"%s\">%s</a>"
+                 (module_url hosted relroot side pkg kind modhead rest)
+                 (html_escape label)
+           in
            match toks with
            | [] -> m0
-           | head :: _ -> (
+           | head :: tl -> (
              match
                List.find_opt
                  (fun (w, _) ->
-                    head = w || String.starts_with ~prefix:(w ^ "_") head)
+                    w <> ""
+                    && (head = w || String.starts_with ~prefix:(w ^ "_") head))
                  wrappers
              with
-             | None -> m0 (* dep we do not host: leave as text *)
              | Some (wrapper, pkg) ->
-                 if pkg = self
-                 then m0 (* self ref: keep text *)
-                 else
-                   let modhead, rest =
-                     if head = wrapper
-                     then
-                       match toks with
-                       | _ :: m :: tl -> flat_module wrapper m, tl
-                       | _ -> "", []
-                     else head, List.tl toks
-                   in
-                   if modhead = ""
-                   then m0
-                   else begin
-                     let last =
-                       match rest with
-                       | [] -> ""
-                       | _ -> List.nth rest (List.length rest - 1)
-                     in
-                     let but_last l =
-                       match l with
-                       | [] -> []
-                       | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
-                     in
-                     let dirs, anchor =
-                       if
-                         rest <> []
-                         && (kind = "val" || kind = "method"
-                            || kind = ""
-                               && String.length last > 0
-                               && is_lower last.[0])
-                       then but_last rest, "#val-" ^ last
-                       else if rest <> [] && kind = "type"
-                       then but_last rest, "#type-" ^ last
-                       else rest, ""
-                     in
-                     let dir, layout, _ = List.assoc pkg hosted in
-                     let url =
-                       dep_base relroot side dir layout pkg
-                       ^ "/" ^ modhead
-                       ^ String.concat "" (List.map (fun d -> "/" ^ d) dirs)
-                       ^ "/index.html" ^ anchor
-                     in
-                     Printf.sprintf "<a href=\"%s\">%s</a>" url
-                       (html_escape label)
-                   end)))
+                 (* through the project's wrapper module, which it deploys flat
+                    ([Eliom.Registration] -> [Eliom_registration]) *)
+                 let modhead, rest =
+                   if head = wrapper
+                   then
+                     match tl with
+                     | m :: tl -> flat_module wrapper m, tl
+                     | [] -> "", []
+                   else head, tl
+                 in
+                 link pkg modhead rest
+             | None -> (
+               (* no wrapper matched: the head may be the project's own root
+                  module, for a project deployed with odoc's nested layout and no
+                  wrapper module (js_of_ocaml, tyxml, lwt, reactiveData) *)
+               match
+                 List.find_opt
+                   (fun (pkg, _) ->
+                      String.lowercase_ascii pkg = String.lowercase_ascii head)
+                   hosted
+               with
+               | Some (pkg, _) -> link pkg head tl
+               | None -> m0 (* dep we do not host: leave as text *)))))
     s
 
 let deps ~hosted ~relroot ~side ~self s =

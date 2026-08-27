@@ -26,6 +26,10 @@ Cross-project references:
   a project without `(client-server)` (a tutorial, tyxml…) had its cross-project
   references left as plain text. A reference to a `multilib` target from a page
   with no side of its own now goes to the target's server library.
+- Module references odoc could not resolve now reach module types (a component
+  named in all caps deploys under `module-type-<NAME>/`) and projects declared
+  with no wrapper module, whose own root module names the reference
+  (`Js_of_ocaml.Js.t`, `Lwt.bind`).
 
 ## 0.1
 
