@@ -21,6 +21,11 @@ module Convert : sig ... end
 Best-effort converter from extended wikicréole to odoc `.mld` with wodoc markers.
 
 ```ocaml
+module Lint : sig ... end
+```
+Diagnostics on the pages a build has just produced: markup that was meant to become a link or an image and did not.
+
+```ocaml
 module Llms : sig ... end
 ```
 Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that [`Wodoc.Build`](./Wodoc-Build.md) produces in the output directory.

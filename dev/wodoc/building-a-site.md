@@ -221,7 +221,7 @@ A site can host several *independent* projects (each its own `wodoc build`, depl
         (otherproj otherproj root "")
         (bigproj bigproj subdir ""))
 ```
-The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
+The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(client-server …)`; a page that carries no side of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
 
 
 ## A blog

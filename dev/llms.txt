@@ -21,6 +21,7 @@
 - [Module `Wodoc.Build`](wodoc/Wodoc-Build.md)
 - [Module `Wodoc.Config`](wodoc/Wodoc-Config.md)
 - [Module `Wodoc.Convert`](wodoc/Wodoc-Convert.md)
+- [Module `Wodoc.Lint`](wodoc/Wodoc-Lint.md)
 - [Module `Wodoc.Llms`](wodoc/Wodoc-Llms.md)
 - [Module `Wodoc.Nav`](wodoc/Wodoc-Nav.md)
 - [Module `Wodoc.Preprocess`](wodoc/Wodoc-Preprocess.md)

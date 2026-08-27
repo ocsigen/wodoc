@@ -69,8 +69,11 @@ For the end-to-end picture — home page, prose pages, navigation, theme, multip
 ```text
 wodoc build --config <doc/wodoc> --out <dir> [--menu <menu.html|URL>] [--label <v>]
             [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]
+            [--strict-refs]
 ```
 `--menu` is optional: without it, wodoc generates a default top bar. Pass it to use your own shared site menu — a local file *or* an `http(s)` URL (fetched with curl), so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
+
+`--strict-refs` fails the build on markup that was meant to become a link or an image and did not: a reference odoc could not resolve and no rewriting pass could repair, or a wikicréole image a wiki conversion left behind (`{{file.png|alt}}` — odoc has no image syntax, so it survives as literal text). Every build reports those; `--strict-refs` is how a doc CI keeps them from shipping. A reference written with no label degrades to a bare `<code>`, indistinguishable from inline code, so only the labelled shape can be reported.
 
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 

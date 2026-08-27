@@ -319,7 +319,7 @@ A site can host several *independent* projects (each its own `wodoc build`, depl
         (otherproj otherproj root "")
         (bigproj bigproj subdir ""))
 ```
-The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
+The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(client-server …)`; a page that carries no side of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
 
 
 ## A blog
@@ -527,7 +527,7 @@ wodoc build --config doc/wodoc --out <site>/<v> --label <v> \
 odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`resolve-refs`](./commands.md) and [`Wodoc.Resolve`](./Wodoc-Resolve.md)).
 
 - `(sibling <Module> <seg/seg/…>) …` — cross-*package* references to a sibling library built in the same tree; maps a top module to its odoc directory path.
-- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)` — cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module (or `""`).
+- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)` — cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module, which that project deploys flat (`Eliom.Registration` *\-\>* `Eliom_registration`); pass `""` for a project that has none, and references then start with its own root module (`Js_of_ocaml.Js.t`). A reference to a `multilib` target from a page with no client/server side of its own links to the target's server library.
 
 ## Build inputs and assets
 
@@ -692,8 +692,11 @@ For the end-to-end picture — home page, prose pages, navigation, theme, multip
 ```text
 wodoc build --config <doc/wodoc> --out <dir> [--menu <menu.html|URL>] [--label <v>]
             [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]
+            [--strict-refs]
 ```
 `--menu` is optional: without it, wodoc generates a default top bar. Pass it to use your own shared site menu — a local file *or* an `http(s)` URL (fetched with curl), so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
+
+`--strict-refs` fails the build on markup that was meant to become a link or an image and did not: a reference odoc could not resolve and no rewriting pass could repair, or a wikicréole image a wiki conversion left behind (`{{file.png|alt}}` — odoc has no image syntax, so it survives as literal text). Every build reports those; `--strict-refs` is how a doc CI keeps them from shipping. A reference written with no label degrades to a bare `<code>`, indistinguishable from inline code, so only the labelled shape can be reported.
 
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 
@@ -1210,6 +1213,7 @@ val run :
   assets_dir:string ->
   local:bool ->
   set_latest:bool ->
+  strict_refs:bool ->
   unit
 ```
 ```ocaml
@@ -1345,6 +1349,35 @@ val wiki_to_mld : ?default_side:string -> ?odoc_refs:bool -> string -> string
 `default_side` (e.g. `"server"`/`"client"`, default `""`) controls plain `<<a_api|...>>` references carrying neither `subproject` nor `project`: when set, they link into that side of the API (`../<pkg>.<side>/...`) rather than becoming an in-package odoc reference — used for a sided project's manual, whose bare API references are understood to be server-side.
 
 `odoc_refs` (default `false`): emit native odoc references for `a_api` (`{!Name}`) and `a_manual` (`{{!page-"c"}…}`) instead of relative URLs. Use this when the manual is built in the SAME odoc run as the API (unified in-package build), where such references resolve. `default_side` is then irrelevant.
+
+
+---
+
+# Module `Wodoc.Lint`
+
+Diagnostics on the pages a build has just produced: markup that was meant to become a link or an image and did not.
+
+Both shapes below have shipped to ocsigen.org unnoticed, because a dead reference degrades into plain text rather than into a build failure. wodoc reports them on every build and, with `wodoc build --strict-refs`, fails.
+
+```ocaml
+val unresolved_refs : string -> string list
+```
+`unresolved_refs page` lists the references odoc could not resolve and no rewriting pass could repair, as they read in the page: the `(hosted …)` target when the span carries one, else its visible text. Each is a dead reference — a missing entry in the project's tables, or a name that no longer exists.
+
+```ocaml
+val wiki_images : string -> string list
+```
+`wiki_images page` lists leftover wikicréole images (`{{file.png|alt}}`). odoc has no image syntax, so a conversion that missed one leaves it as literal text; only `{%wodoc:img …%}` renders.
+
+```ocaml
+exception Dead_markup of string
+```
+Raised by [`report`](./#val-report) in strict mode; the payload is the summary line.
+
+```ocaml
+val report : strict:bool -> (string * string list) list -> string -> unit
+```
+`report ~strict diagnostics kind` prints one line per page holding a `kind` ("unresolved reference", …) diagnostic, then a count. Raises [`Dead_markup`](./#exception-Dead_markup) when `strict` and there is anything to report.
 
 
 ---
@@ -1567,6 +1600,11 @@ module Config : sig ... end
 module Convert : sig ... end
 ```
 Best-effort converter from extended wikicréole to odoc `.mld` with wodoc markers.
+
+```ocaml
+module Lint : sig ... end
+```
+Diagnostics on the pages a build has just produced: markup that was meant to become a link or an image and did not.
 
 ```ocaml
 module Llms : sig ... end

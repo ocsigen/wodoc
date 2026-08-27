@@ -146,6 +146,7 @@ val run :
   assets_dir:string ->
   local:bool ->
   set_latest:bool ->
+  strict_refs:bool ->
   unit
 ```
 ```ocaml
