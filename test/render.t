@@ -82,3 +82,24 @@ pages, so the dead links are stripped:
   > XEOF
   $ wodoc render src.html
   <code>val foo : int</code>
+
+
+odoc wraps a marker in a paragraph of its own making. A block container's tags
+are taken out of it, whichever end of the paragraph they sit at: left inside, a
+closing tag such as `</header>` would end that paragraph where the browser sees
+it, leaving an empty `<p></p>` inside the header — right after the heading, which
+shows.
+
+  $ cat > block.html <<'XEOF'
+  > <p><section class="docblock"> <header></p><h2 id="t">Title</h2><p></header> Body text.</p></section>
+  > XEOF
+  $ wodoc render block.html
+  <section class="docblock"><header><h2 id="t">Title</h2></header><p>Body text.</p></section>
+
+A balanced inline element stays inside its paragraph:
+
+  $ cat > inline.html <<'XEOF'
+  > <p>See <a href="x.html">the page</a> for more.</p>
+  > XEOF
+  $ wodoc render inline.html
+  <p>See <a href="x.html">the page</a> for more.</p>
