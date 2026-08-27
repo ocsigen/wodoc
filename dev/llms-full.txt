@@ -696,7 +696,9 @@ wodoc build --config <doc/wodoc> --out <dir> [--menu <menu.html|URL>] [--label <
 ```
 `--menu` is optional: without it, wodoc generates a default top bar. Pass it to use your own shared site menu — a local file *or* an `http(s)` URL (fetched with curl), so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
 
-`--strict-refs` fails the build on markup that was meant to become a link or an image and did not: a reference odoc could not resolve and no rewriting pass could repair, or a wikicréole image a wiki conversion left behind (`{{file.png|alt}}` — odoc has no image syntax, so it survives as literal text). Every build reports those; `--strict-refs` is how a doc CI keeps them from shipping. A reference written with no label degrades to a bare `<code>`, indistinguishable from inline code, so only the labelled shape can be reported.
+`--strict-refs` fails the build on markup that was meant to become a link or an image and did not: a reference odoc could not resolve and no rewriting pass could repair, or a wikicréole image a wiki conversion left behind (`{{file.png|alt}}` — odoc has no image syntax, so it survives as literal text). Every build reports those; `--strict-refs` is how a doc CI keeps them from shipping.
+
+Only *repairable* references count. A reference into a dependency the site does not host (`Stdlib`, `Ppxlib`) is expected and nothing here can fix it, as is a project's reference to one of its own modules it does not publish; both are counted apart, on one line. What is reported is a cross-project page reference (a missing entry in `(hosted …)`, or a wrong page name), a reference to a page, value or type of this project that leads nowhere, and a module reference into a project the tables cover. A reference written with no label degrades to a bare `<code>`, indistinguishable from inline code, so only the labelled shape can be reported.
 
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 
@@ -1360,14 +1362,22 @@ Diagnostics on the pages a build has just produced: markup that was meant to bec
 Both shapes below have shipped to ocsigen.org unnoticed, because a dead reference degrades into plain text rather than into a build failure. wodoc reports them on every build and, with `wodoc build --strict-refs`, fails.
 
 ```ocaml
-val unresolved_refs : string -> string list
+val unresolved_refs : 
+  ours:(string -> bool) ->
+  string ->
+  string list * string list
 ```
-`unresolved_refs page` lists the references odoc could not resolve and no rewriting pass could repair, as they read in the page: the `(hosted …)` target when the span carries one, else its visible text. Each is a dead reference — a missing entry in the project's tables, or a name that no longer exists.
+`unresolved_refs ~ours page` lists the references odoc could not resolve and no rewriting pass could repair, as they read in the page: the reference target when the span carries one, else its visible text. The first list holds the ones `ours` accepts — dead references of this documentation: a missing entry in the project's tables, a name that no longer exists, an unresolved page of the project itself. The second holds references into dependencies the site does not host (`Stdlib`, `Ppxlib`), which no local change can repair; see [`Wodoc.Resolve.is_ours`](./Wodoc-Resolve.md#val-is_ours).
 
 ```ocaml
 val wiki_images : string -> string list
 ```
 `wiki_images page` lists leftover wikicréole images (`{{file.png|alt}}`). odoc has no image syntax, so a conversion that missed one leaves it as literal text; only `{%wodoc:img …%}` renders.
+
+```ocaml
+val count : (string * string list) list -> string -> unit
+```
+`count diagnostics kind` prints the one-line total only, for what is worth knowing but not acting on.
 
 ```ocaml
 exception Dead_markup of string
@@ -1504,6 +1514,16 @@ How a hosted project's modules are laid out under `<dir>/latest/`.
 val layout_of_string : string -> layout
 ```
 Parse a `hosted` layout token: `"multilib"`/`"true"` \-\> `Multilib`, `"subdir"` \-\> `Subdir`, anything else (`"root"`/`"false"`) \-\> `Root`.
+
+```ocaml
+val is_ours : 
+  hosted:(string * (string * layout * string)) list ->
+  siblings:(string * string list) list ->
+  self:string ->
+  string ->
+  bool
+```
+`is_ours ~hosted ~siblings ~self raw` is whether the unresolved reference `raw` (as odoc titles its span) is a defect of *this* documentation rather than one into a dependency the site does not host — whose spans are expected and cannot be repaired locally (`Stdlib`, `Ppxlib`). Ours are: a cross-project page reference (leading `'/'` — if its package is missing from `hosted`, the table is what is wrong); a lowercase head, i.e. a page of this project (`server-services.scope`) or a value or type of it (`key`); and a module reference the tables cover, except into `self` — a project's reference to a module it does not publish is deliberately left as text.
 
 ```ocaml
 val deps : 
