@@ -19,6 +19,9 @@ Config simplifications (breaking):
 - `(mld-dir <dir> [<package>])` can carry the odoc package inline; `mld-package`
   still sets it when the directory is passed on the CLI (`--mld-dir`).
 - The `pub` stanza is renamed `url-prefix`.
+- Direct-mld builds link every page against all the others, so references between
+  the pages of a manual resolve. They used to be compiled and linked one page at
+  a time, which left every reference to a not-yet-compiled page dead.
 
 Cross-project references:
 

@@ -333,42 +333,59 @@ let () =
               then (
                 prerr_endline ("wodoc build: no .mld in " ^ dir);
                 exit 1);
+              (* Three passes, not one per page: [odoc link] only resolves a
+                 reference to a page whose .odoc already sits in -I, so
+                 compiling and linking a page at a time leaves every reference
+                 to a not-yet-compiled page dead (alphabetically forward ones,
+                 which is most of them in a fresh build). *)
+              let run e cmd =
+                if Sys.command cmd <> 0
+                then (
+                  prerr_endline ("wodoc build: odoc failed on " ^ e);
+                  exit 1)
+              in
+              let odoc_of e =
+                Filename.concat odoc
+                  ("page-" ^ Filename.remove_extension e ^ ".odoc")
+              in
+              let odocl_of e = odoc_of e ^ "l" in
               List.iter
                 (fun e ->
-                   let name = Filename.remove_extension e in
                    let pp = Filename.concat odoc ("pp-" ^ e) in
                    (let oc = open_out_bin pp in
                     output_string oc
                       (Wodoc.Preprocess.string
                          (read_file (Filename.concat dir e)));
                     close_out oc);
-                   let odocf =
-                     Filename.concat odoc ("page-" ^ name ^ ".odoc")
-                   in
-                   let odoclf =
-                     Filename.concat odoc ("page-" ^ name ^ ".odocl")
-                   in
+                   run e
+                     (Printf.sprintf "odoc compile %s%s -I %s -o %s"
+                        (Filename.quote pp) pkg_flag (Filename.quote odoc)
+                        (Filename.quote (odoc_of e))))
+                mlds;
+              List.iter
+                (fun e ->
+                   run e
+                     (Printf.sprintf "odoc link %s -I %s -o %s"
+                        (Filename.quote (odoc_of e))
+                        (Filename.quote odoc)
+                        (Filename.quote (odocl_of e))))
+                mlds;
+              List.iter
+                (fun e ->
                    (* the markdown twin step is appended unless the project opts
                       out of markdown with (markdown false) *)
                    let md_step =
                      if c.markdown
                      then
                        Printf.sprintf " && odoc markdown-generate %s -o %s"
-                         (Filename.quote odoclf) (Filename.quote md)
+                         (Filename.quote (odocl_of e))
+                         (Filename.quote md)
                      else ""
                    in
-                   let cmd =
-                     Printf.sprintf
-                       "odoc compile %s%s -I %s -o %s && odoc link %s -I %s -o %s && odoc html-generate %s -o %s%s"
-                       (Filename.quote pp) pkg_flag (Filename.quote odoc)
-                       (Filename.quote odocf) (Filename.quote odocf)
-                       (Filename.quote odoc) (Filename.quote odoclf)
-                       (Filename.quote odoclf) (Filename.quote html) md_step
-                   in
-                   if Sys.command cmd <> 0
-                   then (
-                     prerr_endline ("wodoc build: odoc failed on " ^ e);
-                     exit 1))
+                   run e
+                     (Printf.sprintf "odoc html-generate %s -o %s%s"
+                        (Filename.quote (odocl_of e))
+                        (Filename.quote html) md_step))
                 mlds;
               let md_src = if c.markdown then Some md else None in
               if c.mld_package = ""
