@@ -76,7 +76,7 @@ a wikicréole [menu.wiki]; that is gone.) See {!Wodoc.Nav}.
 
 {@text[
 wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..
-wodoc resolve-refs --relroot <r> --side <s> [--self <pkg>]
+wodoc resolve-refs --relroot <r> --side <s> [--self <pkg>] [--version <v>]
                    --hosted <pkg=dir:multilib:wrapper> [--hosted ..] <file>..
 ]}
 
@@ -85,7 +85,9 @@ Link references odoc left dead, rewriting the given files {e in place}. With
 sibling table maps a top module to its directory path). With [--hosted],
 cross-PROJECT references to another hosted Ocsigen project (both resolved
 ocaml.org dep links and unresolved spans), relative to [--relroot]; [--self]
-keeps the project's own leftover refs as text. See {!Wodoc.Resolve}.
+keeps the project's own leftover refs as text. [--version] is the target's version
+directory, [latest] by default — [wodoc build] passes [dev] for a [dev] manual, so
+a development doc links against development APIs. See {!Wodoc.Resolve}.
 
 {1 [wodoc convert]}
 

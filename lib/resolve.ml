@@ -271,8 +271,8 @@ let flat_path wrapper path =
    page's real address. A page with no side of its own -- a manual page, or any
    page of a project without [(client-server)] -- links to the server library:
    that is the side manuals describe. *)
-let dep_base relroot side dir layout pkg =
-  let b = relroot ^ "/" ^ dir ^ "/latest" in
+let dep_base relroot version side dir layout pkg =
+  let b = relroot ^ "/" ^ dir ^ "/" ^ version in
   let side = if side = "" then "server" else side in
   match layout with
   | Multilib -> b ^ "/" ^ dir ^ "." ^ side
@@ -285,17 +285,17 @@ let dep_base relroot side dir layout pkg =
    and under [<pkg>/] for [Subdir] projects whose nested layout is kept
    (e.g. [tyxml/latest/tyxml/index.html]). [page] is the page path relative to
    that location (e.g. ["config.html"] or ["server-state.html#scopes"]). *)
-let hosted_page_url relroot dir layout pkg page =
+let hosted_page_url relroot version dir layout pkg page =
   let prefix =
     match layout with Multilib | Root -> "" | Subdir -> pkg ^ "/"
   in
-  Printf.sprintf "%s/%s/latest/%s%s" relroot dir prefix page
+  Printf.sprintf "%s/%s/%s/%s%s" relroot dir version prefix page
 
 let resolved_re =
   Str.regexp
     "href=\"https://ocaml\\.org/p/\\([^/\"]+\\)/[^/\"]+/doc/\\([^\"]+\\)\""
 
-let fix_resolved hosted relroot side s =
+let fix_resolved hosted relroot version side s =
   global_sub resolved_re
     (fun whole ->
        let m0 = Str.matched_string whole in
@@ -314,8 +314,8 @@ let fix_resolved hosted relroot side s =
                  | Subdir -> path
                  | _ -> flat_path wrapper path
                in
-               dep_base relroot side dir layout pkg ^ "/" ^ path'
-             else hosted_page_url relroot dir layout pkg path
+               dep_base relroot version side dir layout pkg ^ "/" ^ path'
+             else hosted_page_url relroot version dir layout pkg path
            in
            Printf.sprintf "href=\"%s\"" url
        | _ -> m0)
@@ -325,7 +325,7 @@ let fix_resolved hosted relroot side s =
    renders as an [xref-unresolved] span titled ["/pkg/path"] (leading '/', the
    "page-" prefix dropped, '/'-separated sub-pages, an optional ".section"
    anchor on the last segment). Map it to the hosted project's deployed page. *)
-let page_link hosted relroot raw =
+let page_link hosted relroot version raw =
   match String.split_on_char '/' raw with
   | "" :: pkg :: (_ :: _ as rest) -> (
     match find_hosted hosted pkg with
@@ -339,7 +339,9 @@ let page_link hosted relroot raw =
               , "#" ^ String.sub path (i + 1) (String.length path - i - 1) )
           | None -> path, ""
         in
-        Some (hosted_page_url relroot dir layout pkg (file ^ ".html" ^ anchor)))
+        Some
+          (hosted_page_url relroot version dir layout pkg
+             (file ^ ".html" ^ anchor)))
   | _ -> None
 
 (* The root module a package exposes, by the dune convention that turns the
@@ -370,7 +372,7 @@ let url_component c = if is_module_type_name c then "module-type-" ^ c else c
 (* The deployed URL of module [modhead] of hosted project [pkg]. [rest] holds the
    reference components below it: nested modules, plus a trailing value or type
    which becomes an anchor instead of a directory. *)
-let module_url hosted relroot side pkg kind modhead rest =
+let module_url hosted relroot version side pkg kind modhead rest =
   let last =
     match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1)
   in
@@ -390,12 +392,12 @@ let module_url hosted relroot side pkg kind modhead rest =
     else rest, ""
   in
   let dir, layout, _ = List.assoc pkg hosted in
-  dep_base relroot side dir layout pkg
+  dep_base relroot version side dir layout pkg
   ^ "/" ^ url_component modhead
   ^ String.concat "" (List.map (fun d -> "/" ^ url_component d) dirs)
   ^ "/index.html" ^ anchor
 
-let fix_dep_spans hosted relroot side self s =
+let fix_dep_spans hosted relroot version side self s =
   let wrappers = List.map (fun (pkg, (_, _, w)) -> w, pkg) hosted in
   global_sub span_re
     (fun whole ->
@@ -405,7 +407,7 @@ let fix_dep_spans hosted relroot side self s =
        let trailing = Str.matched_group 4 whole in
        let label = visible ^ trailing in
        let raw = String.trim (if title <> "" then title else label) in
-       match page_link hosted relroot raw with
+       match page_link hosted relroot version raw with
        | Some url ->
            Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
        | None -> (
@@ -425,7 +427,7 @@ let fix_dep_spans hosted relroot side self s =
              then m0 (* self ref, or nothing left to link: keep text *)
              else
                Printf.sprintf "<a href=\"%s\">%s</a>"
-                 (module_url hosted relroot side pkg kind modhead rest)
+                 (module_url hosted relroot version side pkg kind modhead rest)
                  (html_escape label)
            in
            match toks with
@@ -463,8 +465,9 @@ let fix_dep_spans hosted relroot side self s =
                | None -> m0 (* dep we do not host: leave as text *)))))
     s
 
-let deps ~hosted ~relroot ~side ~self s =
-  fix_dep_spans hosted relroot side self (fix_resolved hosted relroot side s)
+let deps ~hosted ~relroot ~version ~side ~self s =
+  fix_dep_spans hosted relroot version side self
+    (fix_resolved hosted relroot version side s)
 
 (* --- requalify cross-project links to wrapped libraries (post-pass) ---
    odoc_driver --remap names a reference to a wrapped library's module by a FLAT
