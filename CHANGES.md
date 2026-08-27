@@ -38,7 +38,9 @@ Cross-project references:
 - Every build now reports the markup that was meant to become a link or an image
   and did not — a dead reference, a wikicréole image the wiki conversion left
   behind — and `wodoc build --strict-refs` makes that a build failure, for a doc
-  CI to catch it at the source.
+  CI to catch it at the source. References into a dependency the site does not
+  host (`Stdlib`, `Ppxlib`), and a project's references to its own unpublished
+  modules, are counted apart: expected, and not repairable there.
 
 ## 0.1
 

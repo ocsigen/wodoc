@@ -397,8 +397,28 @@ let module_url hosted relroot version side pkg kind modhead rest =
   ^ String.concat "" (List.map (fun d -> "/" ^ url_component d) dirs)
   ^ "/index.html" ^ anchor
 
-let fix_dep_spans hosted relroot version side self s =
+(* Which hosted project a module reference rooted at [head] belongs to: through
+   the project's wrapper module, which it deploys flat ([Eliom.Registration] ->
+   [Eliom_registration]), or through its own root module for a project that
+   declares no wrapper ([Js_of_ocaml.Js], [Lwt.bind]). [None] for a dependency we
+   do not host, whose reference is left as text. *)
+let hosted_head hosted head =
   let wrappers = List.map (fun (pkg, (_, _, w)) -> w, pkg) hosted in
+  match
+    List.find_opt
+      (fun (w, _) ->
+         w <> "" && (head = w || String.starts_with ~prefix:(w ^ "_") head))
+      wrappers
+  with
+  | Some (wrapper, pkg) -> Some (pkg, Some wrapper)
+  | None -> (
+    match
+      List.find_opt (fun (pkg, _) -> module_name_of_pkg pkg = head) hosted
+    with
+    | Some (pkg, _) -> Some (pkg, None)
+    | None -> None)
+
+let fix_dep_spans hosted relroot version side self s =
   global_sub span_re
     (fun whole ->
        let m0 = Str.matched_string whole in
@@ -433,16 +453,9 @@ let fix_dep_spans hosted relroot version side self s =
            match toks with
            | [] -> m0
            | head :: tl -> (
-             match
-               List.find_opt
-                 (fun (w, _) ->
-                    w <> ""
-                    && (head = w || String.starts_with ~prefix:(w ^ "_") head))
-                 wrappers
-             with
-             | Some (wrapper, pkg) ->
-                 (* through the project's wrapper module, which it deploys flat
-                    ([Eliom.Registration] -> [Eliom_registration]) *)
+             match hosted_head hosted head with
+             | None -> m0 (* dep we do not host: leave as text *)
+             | Some (pkg, Some wrapper) ->
                  let modhead, rest =
                    if head = wrapper
                    then
@@ -452,18 +465,38 @@ let fix_dep_spans hosted relroot version side self s =
                    else head, tl
                  in
                  link pkg modhead rest
-             | None -> (
-               (* no wrapper matched: the head may be the project's own root
-                  module, for a project deployed with odoc's nested layout and no
-                  wrapper module (js_of_ocaml, tyxml, lwt, reactiveData) *)
-               match
-                 List.find_opt
-                   (fun (pkg, _) -> module_name_of_pkg pkg = head)
-                   hosted
-               with
-               | Some (pkg, _) -> link pkg head tl
-               | None -> m0 (* dep we do not host: leave as text *)))))
+             | Some (pkg, None) ->
+                 (* the project's own root module: odoc's nested layout is kept *)
+                 link pkg head tl)))
     s
+
+(* Is this unresolved reference a defect of OUR documentation, as opposed to one
+   into a dependency we do not host, whose spans are expected and unfixable here?
+   Ours are:
+   - a cross-project page reference (a leading '/'): if its package is missing
+     from the table, the table is what is wrong;
+   - a lowercase head -- a page of this project ([server-services.scope]), or a
+     value or type of it ([key]): either way a reference that leads nowhere;
+   - a module reference into a project the tables cover, EXCEPT this project's
+     own: a reference to a module it does not publish is deliberately left as
+     text, not a defect to report on every build. *)
+let is_ours ~hosted ~siblings ~self raw =
+  let raw = String.trim raw in
+  let after_kind =
+    if Str.string_match kind_re raw 0
+    then String.sub raw (Str.match_end ()) (String.length raw - Str.match_end ())
+    else raw
+  in
+  let name = strip_parens after_kind in
+  match String.split_on_char '.' name with
+  | [] -> false
+  | head :: _ when head = "" -> String.length name > 1 (* a leading '/' *)
+  | head :: _ -> (
+      is_lower head.[0]
+      ||
+      match hosted_head hosted head with
+      | Some (pkg, _) -> pkg <> self
+      | None -> List.mem_assoc head siblings)
 
 let deps ~hosted ~relroot ~version ~side ~self s =
   fix_dep_spans hosted relroot version side self
