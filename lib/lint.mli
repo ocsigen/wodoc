@@ -12,7 +12,7 @@ val unresolved_refs :
 (** [unresolved_refs ~ours page] lists the references odoc could not resolve and
     no rewriting pass could repair, as they read in the page: the reference target
     when the span carries one, else its visible text. The first list holds the
-    ones [ours] accepts — dead references of this documentation: a missing entry
+    ones [ours] accepts, the dead references of this documentation: a missing entry
     in the project's tables, a name that no longer exists, an unresolved page of
     the project itself. The second holds references into dependencies the site
     does not host ([Stdlib], [Ppxlib]), which no local change can repair;

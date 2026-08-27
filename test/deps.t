@@ -89,8 +89,8 @@ Module pages (`<Mod>/…/index.html`) keep the module layout.
   <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">srv mod</a>
   <a href="../../../tyxml/latest/tyxml/ppx.html">ppx page</a>
 
-A page with no side of its own — every page of a project without
-`(client-server)` (the tutorial, tyxml…), and the manual pages of one with it —
+A page with no side of its own (every page of a project without
+`(client-server)`: the tutorial, tyxml, and the manual pages of one with it)
 still links to a `multilib` target, whose modules only exist under a sided
 library. Such a link goes to the server one:
 

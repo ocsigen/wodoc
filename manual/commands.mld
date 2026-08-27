@@ -86,7 +86,7 @@ sibling table maps a top module to its directory path). With [--hosted],
 cross-PROJECT references to another hosted Ocsigen project (both resolved
 ocaml.org dep links and unresolved spans), relative to [--relroot]; [--self]
 keeps the project's own leftover refs as text. [--version] is the target's version
-directory, [latest] by default — [wodoc build] passes [dev] for a [dev] manual, so
+directory, [latest] by default. [wodoc build] passes [dev] for a [dev] manual, so
 a development doc links against development APIs. See {!Wodoc.Resolve}.
 
 {1 [wodoc convert]}
@@ -121,7 +121,7 @@ wrapper script to download it first.
 
 [--strict-refs] fails the build on markup that was meant to become a link or an
 image and did not: a reference odoc could not resolve and no rewriting pass could
-repair, or a wikicréole image a wiki conversion left behind ([{{file.png|alt}}] —
+repair, or a wikicréole image a wiki conversion left behind ([{{file.png|alt}}]:
 odoc has no image syntax, so it survives as literal text). Every build reports
 those; [--strict-refs] is how a doc CI keeps them from shipping.
 

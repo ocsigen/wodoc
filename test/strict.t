@@ -47,8 +47,8 @@ page at a time, which would leave each reference to a not-yet-compiled page dead
   1
 
 A lowercase reference is a page or section of the project when it sits on a manual
-page. On an API page — one under a module directory, i.e. a path segment starting
-with a capital, which a capitalised page name stands in for here — it names a
+page. On an API page (one under a module directory, i.e. a path segment starting
+with a capital, which a capitalised page name stands in for here) it names a
 value or type of a signature odoc could not reach instead (what the standard
 library's functors document: `key`, `elt` in an applied `Map.Make`), and only
 counts when it names a manual page of this build:
@@ -66,13 +66,13 @@ counts when it names a manual page of this build:
   wodoc: 2 unresolved references in 2 pages (--strict-refs makes this fatal)
 
 `key` is left out of that count: nothing in this build is named `key`, so it is a
-signature odoc could not reach, not a page of ours. `details.nowhere` is in it —
+signature odoc could not reach, not a page of ours. `details.nowhere` is in it:
 `details` is one of this build's pages, so the reference is ours and its anchor
 leads nowhere.
 
   $ rm doc/manual/Api.mld
 
-The build fails under `--strict-refs`, naming what to fix — and never over a
+The build fails under `--strict-refs`, naming what to fix, and never over a
 dependency it cannot reach:
 
   $ rm -rf _wodoc-html site
