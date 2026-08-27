@@ -19,6 +19,10 @@ Config simplifications (breaking):
 - `(mld-dir <dir> [<package>])` can carry the odoc package inline; `mld-package`
   still sets it when the directory is passed on the CLI (`--mld-dir`).
 - The `pub` stanza is renamed `url-prefix`.
+- A block container a marker opens or closes (`section`, `header`, `nav`, …) is
+  taken out of the paragraph odoc wraps the marker in, at either end of it. A
+  closing tag left inside ended that paragraph where the browser saw it, leaving
+  an empty `<p></p>` inside the container — right after a heading, where it shows.
 - Direct-mld builds link every page against all the others, so references between
   the pages of a manual resolve. They used to be compiled and linked one page at
   a time, which left every reference to a not-yet-compiled page dead.

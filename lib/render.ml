@@ -111,9 +111,8 @@ let emit_tags s =
                 stack := "</span>" :: !stack
             | ("section" | "header" | "footer" | "nav" | "article" | "aside") as
               t ->
-                (* semantic block containers (same family as div): the odoc
-                   paragraph that wraps the marker is normalised away by the
-                   browser when a block element opens inside it. *)
+                (* semantic block containers, the same family as div: the odoc
+                   paragraph wrapping the marker is taken apart by {!hoist}. *)
                 Buffer.add_string out
                   (Printf.sprintf "<%s%s>" t (attrs_of rest));
                 stack := Printf.sprintf "</%s>" t :: !stack
@@ -331,13 +330,18 @@ let fuse_attrs s =
   Buffer.contents out
 
 (* Pass 3: hoist structural tags out of odoc's forced <p> wrappers. *)
+(* the tags a wodoc marker can emit: the block containers, the inline ones, and
+   the void image *)
+let marker_tags =
+  "div\\|section\\|header\\|footer\\|nav\\|article\\|aside\\|a\\|span"
+
 let lead_re =
   Str.regexp
-    "^[ \t\r\n]*\\(</?\\(div\\|a\\|span\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)"
+    ("^[ \t\r\n]*\\(</?\\(" ^ marker_tags ^ "\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)")
 
 let tail_re =
   Str.regexp
-    "\\(</?\\(div\\|a\\|span\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)[ \t\r\n]*$"
+    ("\\(</?\\(" ^ marker_tags ^ "\\)\\b[^>]*>\\|<img\\b[^>]*/?>\\)[ \t\r\n]*$")
 
 let contains s sub = find s sub 0 <> None
 let is_close g = String.length g >= 2 && g.[1] = '/'
