@@ -698,7 +698,7 @@ wodoc build --config <doc/wodoc> --out <dir> [--menu <menu.html|URL>] [--label <
 
 `--strict-refs` fails the build on markup that was meant to become a link or an image and did not: a reference odoc could not resolve and no rewriting pass could repair, or a wikicréole image a wiki conversion left behind (`{{file.png|alt}}` — odoc has no image syntax, so it survives as literal text). Every build reports those; `--strict-refs` is how a doc CI keeps them from shipping.
 
-Only *repairable* references count. A reference into a dependency the site does not host (`Stdlib`, `Ppxlib`) is expected and nothing here can fix it, as is a project's reference to one of its own modules it does not publish; both are counted apart, on one line. What is reported is a cross-project page reference (a missing entry in `(hosted …)`, or a wrong page name), a reference to a page, value or type of this project that leads nowhere, and a module reference into a project the tables cover. A reference written with no label degrades to a bare `<code>`, indistinguishable from inline code, so only the labelled shape can be reported.
+Only *repairable* references count. A reference into a dependency the site does not host (`Stdlib`, `Ppxlib`) is expected and nothing here can fix it, as is a project's reference to one of its own modules it does not publish, and as is the value or type name a signature odoc could not reach leaves on an API page (`key`, `elt` in an applied `Map.Make`); those are counted apart, on one line. What is reported is a cross-project page reference (a missing entry in `(hosted …)`, or a wrong page name), a page or section of this project that leads nowhere, and a module reference into a project the tables cover. A reference written with no label degrades to a bare `<code>`, indistinguishable from inline code, so only the labelled shape can be reported.
 
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 
@@ -1375,9 +1375,9 @@ val wiki_images : string -> string list
 `wiki_images page` lists leftover wikicréole images (`{{file.png|alt}}`). odoc has no image syntax, so a conversion that missed one leaves it as literal text; only `{%wodoc:img …%}` renders.
 
 ```ocaml
-val count : (string * string list) list -> string -> unit
+val count : (string * string list) list -> (string * string) -> unit
 ```
-`count diagnostics kind` prints the one-line total only, for what is worth knowing but not acting on.
+`count diagnostics (singular, plural)` prints the one-line total only, for what is worth knowing but not acting on.
 
 ```ocaml
 exception Dead_markup of string
@@ -1385,9 +1385,13 @@ exception Dead_markup of string
 Raised by [`report`](./#val-report) in strict mode; the payload is the summary line.
 
 ```ocaml
-val report : strict:bool -> (string * string list) list -> string -> unit
+val report : 
+  strict:bool ->
+  (string * string list) list ->
+  (string * string) ->
+  unit
 ```
-`report ~strict diagnostics kind` prints one line per page holding a `kind` ("unresolved reference", …) diagnostic, then a count. Raises [`Dead_markup`](./#exception-Dead_markup) when `strict` and there is anything to report.
+`report ~strict diagnostics (singular, plural)` prints one line per page holding such a diagnostic, then a count. Raises [`Dead_markup`](./#exception-Dead_markup) when `strict` and there is anything to report.
 
 
 ---
@@ -1520,11 +1524,16 @@ val is_ours :
   hosted:(string * (string * layout * string)) list ->
   siblings:(string * string list) list ->
   self:string ->
+  in_api:bool ->
+  pages:string list ->
   string ->
   bool
 ```
-`is_ours ~hosted ~siblings ~self raw` is whether the unresolved reference `raw` (as odoc titles its span) is a defect of *this* documentation rather than one into a dependency the site does not host — whose spans are expected and cannot be repaired locally (`Stdlib`, `Ppxlib`). Ours are: a cross-project page reference (leading `'/'` — if its package is missing from `hosted`, the table is what is wrong); a lowercase head, i.e. a page of this project (`server-services.scope`) or a value or type of it (`key`); and a module reference the tables cover, except into `self` — a project's reference to a module it does not publish is deliberately left as text.
+`is_ours ~hosted ~siblings ~self ~in_api ~pages raw` is whether the unresolved reference `raw` (as odoc titles its span) is a defect of *this* documentation rather than one into a dependency the site does not host — whose spans are expected and cannot be repaired locally (`Stdlib`, `Ppxlib`). Ours are:
 
+- a cross-project page reference (leading `'/'`): if its package is missing from `hosted`, the table is what is wrong;
+- a lowercase head, when the page holding it is a manual one (`in_api` is false) or when it names one of `pages`, this build's manual pages: a page or section of this project that leads nowhere. A lowercase head on an API page otherwise names a value or type of a signature odoc could not reach — typically what the standard library's functors document (`key`, `elt` in an applied `Map.Make`) — which no change here can fix;
+- a module reference the tables cover, except into `self`: a project's reference to a module it does not publish is deliberately left as text.
 ```ocaml
 val deps : 
   hosted:(string * (string * layout * string)) list ->
