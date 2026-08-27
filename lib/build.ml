@@ -404,7 +404,7 @@ let version_names ~root ?(extra = []) () =
         (* skip internal/staging dirs (e.g. the _staging copy a release builds
            from): they are full wodoc builds, so they'd otherwise pass the
            wodoc-highlight.js test and leak into versions.json. *)
-        && not (String.length d > 0 && d.[0] = '_')
+        && (not (String.length d > 0 && d.[0] = '_'))
         && Sys.is_directory (Filename.concat root d)
         && Sys.file_exists
              (Filename.concat (Filename.concat root d) "wodoc-highlight.js"))
@@ -779,6 +779,23 @@ let run
       in
       walk ""; List.sort compare !acc
   in
+  (* The cross-reference post-pass, the same for every project shape: sibling
+     packages of this doc first, then the cross-project [(hosted ..)] table.
+     [side] is "" for a page that carries no client/server colour -- every page
+     of a project without [(client-server)], and the manual pages of one with
+     it; {!Resolve.dep_base} then picks the server library of a sided target. *)
+  let resolve_refs ~base ~side page =
+    let page =
+      if c.siblings = []
+      then page
+      else Resolve.html ~siblings:c.siblings ~base page
+    in
+    if c.hosted = []
+    then page
+    else
+      Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..") ~side
+        ~self:c.project page
+  in
   (* the per-page assembler: one shared nav (normal projects), or a per-side
      template + nav for client/server projects (eliom/toolkit/start). *)
   let assemble_page =
@@ -805,9 +822,7 @@ let run
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in
-          if c.siblings = []
-          then page
-          else Resolve.html ~siblings:c.siblings ~base page
+          resolve_refs ~base ~side:"" page
     | sides ->
         let script = cs_switch_script c sides in
         let switch = cs_switch sides in
@@ -869,11 +884,7 @@ let run
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in
-          if c.hosted = []
-          then page
-          else
-            Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..") ~side
-              ~self:c.project page
+          resolve_refs ~base ~side page
   in
   List.iter
     (fun rel ->
@@ -1033,8 +1044,8 @@ let run
            else
              prerr_endline
                (Printf.sprintf
-                  "wodoc build: (css %s) not found next to the config; pages \
-                   link it but it is not shipped" href))
+                  "wodoc build: (css %s) not found next to the config; pages link it but it is not shipped"
+                  href))
       c.css;
   (* assets: odoc's bundled highlighter + the project's highlight starter *)
   let sf = Filename.temp_file "wodoc-sf" "" in

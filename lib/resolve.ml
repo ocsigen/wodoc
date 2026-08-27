@@ -266,8 +266,14 @@ let flat_path wrapper path =
     flat_module wrapper comp ^ tail
   else path
 
+(* A [Multilib] project deploys one library per side ([eliom.server],
+   [eliom.client]) and no side-less tree, so the side is part of the target
+   page's real address. A page with no side of its own -- a manual page, or any
+   page of a project without [(client-server)] -- links to the server library:
+   that is the side manuals describe. *)
 let dep_base relroot side dir layout pkg =
   let b = relroot ^ "/" ^ dir ^ "/latest" in
+  let side = if side = "" then "server" else side in
   match layout with
   | Multilib -> b ^ "/" ^ dir ^ "." ^ side
   | Root -> b

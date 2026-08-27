@@ -20,6 +20,13 @@ Config simplifications (breaking):
   still sets it when the directory is passed on the CLI (`--mld-dir`).
 - The `pub` stanza is renamed `url-prefix`.
 
+Cross-project references:
+
+- `(hosted …)` is now honoured by every project, not only the client/server ones:
+  a project without `(client-server)` (a tutorial, tyxml…) had its cross-project
+  references left as plain text. A reference to a `multilib` target from a page
+  with no side of its own now goes to the target's server library.
+
 ## 0.1
 
 First release: an odoc driver that builds complete, styled websites from `.mld`

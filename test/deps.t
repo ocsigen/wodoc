@@ -88,3 +88,23 @@ Module pages (`<Mod>/…/index.html`) keep the module layout.
   <a href="../../../eliom/latest/server-services.html">srv page</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">srv mod</a>
   <a href="../../../tyxml/latest/tyxml/ppx.html">ppx page</a>
+
+A page with no side of its own — every page of a project without
+`(client-server)` (the tutorial, tyxml…), and the manual pages of one with it —
+still links to a `multilib` target, whose modules only exist under a sided
+library. Such a link goes to the server one:
+
+  $ cat > sideless.html <<'HTML'
+  > <span class="xref-unresolved" title="Eliom.Registration.Html">Html</span>
+  > <a href="https://ocaml.org/p/eliom/12.0/doc/Eliom_content/index.html">mod</a>
+  > <span class="xref-unresolved" title="/eliom/server-services">page</span>
+  > HTML
+
+  $ wodoc resolve-refs --relroot ../../.. --self tuto \
+  >   --hosted eliom=eliom:multilib:Eliom \
+  >   sideless.html
+
+  $ cat sideless.html
+  <a href="../../../eliom/latest/eliom.server/Eliom_registration/Html/index.html">Html</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">mod</a>
+  <a href="../../../eliom/latest/server-services.html">page</a>
