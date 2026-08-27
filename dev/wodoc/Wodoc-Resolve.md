@@ -41,12 +41,13 @@ Parse a `hosted` layout token: `"multilib"`/`"true"` \-\> `Multilib`, `"subdir"`
 val deps : 
   hosted:(string * (string * layout * string)) list ->
   relroot:string ->
+  version:string ->
   side:string ->
   self:string ->
   string ->
   string
 ```
-`deps ~hosted ~relroot ~side ~self page` rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and `xref-unresolved` spans. `hosted` maps a package to `(dir, layout, wrapper)`; a `Subdir` entry also matches any package extending its key with a `-`/`_` separator (whole-family match). `relroot` is the path from the page to the shared root holding every project; `side` is `"server"`/`"client"`/`""`; `self` is the package being documented (its own leftover refs are kept as text). The OCaml port of `resolve-deps.py`.
+`deps ~hosted ~relroot ~version ~side ~self page` rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and `xref-unresolved` spans. `hosted` maps a package to `(dir, layout, wrapper)`; a `Subdir` entry also matches any package extending its key with a `-`/`_` separator (whole-family match). `relroot` is the path from the page to the shared root holding every project; `version` is the target's version directory (`"latest"`, or `"dev"` so that a development manual documents against development APIs); `side` is `"server"`/`"client"`/`""` (a sided target with no side falls back to its server library); `self` is the package being documented (its own leftover refs are kept as text). The OCaml port of `resolve-deps.py`.
 
 ```ocaml
 val requalify : 

@@ -48,10 +48,10 @@ The **manual's own navigation is not built here** — it is declared declarative
 
 ```text
 wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..
-wodoc resolve-refs --relroot <r> --side <s> [--self <pkg>]
+wodoc resolve-refs --relroot <r> --side <s> [--self <pkg>] [--version <v>]
                    --hosted <pkg=dir:multilib:wrapper> [--hosted ..] <file>..
 ```
-Link references odoc left dead, rewriting the given files *in place*. With `--sibling`, cross-PACKAGE references to a sibling built in the same tree (the sibling table maps a top module to its directory path). With `--hosted`, cross-PROJECT references to another hosted Ocsigen project (both resolved ocaml.org dep links and unresolved spans), relative to `--relroot`; `--self` keeps the project's own leftover refs as text. See [`Wodoc.Resolve`](./Wodoc-Resolve.md).
+Link references odoc left dead, rewriting the given files *in place*. With `--sibling`, cross-PACKAGE references to a sibling built in the same tree (the sibling table maps a top module to its directory path). With `--hosted`, cross-PROJECT references to another hosted Ocsigen project (both resolved ocaml.org dep links and unresolved spans), relative to `--relroot`; `--self` keeps the project's own leftover refs as text. `--version` is the target's version directory, `latest` by default — `wodoc build` passes `dev` for a `dev` manual, so a development doc links against development APIs. See [`Wodoc.Resolve`](./Wodoc-Resolve.md).
 
 
 ## `wodoc convert`

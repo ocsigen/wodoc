@@ -527,7 +527,7 @@ wodoc build --config doc/wodoc --out <site>/<v> --label <v> \
 odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`resolve-refs`](./commands.md) and [`Wodoc.Resolve`](./Wodoc-Resolve.md)).
 
 - `(sibling <Module> <seg/seg/…>) …` — cross-*package* references to a sibling library built in the same tree; maps a top module to its odoc directory path.
-- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)` — cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module, which that project deploys flat (`Eliom.Registration` *\-\>* `Eliom_registration`); pass `""` for a project that has none, and references then start with its own root module (`Js_of_ocaml.Js.t`). A reference to a `multilib` target from a page with no client/server side of its own links to the target's server library.
+- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)` — cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module, which that project deploys flat (`Eliom.Registration` *\-\>* `Eliom_registration`); pass `""` for a project that has none, and references then start with its own root module (`Js_of_ocaml.Js.t`). A reference to a `multilib` target from a page with no client/server side of its own links to the target's server library. Links go to the target's `latest`, except from a `dev` manual, which links to their `dev`.
 
 ## Build inputs and assets
 
@@ -671,10 +671,10 @@ The **manual's own navigation is not built here** — it is declared declarative
 
 ```text
 wodoc resolve-refs --base <b> --sibling <Mod=seg/seg/..> [--sibling ..] <file>..
-wodoc resolve-refs --relroot <r> --side <s> [--self <pkg>]
+wodoc resolve-refs --relroot <r> --side <s> [--self <pkg>] [--version <v>]
                    --hosted <pkg=dir:multilib:wrapper> [--hosted ..] <file>..
 ```
-Link references odoc left dead, rewriting the given files *in place*. With `--sibling`, cross-PACKAGE references to a sibling built in the same tree (the sibling table maps a top module to its directory path). With `--hosted`, cross-PROJECT references to another hosted Ocsigen project (both resolved ocaml.org dep links and unresolved spans), relative to `--relroot`; `--self` keeps the project's own leftover refs as text. See [`Wodoc.Resolve`](./Wodoc-Resolve.md).
+Link references odoc left dead, rewriting the given files *in place*. With `--sibling`, cross-PACKAGE references to a sibling built in the same tree (the sibling table maps a top module to its directory path). With `--hosted`, cross-PROJECT references to another hosted Ocsigen project (both resolved ocaml.org dep links and unresolved spans), relative to `--relroot`; `--self` keeps the project's own leftover refs as text. `--version` is the target's version directory, `latest` by default — `wodoc build` passes `dev` for a `dev` manual, so a development doc links against development APIs. See [`Wodoc.Resolve`](./Wodoc-Resolve.md).
 
 
 ## `wodoc convert`
@@ -1509,12 +1509,13 @@ Parse a `hosted` layout token: `"multilib"`/`"true"` \-\> `Multilib`, `"subdir"`
 val deps : 
   hosted:(string * (string * layout * string)) list ->
   relroot:string ->
+  version:string ->
   side:string ->
   self:string ->
   string ->
   string
 ```
-`deps ~hosted ~relroot ~side ~self page` rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and `xref-unresolved` spans. `hosted` maps a package to `(dir, layout, wrapper)`; a `Subdir` entry also matches any package extending its key with a `-`/`_` separator (whole-family match). `relroot` is the path from the page to the shared root holding every project; `side` is `"server"`/`"client"`/`""`; `self` is the package being documented (its own leftover refs are kept as text). The OCaml port of `resolve-deps.py`.
+`deps ~hosted ~relroot ~version ~side ~self page` rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and `xref-unresolved` spans. `hosted` maps a package to `(dir, layout, wrapper)`; a `Subdir` entry also matches any package extending its key with a `-`/`_` separator (whole-family match). `relroot` is the path from the page to the shared root holding every project; `version` is the target's version directory (`"latest"`, or `"dev"` so that a development manual documents against development APIs); `side` is `"server"`/`"client"`/`""` (a sided target with no side falls back to its server library); `self` is the package being documented (its own leftover refs are kept as text). The OCaml port of `resolve-deps.py`.
 
 ```ocaml
 val requalify : 
