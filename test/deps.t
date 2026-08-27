@@ -160,3 +160,20 @@ one-letter name is ambiguous and stays a module (`Eliom_content.Html.D`):
   <a href="../../../eliom/latest/eliom.server/Eliom_form_sigs/module-type-LINKS/index.html#val-a">a</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content_sigs/module-type-LINKS_AND_FORMS/Form/index.html">form</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content/Html/D/index.html">D</a>
+
+Links go to the target's `latest` by default; `--version` picks another version
+directory, so a `dev` manual links against the other projects' `dev` docs (every
+hosted project publishes both):
+
+  $ cat > devrefs.html <<'HTML'
+  > <span class="xref-unresolved" title="Eliom.Registration.APP">app</span>
+  > <span class="xref-unresolved" title="/eliom/eliom-language">language</span>
+  > HTML
+
+  $ wodoc resolve-refs --relroot ../../.. --self tuto --version dev \
+  >   --hosted eliom=eliom:multilib:Eliom \
+  >   devrefs.html
+
+  $ cat devrefs.html
+  <a href="../../../eliom/dev/eliom.server/Eliom_registration/module-type-APP/index.html">app</a>
+  <a href="../../../eliom/dev/eliom-language.html">language</a>

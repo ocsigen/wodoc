@@ -124,7 +124,8 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see
   ([Eliom.Registration] {i -> } [Eliom_registration]); pass [""] for a project
   that has none, and references then start with its own root module
   ([Js_of_ocaml.Js.t]). A reference to a [multilib] target from a page with no
-  client/server side of its own links to the target's server library.
+  client/server side of its own links to the target's server library. Links go to
+  the target's [latest], except from a [dev] manual, which links to their [dev].
 
 {1 Build inputs and assets}
 

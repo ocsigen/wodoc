@@ -780,6 +780,10 @@ let run
       in
       walk ""; List.sort compare !acc
   in
+  (* A development manual documents development APIs, so it links into the other
+     projects' [dev] docs; a released one into their [latest]. Every hosted
+     project publishes both. *)
+  let dep_version = if label = "dev" then "dev" else "latest" in
   (* The cross-reference post-pass, the same for every project shape: sibling
      packages of this doc first, then the cross-project [(hosted ..)] table.
      [side] is "" for a page that carries no client/server colour -- every page
@@ -794,8 +798,8 @@ let run
     if c.hosted = []
     then page
     else
-      Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..") ~side
-        ~self:c.project page
+      Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..")
+        ~version:dep_version ~side ~self:c.project page
   in
   (* the per-page assembler: one shared nav (normal projects), or a per-side
      template + nav for client/server projects (eliom/toolkit/start). *)

@@ -230,9 +230,12 @@ let () =
           let relroot =
             Option.value ~default:base (List.assoc_opt "relroot" flags)
           in
+          let version =
+            Option.value ~default:"latest" (List.assoc_opt "version" flags)
+          in
           let side = Option.value ~default:"" (List.assoc_opt "side" flags) in
           let self = Option.value ~default:"" (List.assoc_opt "self" flags) in
-          Wodoc.Resolve.deps ~hosted ~relroot ~side ~self
+          Wodoc.Resolve.deps ~hosted ~relroot ~version ~side ~self
         else
           let siblings =
             List.filter_map
