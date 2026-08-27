@@ -87,7 +87,7 @@ pages, so the dead links are stripped:
 odoc wraps a marker in a paragraph of its own making. A block container's tags
 are taken out of it, whichever end of the paragraph they sit at: left inside, a
 closing tag such as `</header>` would end that paragraph where the browser sees
-it, leaving an empty `<p></p>` inside the header — right after the heading, which
+it, leaving an empty `<p></p>` inside the header, right after the heading, which
 shows.
 
   $ cat > block.html <<'XEOF'

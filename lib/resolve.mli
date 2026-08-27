@@ -50,7 +50,7 @@ val is_ours :
   -> bool
 (** [is_ours ~hosted ~siblings ~self ~in_api ~pages raw] is whether the
     unresolved reference [raw] (as odoc titles its span) is a defect of {e this}
-    documentation rather than one into a dependency the site does not host —
+    documentation rather than one into a dependency the site does not host,
     whose spans are expected and cannot be repaired locally ([Stdlib],
     [Ppxlib]). Ours are:
 
@@ -59,9 +59,9 @@ val is_ours :
     - a lowercase head, when the page holding it is a manual one ([in_api] is
       false) or when it names one of [pages], this build's manual pages: a page
       or section of this project that leads nowhere. A lowercase head on an API
-      page otherwise names a value or type of a signature odoc could not reach —
+      page otherwise names a value or type of a signature odoc could not reach,
       typically what the standard library's functors document ([key], [elt] in an
-      applied [Map.Make]) — which no change here can fix;
+      applied [Map.Make]), which no change here can fix;
     - a module reference the tables cover, except into [self]: a project's
       reference to a module it does not publish is deliberately left as text. *)
 
