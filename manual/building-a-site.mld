@@ -300,7 +300,9 @@ relative links to the sibling project, given how that project is deployed:
 
 The layout token is [multilib] (one [<pkg>.<lib>/] subtree per library), [root]
 (a single package at the version root) or [subdir] (a [<pkg>/] subtree per
-package, e.g. js_of_ocaml, tyxml). See [(hosted …)] in
+package, e.g. js_of_ocaml, tyxml). Any project can host others this way, with or
+without [(client-server …)]; a page that carries no side of its own links to the
+server library of a [multilib] target. See [(hosted …)] in
 {{!page-"config"}Configuration} and {{!page-"commands"}[wodoc requalify-xrefs]}.
 
 {1 A blog}
