@@ -931,9 +931,13 @@ let run
        note dead_images (Lint.wiki_images page);
        write_file dst page)
     rels;
-  Lint.report ~strict:strict_refs !dead_images "leftover wikicréole image";
-  Lint.report ~strict:strict_refs !dead_refs "unresolved reference";
-  Lint.count !foreign_refs "reference into a dependency this site does not host";
+  Lint.report ~strict:strict_refs !dead_images
+    ("leftover wikicréole image", "leftover wikicréole images");
+  Lint.report ~strict:strict_refs !dead_refs
+    ("unresolved reference", "unresolved references");
+  Lint.count !foreign_refs
+    ( "reference into a dependency this site does not host"
+    , "references into dependencies this site does not host" );
   (* the markdown twin tree: odoc's markdown backend emits a flat-module layout
      ([<pkg>/Mod-Sub.md]) parallel to the HTML one, with self-consistent relative
      .md xrefs. Copy it verbatim next to the HTML, applying the same manual-root

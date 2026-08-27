@@ -23,14 +23,18 @@ val wiki_images : string -> string list
     odoc has no image syntax, so a conversion that missed one leaves it as
     literal text; only [{%wodoc:img …%}] renders. *)
 
-val count : (string * string list) list -> string -> unit
-(** [count diagnostics kind] prints the one-line total only, for what is worth
-    knowing but not acting on. *)
+val count : (string * string list) list -> string * string -> unit
+(** [count diagnostics (singular, plural)] prints the one-line total only, for
+    what is worth knowing but not acting on. *)
 
 exception Dead_markup of string
 (** Raised by {!report} in strict mode; the payload is the summary line. *)
 
-val report : strict:bool -> (string * string list) list -> string -> unit
-(** [report ~strict diagnostics kind] prints one line per page holding a [kind]
-    ("unresolved reference", …) diagnostic, then a count. Raises
-    {!Dead_markup} when [strict] and there is anything to report. *)
+val report :
+   strict:bool
+  -> (string * string list) list
+  -> string * string
+  -> unit
+(** [report ~strict diagnostics (singular, plural)] prints one line per page
+    holding such a diagnostic, then a count. Raises {!Dead_markup} when [strict]
+    and there is anything to report. *)
