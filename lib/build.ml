@@ -904,6 +904,13 @@ let run
       (fun seg -> seg <> "" && seg.[0] >= 'A' && seg.[0] <= 'Z')
       (String.split_on_char '/' rel)
   in
+  (* A library's index page repeats each module's synopsis, and odoc does not
+     resolve the references inside those copies -- the module's own page does. So
+     the references there are not diagnostics: they are already reported, or
+     already links, where they belong. *)
+  let is_library_index rel =
+    Filename.basename rel = "index.html" && Filename.dirname rel <> "."
+  in
   let pages =
     List.filter_map
       (fun rel ->
@@ -925,7 +932,11 @@ let run
          | [] -> ()
          | items -> acc := (strip rel, items) :: !acc
        in
-       let dead, foreign = Lint.unresolved_refs ~ours:(ours (strip rel)) page in
+       let dead, foreign =
+         if is_library_index (strip rel)
+         then [], []
+         else Lint.unresolved_refs ~ours:(ours (strip rel)) page
+       in
        note dead_refs dead;
        note foreign_refs foreign;
        note dead_images (Lint.wiki_images page);
