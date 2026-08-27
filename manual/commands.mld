@@ -132,7 +132,9 @@ value or type name a signature odoc could not reach leaves on an API page ([key]
 [elt] in an applied [Map.Make]); those are counted apart, on one line. What is
 reported is a cross-project page reference (a missing entry in [(hosted …)], or a
 wrong page name), a page or section of this project that leads nowhere, and a
-module reference into a project the tables cover. A reference written with no label degrades to a bare
+module reference into a project the tables cover. A library's index page is
+skipped entirely: it repeats each module's synopsis, and odoc resolves the
+references of a synopsis on the module's own page, not in the copy. A reference written with no label degrades to a bare
 [<code>], indistinguishable from inline code, so only the labelled shape can be
 reported.
 

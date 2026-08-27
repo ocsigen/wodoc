@@ -46,7 +46,9 @@ Cross-project references:
   host (`Stdlib`, `Ppxlib`), a project's references to its own unpublished
   modules, and the value or type names a signature odoc could not reach leaves
   behind on API pages (`key`, `elt` in an applied `Map.Make`) are counted apart:
-  expected, and not repairable there.
+  expected, and not repairable there. A library's index page is skipped: it repeats
+  each module's synopsis, and odoc resolves the references in the module's own page,
+  not in those copies.
 
 ## 0.1
 
