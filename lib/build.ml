@@ -688,6 +688,7 @@ let run
       ~assets_dir
       ~local
       ~set_latest
+      ~strict_refs
   =
   mkdir_p out;
   (* no --menu given: use the built-in default top bar (Theme.menu) *)
@@ -886,12 +887,24 @@ let run
           let page = expand_blog ~base page in
           resolve_refs ~base ~side page
   in
+  (* markup that was meant to become a link or an image and did not: reported on
+     every build, fatal with --strict-refs. See {!Lint}. *)
+  let dead_refs = ref [] and dead_images = ref [] in
   List.iter
     (fun rel ->
        let dst = Filename.concat out (strip rel) in
        mkdir_p (Filename.dirname dst);
-       write_file dst (assemble_page rel))
+       let page = assemble_page rel in
+       let note acc = function
+         | [] -> ()
+         | items -> acc := (strip rel, items) :: !acc
+       in
+       note dead_refs (Lint.unresolved_refs page);
+       note dead_images (Lint.wiki_images page);
+       write_file dst page)
     rels;
+  Lint.report ~strict:strict_refs !dead_images "leftover wikicréole image";
+  Lint.report ~strict:strict_refs !dead_refs "unresolved reference";
   (* the markdown twin tree: odoc's markdown backend emits a flat-module layout
      ([<pkg>/Mod-Sub.md]) parallel to the HTML one, with self-consistent relative
      .md xrefs. Copy it verbatim next to the HTML, applying the same manual-root
