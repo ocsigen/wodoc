@@ -678,6 +678,12 @@ let nav_md_order (c : Config.t) =
 
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
+(* Raised when the Markdown tree the build was handed turns out to be missing or
+   empty. The .md twins and llms.txt are published files and a version directory
+   is deployed wholesale (clean:true), so shipping the site without them would
+   delete the twins already online: better to stop and say so. *)
+exception Missing_markdown of string
+
 let run
       (c : Config.t)
       ~src
@@ -956,7 +962,10 @@ let run
      This is what AIs/LLMs consume; the per-page <link rel="alternate"> and the
      llms.txt index (below) point into it. *)
   (match md_src with
-  | Some root when Sys.file_exists root ->
+  | Some root ->
+      if not (Sys.file_exists root)
+      then raise (Missing_markdown ("no Markdown tree at " ^ root));
+      let copied = ref 0 in
       let rec walk rel =
         let abs = if rel = "" then root else Filename.concat root rel in
         if Sys.is_directory abs
@@ -968,15 +977,20 @@ let run
         then (
           let dst = Filename.concat out (strip rel) in
           mkdir_p (Filename.dirname dst);
-          write_file dst (read_file abs))
+          write_file dst (read_file abs);
+          incr copied)
       in
       walk "";
+      (* An empty tree means the site would ship without a single twin, and
+         Llms.write would leave no index behind: the pages the build was asked
+         for are simply not there. *)
+      if !copied = 0 then raise (Missing_markdown ("no .md page under " ^ root));
       (* the llms.txt / llms-full.txt index over the markdown tree just placed,
          so AIs/LLMs get a structured entry point and a single-file dump *)
       Llms.write ~out ~title:c.title
         ~landing:(Some (md_twin c.landing))
         ~order:(nav_md_order c)
-  | _ -> ());
+  | None -> ());
   (* blog posts: each post .mld is compiled straight with odoc (preprocess ->
      compile -> link -> html-generate, the direct-mld pipeline), then assembled
      with the same site chrome and the (blog-augmented) left nav, and written to
