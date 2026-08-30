@@ -76,11 +76,31 @@ llms-full.txt concatenates every page for single-shot ingestion:
   $ grep -c '^# ' out/dev/llms-full.txt
   3
 
+The twins and the index are part of the site, and a version directory is
+deployed wholesale, so a build that produced none of them would delete the ones
+already online. A Markdown tree that is absent, or holds no page at all, stops
+the build and names the way out:
+
+  $ wodoc build --config doc/wodoc --src src --md-src gone --out bad/dev \
+  >   --menu menu.html --label dev
+  wodoc build: no Markdown tree at gone
+  wodoc build: the Markdown twins and llms.txt are part of the site; fix the
+    error above, or opt out with (markdown false) in the wodoc config.
+  [1]
+
+  $ mkdir -p hollow
+  $ wodoc build --config doc/wodoc --src src --md-src hollow --out bad/dev \
+  >   --menu menu.html --label dev
+  wodoc build: no .md page under hollow
+  wodoc build: the Markdown twins and llms.txt are part of the site; fix the
+    error above, or opt out with (markdown false) in the wodoc config.
+  [1]
+
 A project can opt out of the whole Markdown pipeline with (markdown false): no
 .md twins, no llms.txt, and no <link rel="alternate"> on the pages.
 
   $ printf '(project demo)\n(title Demo)\n(url-prefix /demo)\n(packages demo)\n(landing demo/index.html)\n(markdown false)\n' > doc/wodoc
-  $ wodoc build --config doc/wodoc --src src --md-src md --out off/dev \
+  $ wodoc build --config doc/wodoc --src src --md-src gone --out off/dev \
   >   --menu menu.html --label dev 2>/dev/null
   $ test -e off/dev/demo/index.md && echo twin || echo "no twin"
   no twin
