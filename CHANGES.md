@@ -26,6 +26,11 @@ Config simplifications (breaking):
 - Direct-mld builds link every page against all the others, so references between
   the pages of a manual resolve. They used to be compiled and linked one page at
   a time, which left every reference to a not-yet-compiled page dead.
+- The Markdown twins and the `llms.txt`/`llms-full.txt` indexes are now required:
+  a build that cannot produce them fails, where it used to warn and carry on.
+  They are published files and a version directory is deployed wholesale, so a
+  skipped generation deleted the twins already online while the CI stayed green.
+  `(markdown false)` opts a project out, as before.
 
 Cross-project references:
 

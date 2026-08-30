@@ -4,13 +4,23 @@ let read_file f =
   let s = really_input_string ic n in
   close_in ic; s
 
+(* The Markdown twins and the llms.txt index are published files, not a bonus: a
+   project deploys its version directory with clean:true, so a build that quietly
+   skipped them would DELETE the twins already online and still report success. A
+   project that asks for them (the default) therefore fails when it cannot produce
+   them; one with no use for them opts out with [(markdown false)] in its config. *)
+let markdown_failed what =
+  Printf.eprintf
+    "wodoc build: %s\nwodoc build: the Markdown twins and llms.txt are part of the site; fix the\n\  error above, or opt out with (markdown false) in the wodoc config.\n"
+    what;
+  exit 1
+
 (* Render every linked [.odocl] under [odocls] with odoc's markdown backend into
    [out], producing a flat-module markdown tree parallel to the HTML one (used by
    the odoc_driver route, which keeps its linked odocls). Source-implementation
-   odocls ([impl-*]) are skipped — they need markdown-generate-source and are not
-   doc pages. Best-effort: returns [Some out] if at least one page was produced
-   (warning on partial failures), else [None] — a markdown hiccup never aborts the
-   HTML build. *)
+   odocls ([impl-*]) are skipped: they need markdown-generate-source and are not
+   doc pages. Returns [out]; a page that fails to render is a page missing from
+   the site, so the build stops there (see {!markdown_failed}). *)
 let generate_markdown ~odocls ~out =
   let oks = ref 0 and fails = ref 0 in
   let rec walk dir =
@@ -35,15 +45,13 @@ let generate_markdown ~odocls ~out =
   (try Sys.mkdir out 0o755 with _ -> ());
   walk odocls;
   if !oks = 0
-  then (
-    prerr_endline "wodoc build: no markdown produced; skipping markdown";
-    None)
-  else (
-    if !fails > 0
-    then
-      Printf.eprintf "wodoc build: markdown-generate failed on %d/%d odocl\n"
-        !fails (!oks + !fails);
-    Some out)
+  then markdown_failed "odoc markdown-generate produced no page"
+  else if !fails > 0
+  then
+    markdown_failed
+      (Printf.sprintf "odoc markdown-generate failed on %d of %d pages" !fails
+         (!oks + !fails))
+  else out
 
 let usage () =
   prerr_endline
@@ -480,20 +488,18 @@ let () =
                 then (
                   prerr_endline "wodoc build: odoc_driver failed";
                   exit 1);
-                (* markdown twin (best-effort): render the kept odocls into a
-                   parallel tree; layout mirrors the HTML one (per-<pkg> subtrees).
-                   Skipped when the project opts out with (markdown false). *)
+                (* markdown twin: render the kept odocls into a parallel tree;
+                   layout mirrors the HTML one (per-<pkg> subtrees). Skipped only
+                   when the project opts out with (markdown false). *)
                 let md_src =
                   if not c.markdown
                   then None
                   else
-                    match generate_markdown ~odocls ~out:"_wodoc-md" with
-                    | None -> None
-                    | Some md ->
-                        Some
-                          (if c.packages <> []
-                           then md
-                           else Filename.concat md main_pkg)
+                    let md = generate_markdown ~odocls ~out:"_wodoc-md" in
+                    Some
+                      (if c.packages <> []
+                       then md
+                       else Filename.concat md main_pkg)
                 in
                 (* Multi-package: each package lands in its own _wodoc-html/<pkg>
                    subtree, so assemble from the root and let (packages …) pick
@@ -514,18 +520,15 @@ let () =
                 then (
                   prerr_endline "wodoc build: dune build @doc failed";
                   exit 1);
-                (* markdown twin (best-effort): the @doc-markdown alias mirrors
-                   @doc into _doc/_markdown (flat module layout). Skipped when the
+                (* markdown twin: the @doc-markdown alias mirrors @doc into
+                   _doc/_markdown (flat module layout). Skipped only when the
                    project opts out with (markdown false). *)
                 let md_src =
                   if not c.markdown
                   then None
                   else if Sys.command ("dune build @doc-markdown" ^ profile) = 0
                   then Some "_build/default/_doc/_markdown"
-                  else (
-                    prerr_endline
-                      "wodoc build: dune build @doc-markdown failed; skipping markdown";
-                    None)
+                  else markdown_failed "dune build @doc-markdown failed"
                 in
                 "_build/default/_doc/_html", md_src))
       in
@@ -534,7 +537,9 @@ let () =
       try
         Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu
           ~assets_dir:(Filename.dirname cfg) ~local ~set_latest ~strict_refs
-      with Wodoc.Lint.Dead_markup m -> prerr_endline m; exit 1)
+      with
+      | Wodoc.Lint.Dead_markup m -> prerr_endline m; exit 1
+      | Wodoc.Build.Missing_markdown m -> markdown_failed m)
   | _ :: "requalify-xrefs" :: args ->
       (* Post-pass over a co-located multi-project site: rewrite flat
          cross-project links to a wrapped library (Eliom_content) into the
