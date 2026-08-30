@@ -136,6 +136,9 @@ val md_alternate :
 val nav_md_order : Config.t -> string list
 ```
 ```ocaml
+exception Missing_markdown of string
+```
+```ocaml
 val run : 
   Config.t ->
   src:string ->

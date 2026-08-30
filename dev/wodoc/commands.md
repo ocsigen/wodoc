@@ -88,7 +88,7 @@ Alongside the themed HTML, `wodoc build` emits a **Markdown twin** of every page
 
 Two index files are written at the version root: `llms.txt` (the project name, a one-line summary, then a Manual and an API section linking every page) and `llms-full.txt` (all pages concatenated, for single-shot ingestion). The site's root `/llms.txt` (built by the vitrine) links each project's `llms.txt` in turn.
 
-Markdown generation is **best-effort**: if it fails it is skipped with a warning and never aborts the HTML build. It is **on by default**; disable it per project with `(markdown false)` in the config (see [Configuration](./config.md)) — for example for a project whose Markdown output is not yet useful.
+Markdown generation is **on by default**, and a project that asks for it **fails the build** when it cannot produce it: the twins and the indexes are published files, and a version directory is deployed wholesale (the doc CI replaces it), so a build that skipped them quietly would delete the twins already online. Disable them per project with `(markdown false)` in the config (see [Configuration](./config.md)), for example for a project whose Markdown output is not yet useful.
 
 
 ### Requalifying cross-project links
