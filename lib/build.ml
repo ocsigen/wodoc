@@ -977,7 +977,10 @@ let run
         then (
           let dst = Filename.concat out (strip rel) in
           mkdir_p (Filename.dirname dst);
-          write_file dst (read_file abs);
+          (* the markers reach the twin verbatim: odoc's Markdown backend passes
+             raw markup through. Render.markdown drops the presentational ones
+             and keeps what carries content (see {!Render.markdown}). *)
+          write_file dst (Render.markdown (read_file abs));
           incr copied)
       in
       walk "";

@@ -175,6 +175,14 @@ one-line summary, then a Manual and an API section linking every page) and
 [llms-full.txt] (all pages concatenated, for single-shot ingestion). The site's
 root [/llms.txt] (built by the vitrine) links each project's [llms.txt] in turn.
 
+The twins are {b free of wodoc markers}: odoc's Markdown backend passes raw markup
+through verbatim, so the [{%wodoc:%}] directives would otherwise land in them as
+HTML comments. Markdown has neither containers nor classes, so the presentational
+ones are dropped; the two that carry content are kept, [img] as a Markdown image
+and the target of [a] (a link around a whole block) carried over to the block's
+first heading, or around a one-line block. [wodoc render --markdown <page.md>]
+applies that pass on its own, for a site that builds its twins by hand.
+
 Markdown generation is {b on by default}, and a project that asks for it {b fails
 the build} when it cannot produce it: the twins and the indexes are published
 files, and a version directory is deployed wholesale (the doc CI replaces it), so

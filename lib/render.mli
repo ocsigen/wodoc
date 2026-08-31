@@ -30,3 +30,13 @@ val html : ?strip_anchors:bool -> string -> string
     [strip_anchors] (default [false]) removes the empty hover-link anchors odoc
     inserts inside headings — useful for website pages (and required when a
     heading sits inside a clickable card link, to avoid a nested [<a>]). *)
+
+val markdown : string -> string
+(** [markdown s] removes the wodoc markers from odoc's Markdown output [s].
+
+    odoc's Markdown backend passes raw markup through verbatim, so the twins
+    reach us carrying the same markers as the HTML. Markdown has neither
+    containers nor classes, so the presentation directives are dropped; the two
+    that carry content are kept instead of lost: [img] becomes a Markdown image,
+    and the target of [a] (a link around a whole block) is carried over to the
+    block's first heading. *)
