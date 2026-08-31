@@ -448,3 +448,141 @@ let strip_source_links s =
 let html ?(strip_anchors = false) s =
   let s = s |> emit_tags |> fuse_attrs |> hoist |> strip_source_links in
   if strip_anchors then strip_heading_anchors s else s
+
+(* An [a] container open in the Markdown pass carries its target and the offset
+   in the output where its block starts, so [end] can reach back and place the
+   link; any other container carries nothing. *)
+type open_block = Link of string * int | Plain
+
+(* Markdown cannot wrap a block in a link, so put [href] where a human writing
+   this page would: on the block's first heading ("### Title" becomes
+   "### [Title](href)"), or, for a block that is one line of content and no
+   heading (a sponsor logo, say), around that line. A block that is neither has
+   nowhere to carry it and is returned unchanged. *)
+let place_link href block =
+  let hashes l =
+    let n = String.length l in
+    let rec go i = if i < n && l.[i] = '#' then go (i + 1) else i in
+    let h = go 0 in
+    if h > 0 && h < n && l.[h] = ' ' then Some h else None
+  in
+  let lines = String.split_on_char '\n' block in
+  if List.exists (fun l -> hashes l <> None) lines
+  then begin
+    let placed = ref false in
+    let line l =
+      match hashes l with
+      | Some h when not !placed ->
+          placed := true;
+          let title = String.trim (String.sub l h (String.length l - h)) in
+          Printf.sprintf "%s [%s](%s)" (String.sub l 0 h) title href
+      | _ -> l
+    in
+    String.concat "\n" (List.map line lines)
+  end
+  else
+    let content = String.trim block in
+    if content = "" || String.contains content '\n'
+    then block
+    else
+      (* keep the blank lines around it; only the content becomes the link *)
+      let n = String.length block in
+      let rec first i = if i < n && block.[i] = ' ' then first (i + 1) else i in
+      let start = first 0 in
+      let stop = start + String.length content in
+      Printf.sprintf "%s[%s](%s)%s" (String.sub block 0 start) content href
+        (String.sub block stop (n - stop))
+
+(* A dropped marker leaves the line it sat on empty, and a run of them leaves a
+   run of empty lines (the site's index.md went from 74 blank lines to 118). One
+   blank line separates two blocks in Markdown just as well as eight, so keep at
+   most one, and drop the trailing spaces a marker leaves behind. Fenced code is
+   left strictly alone: there, a blank line is content. *)
+let tidy_blanks s =
+  let out = Buffer.create (String.length s) in
+  let fenced = ref false in
+  let blank = ref 0 in
+  let line l =
+    let is_fence =
+      let t = String.trim l in
+      String.length t >= 3 && String.sub t 0 3 = "```"
+    in
+    if is_fence then fenced := not !fenced;
+    if !fenced || is_fence
+    then (
+      blank := 0;
+      Buffer.add_string out l;
+      Buffer.add_char out '\n')
+    else
+      let l = String.trim l in
+      if l = ""
+      then (
+        incr blank;
+        if !blank <= 1 then Buffer.add_char out '\n')
+      else (
+        blank := 0;
+        Buffer.add_string out l;
+        Buffer.add_char out '\n')
+  in
+  List.iter line (String.split_on_char '\n' s);
+  Buffer.contents out
+
+(* The Markdown twin of a page reaches us with the very same markers: odoc's
+   Markdown backend passes raw markup through verbatim. Markdown has no
+   containers and no classes, so presentation markers are simply dropped. The
+   two directives that carry content rather than presentation are kept: [img]
+   becomes a Markdown image, and [a] has its target carried over to its block's
+   first heading (Markdown cannot wrap a block in a link either).
+
+   Left in, they made the twins unreadable, which defeats their purpose: the
+   site's own index.md carried 100 of them and the tutorial's basics.md 134. *)
+let markdown s =
+  let out = Buffer.create (String.length s) in
+  let stack = ref [] in
+  let len = String.length s in
+  let i = ref 0 in
+  while !i < len do
+    match find s mopen !i with
+    | None ->
+        Buffer.add_substring out s !i (len - !i);
+        i := len
+    | Some start -> (
+        Buffer.add_substring out s !i (start - !i);
+        let cstart = start + String.length mopen in
+        match find s mclose cstart with
+        | None ->
+            Buffer.add_substring out s start (len - start);
+            i := len
+        | Some cend ->
+            let d = String.trim (String.sub s cstart (cend - cstart)) in
+            let kind, rest = kind_and_rest d in
+            (match kind with
+            | "end" -> (
+              match !stack with
+              | Link (href, pos) :: tl ->
+                  let block = Buffer.sub out pos (Buffer.length out - pos) in
+                  Buffer.truncate out pos;
+                  Buffer.add_string out (place_link href block);
+                  stack := tl
+              | Plain :: tl -> stack := tl
+              | [] -> ())
+            | "a" ->
+                stack :=
+                  (match List.assoc_opt "href" (parse_attrs rest) with
+                  | Some href -> Link (href, Buffer.length out)
+                  | None -> Plain)
+                  :: !stack
+            | t when is_container t -> stack := Plain :: !stack
+            | "img" -> (
+                let attrs = parse_attrs rest in
+                match List.assoc_opt "src" attrs with
+                | Some src ->
+                    let alt =
+                      Option.value ~default:"" (List.assoc_opt "alt" attrs)
+                    in
+                    Buffer.add_string out (Printf.sprintf "![%s](%s)" alt src)
+                | None -> ())
+            | _ -> ());
+            i := cend + String.length mclose)
+  done;
+  tidy_blanks (Buffer.contents out)
