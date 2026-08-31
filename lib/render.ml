@@ -70,6 +70,15 @@ let kind_and_rest d =
   | Some k -> String.sub d 0 k, String.sub d (k + 1) (String.length d - k - 1)
   | None -> d, ""
 
+(* The directives that open a container and pair with [end]; every other one
+   stands alone. Shared by the HTML and the Markdown pass, so the two agree on
+   what has to be closed. *)
+let is_container = function
+  | "div" | "a" | "span" | "section" | "header" | "footer" | "nav" | "article"
+  | "aside" ->
+      true
+  | _ -> false
+
 (* Pass 1: markers -> tags / void elements / attr-sentinels, tracking an
    open/[end] stack for paired containers. *)
 let emit_tags s =
@@ -99,20 +108,11 @@ let emit_tags s =
                   Buffer.add_string out t;
                   stack := tl
               | [] -> Buffer.add_string out "<!--wodoc:unbalanced-end-->")
-            | "div" ->
-                Buffer.add_string out (Printf.sprintf "<div%s>" (attrs_of rest));
-                stack := "</div>" :: !stack
-            | "a" ->
-                Buffer.add_string out (Printf.sprintf "<a%s>" (attrs_of rest));
-                stack := "</a>" :: !stack
-            | "span" ->
-                Buffer.add_string out
-                  (Printf.sprintf "<span%s>" (attrs_of rest));
-                stack := "</span>" :: !stack
-            | ("section" | "header" | "footer" | "nav" | "article" | "aside") as
-              t ->
-                (* semantic block containers, the same family as div: the odoc
-                   paragraph wrapping the marker is taken apart by {!hoist}. *)
+            | t when is_container t ->
+                (* One case for all of them: [div] and [span], the HTML5 semantic
+                   blocks (whose odoc paragraph {!hoist} takes apart) and [a] (a
+                   link around a whole block, which odoc cannot express) all open
+                   the element they name and pair with [end]. *)
                 Buffer.add_string out
                   (Printf.sprintf "<%s%s>" t (attrs_of rest));
                 stack := Printf.sprintf "</%s>" t :: !stack
