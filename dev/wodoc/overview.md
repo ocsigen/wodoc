@@ -1,4 +1,3 @@
-
 # How wodoc works
 
 odoc's lightweight markup is intentionally semantic: it has no way to put an arbitrary class on an element, no block containers, no page templating. wodoc adds these through a custom raw-markup target, `{%wodoc:DIRECTIVE%}`:
@@ -16,7 +15,6 @@ In that example, `div … end` wraps a block in a `<div class="card">`, and the 
 
 Because the target is unknown to stock odoc, **the very same sources render as plain semantic documentation** with a stock odoc (for example on ocaml.org), and as the **full themed website** when built with wodoc. There is no fork of odoc and no separate dialect to learn.
 
-
 ## Pipeline
 
 The same sources take two paths. Each arrow is the command that performs the transformation.
@@ -28,7 +26,7 @@ The same sources take two paths. Each arrow is the command that performs the tra
      │ wodoc preprocess                    │ odoc compile/link/html-generate
      ▼                                     ▼
  preprocessed .mld                     plain HTML            ──►  ocaml.org
- ({%html:<!--wodoc:…-->%})             (markers dropped)
+ ({%html:%})             (markers dropped)
      │
      │ odoc compile/link/html-generate
      ▼
@@ -46,11 +44,10 @@ The turn-key [`wodoc build`](./commands.md) command drives this whole pipeline f
 
 Alongside the HTML, `wodoc build` also emits a **Markdown twin** of every page and an `llms.txt` index, so the same documentation stays readable by plain-text tools and LLMs (on by default; see [Commands](./commands.md) and the `(markdown …)` config stanza).
 
-
 ## Why rewrite the markers to HTML comments?
 
 This is a deliberate trick to work around a limitation of odoc (the absence of presentational markup). odoc's HTML backend only keeps raw markup whose target it knows: `{%html:...%}` is emitted verbatim, **any other target is silently dropped** (`| _ -> []` in odoc's generator). That drop is exactly what we want on ocaml.org — `{%wodoc:...%}` vanishes and the docs stay semantic. But it also means that, by the time we get odoc's HTML, our own markers are *gone*, so the [`Wodoc.Render`](./Wodoc-Render.md) pass would have nothing left to transform.
 
-So before running odoc we rewrite `{%wodoc:d%}` to `{%html:<!--wodoc:d-->%}`. odoc recognises the `html` target and passes the content through unchanged, as an **HTML comment**. The comment survives odoc's HTML output (so `render` can find it), is invisible in the browser (harmless if `render` never runs), and is a clean sentinel to turn into real, nested HTML. We cannot use `{%html:<div>%}` directly in the sources instead: the `html` target is honoured *everywhere*, so a real `<div>` would also leak into the plain ocaml.org output, defeating the "one source, two outputs" goal.
+So before running odoc we rewrite `{%wodoc:d%}` to `{%html:%}`. odoc recognises the `html` target and passes the content through unchanged, as an **HTML comment**. The comment survives odoc's HTML output (so `render` can find it), is invisible in the browser (harmless if `render` never runs), and is a clean sentinel to turn into real, nested HTML. We cannot use `{%html:<div>%}` directly in the sources instead: the `html` target is honoured *everywhere*, so a real `<div>` would also leak into the plain ocaml.org output, defeating the "one source, two outputs" goal.
 
 Note that this rewrite happens on a temporary copy at build time; the committed sources always keep the clean `{%wodoc:...%}` form. It also only applies to `.mld` text — markers inside `.mli` doc-comments are frozen in the `.cmti` and cannot be post-processed this way (a future model-level driver would lift this restriction).

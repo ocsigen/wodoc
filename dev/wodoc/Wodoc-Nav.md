@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Nav`
 
 Build a project's API module navigation from a curated odoc index.

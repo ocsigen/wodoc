@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Assemble`
 
 Assembly layer: wrap odoc's rendered HTML in a project-provided site template.

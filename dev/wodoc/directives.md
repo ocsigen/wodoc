@@ -1,4 +1,3 @@
-
 # Directives
 
 Every wodoc extension is written as a raw-markup target, `{%wodoc:DIRECTIVE%}`. The directives below are all wodoc understands; everything else in your sources is plain odoc.
@@ -12,7 +11,6 @@ Every wodoc extension is written as a raw-markup target, `{%wodoc:DIRECTIVE%}`. 
 | `blog-latest` | expand into the blog's "latest posts" list (see [Adding a blog](./blog.md)) |
 **Several classes**, HTML-style, are written space-separated inside quotes — `{%wodoc:@ class="card big shadow"%}`. The quotes are required: without them the space ends the value, so `class=card big shadow` would keep only `card`. The classes are merged with any class odoc already put on the element (e.g. `{%wodoc:@ class="pricing wide"%}` on a table yields `class="odoc-table pricing wide"`).
 
-
 ## Containers
 
 `{%wodoc:div class=card%}` … `{%wodoc:end%}` wraps everything between the two markers in a `<div class="card">`. The same form works for `span` (inline), `a` (a link around a whole block, which native odoc cannot express) and the HTML5 semantic blocks `section`, `header`, `nav`, `article`, `aside` and `footer` (e.g. `{%wodoc:section class=hero%}` … `{%wodoc:end%}` emits a `<section class="hero">`):
@@ -25,7 +23,6 @@ Every wodoc extension is written as a raw-markup target, `{%wodoc:DIRECTIVE%}`. 
 {%wodoc:end%}{%wodoc:end%}
 ```
 wodoc re-nests these into correctly balanced HTML, hoisting them out of the `<p>` wrappers odoc forces around inline raw markup (the limitation that makes `{%html:<div>%}` alone unusable for blocks).
-
 
 ## The `@` directive
 

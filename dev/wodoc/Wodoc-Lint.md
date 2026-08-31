@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Lint`
 
 Diagnostics on the pages a build has just produced: markup that was meant to become a link or an image and did not.

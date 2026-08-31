@@ -1,8 +1,6 @@
-
 # Authoring: what survives on ocaml.org
 
 The `{%wodoc:...%}` target is unknown to stock odoc, so it is **dropped** when the same sources are built with a stock odoc (for example on ocaml.org). This is the whole point — the docs stay clean and semantic there — but it means you must choose, per construct, whether something is *content* (must survive) or *presentation* (may vanish).
-
 
 ## The rule
 
@@ -10,7 +8,6 @@ The `{%wodoc:...%}` target is unknown to stock odoc, so it is **dropped** when t
 - **`{%wodoc:@ ...%}`** only adds attributes to a *native* element: the element (and its content) survives on ocaml.org, only the class is absent there.
 - **Drop on ocaml.org → `{%wodoc:div/span/a/...%}`**: purely presentational wrappers and chrome (layout containers, whole-block clickable wrappers). The native content inside still survives on ocaml.org; only the shell disappears.
 In particular, prefer **native links** so they keep working on ocaml.org; reserve `{%wodoc:a%}` for making a whole block clickable (which native odoc cannot express), keeping a native link inside when the target should remain reachable.
-
 
 ## Cross-project references
 

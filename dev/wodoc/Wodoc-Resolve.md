@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Resolve`
 
 Link cross-package "sibling" references odoc left unresolved.

@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Sexp`
 
 ```ocaml

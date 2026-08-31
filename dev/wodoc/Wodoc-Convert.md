@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Convert`
 
 Best-effort converter from extended wikicréole to odoc `.mld` with wodoc markers.

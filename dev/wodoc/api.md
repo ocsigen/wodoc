@@ -1,8 +1,6 @@
-
 # API reference
 
 wodoc is both a command-line tool and an OCaml library. The library exposes one module per pass of the [pipeline](./overview.md); the `wodoc` command-line subcommands ([Commands](./commands.md)) are thin wrappers over them.
-
 
 ## Modules
 
@@ -12,9 +10,9 @@ wodoc is both a command-line tool and an OCaml library. The library exposes one 
 [`Wodoc.Nav`](./Wodoc-Nav.md) Build a project's API module navigation from a curated odoc index.
 [`Wodoc.Resolve`](./Wodoc-Resolve.md) Link cross-package "sibling" references odoc left unresolved.
 [`Wodoc.Convert`](./Wodoc-Convert.md) Best-effort converter from extended wikicréole to odoc .mld with wodoc markers.
-[`Wodoc.Config`](./Wodoc-Config.md) 
-[`Wodoc.Build`](./Wodoc-Build.md) 
-[`Wodoc.Blog`](./Wodoc-Blog.md) 
+[`Wodoc.Config`](./Wodoc-Config.md)
+[`Wodoc.Build`](./Wodoc-Build.md)
+[`Wodoc.Blog`](./Wodoc-Blog.md)
 [`Wodoc.Llms`](./Wodoc-Llms.md) Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that Wodoc.Build produces in the output directory.
 [`Wodoc.Theme`](./Wodoc-Theme.md) Built-in default assets shipped by wodoc build, so it produces a styled, self-contained site with no theme setup. Each is overridable: the stylesheet via the (css …) config stanza, the top menu via --menu.
 

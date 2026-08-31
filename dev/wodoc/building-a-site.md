@@ -1,15 +1,12 @@
-
 # Building a complete site
 
 odoc gives you an API reference. wodoc turns the same sources into a **complete website**: a styled home page, prose chapters, the API of one or several packages, a shared top menu, a generated left navigation, a version selector, an optional blog, Markdown twins for AI tools, and a deployable versioned tree — all from one declarative [`doc/wodoc`](./config.md) config and a single `wodoc build`.
 
 This page is the end-to-end walkthrough. It assumes you have read [How it works](./overview.md) and points to [Configuration](./config.md) and [Commands](./commands.md) for the exhaustive reference of every stanza and flag. A **copy-paste starter** (a menu, a stylesheet and a CI workflow) lives in [`examples/starter`](https://github.com/ocsigen/wodoc/tree/master/examples/starter) — clone it and adjust the names rather than starting from a blank page.
 
-
 ## Quickstart
 
 From an existing dune project with a public library (say package `demo`, whose top module is `Demo`, with documented `.mli`), three steps give you a styled site.
-
 
 ### 1\. Add a documentation page
 
@@ -50,7 +47,6 @@ wodoc build --config doc/wodoc --out _site/dev --label dev
 ```
 `wodoc build` runs `dune build @doc` itself and assembles every page. The result is a complete, **styled, self-contained** site — no menu file, no stylesheet to host. (Customise later with `--menu` and `(css …)`; see [Theming](./#theming).)
 
-
 ### Add a blog
 
 Write a dated post — the filename date is the publication date, `@author` the author, the first heading the title, the first paragraph the excerpt:
@@ -77,7 +73,6 @@ Declare the blog in `doc/wodoc` and drop a "latest posts" marker on the landing 
 {%html:<!--wodoc-blog-latest-->%}
 ```
 Rebuild with the same `wodoc build` command: the post is built at `blog/`, listed in a generated left-nav section, and the marker expands into a styled list. See [Adding a blog](./blog.md) for the Atom feed and the navigation block.
-
 
 ## What "a complete website" means
 
@@ -113,7 +108,6 @@ A wodoc site is made of these ingredients; each is covered below.
 ```
 Everything a page references — the theme, the highlighter, internal links — is version-relative, so the site is self-contained and a frozen version keeps working forever. (Only the version `<select>` uses the absolute `(url-prefix)` to switch versions.)
 
-
 ## `wodoc build`: what it generates, what you supply
 
 The turn-key [`wodoc build`](./commands.md) runs `dune build @doc` and then assembles every page. It **generates almost everything** — including a default theme and top bar — so a basic site needs no theming setup at all.
@@ -135,7 +129,6 @@ wodoc build --config doc/wodoc --out _site/dev --label dev
 ```
 That already produces a **styled, self-contained site** — a built-in theme and a top bar are shipped and linked by per-version relative paths, so it works at any deploy path. The rest of this page is about the pieces you may want to customise: the home page, the navigation, and — when you outgrow the built-in look — the theme and the top bar.
 
-
 ## The home page
 
 The landing page is just one of your `.mld` pages, assembled like any other — so you style it with the full [directive set](./directives.md) (`{%wodoc:div%}`, `{%wodoc:@ class=…%}`, `{%wodoc:img%}`, the semantic block containers…) to make a real front page rather than a wall of text.
@@ -147,11 +140,9 @@ Point the config's `(landing …)` stanza at it:
 ```
 `wodoc build` then writes a tiny `index.html` at the version root that redirects to that page, so `/myproj/dev/` lands on your home page. (A [manual-only project](./config.md) whose landing *is* the root `index.html` gets a real page there instead of a redirect.)
 
-
 ## General (prose) pages
 
 Any `.mld` file compiled by `dune build @doc` becomes a page: write chapters, tutorials and guides as ordinary odoc pages and list them in the navigation (next section). Keep them **portable** — see [Authoring](./authoring.md) for which constructs survive on ocaml.org and which are wodoc-only chrome. Migrating an old wikicréole manual? Run [`wodoc convert`](./commands.md) once to bootstrap the `.mld` files, then review them.
-
 
 ## The left navigation
 
@@ -169,7 +160,6 @@ The left column is declared, not hand-written, in the config's `(nav …)` stanz
 ```
 Each `(link "Label" <path> <id>)` gives the visible label, a version-relative path and the page's odoc `<id>` — wodoc marks the matching entry `current` on each page automatically (longest-prefix match, so you never hand-maintain "current" flags). `(group …)` nests a sub-heading; `(section …)` is a manual block, `(api-section …)` an API block. A project whose versions have *different* manuals can pass a per-version navigation with `wodoc build --nav <file>` (same syntax). The full grammar is in [Configuration](./config.md).
 
-
 ## API docs: one package or several
 
 For a single library, `(packages myproj)` assembles its `dune build @doc` output. List several to document them side by side:
@@ -179,11 +169,9 @@ For a single library, `(packages myproj)` assembles its `dune build @doc` output
 ```
 A **client/server** project (libraries that share module names, e.g. an Eliom app) is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(client-server …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its side's API nav, a body colour and a client/server switch. See the `(client-server …)` stanza in [Configuration](./config.md).
 
-
 ## Theming: customising the look
 
 `wodoc build` ships a built-in theme and a default top bar (the section above), so you can skip this entirely and still get a styled site. Customise when you outgrow the defaults.
-
 
 ### The top bar (`--menu`)
 
@@ -211,7 +199,6 @@ The [starter stylesheet](https://github.com/ocsigen/wodoc/tree/master/examples/s
 
 Syntax highlighting: wodoc ships `wodoc-highlight.js` in every build and the page template always loads it *version-relatively* (`{{base}}/wodoc-highlight.js`), so a frozen version keeps the highlighter it was built with. By default this is wodoc's built-in starter (it teaches odoc's bundled `highlight.js` the eliom / lwt / js\_of\_ocaml syntax extensions). `(highlight <file>)` only changes *which* file is shipped under that name, not where it is loaded from: set it for a project whose code blocks use yet another syntax.
 
-
 ## Several projects that cross-link
 
 A site can host several *independent* projects (each its own `wodoc build`, deployed into a shared tree) whose docs cross-reference each other. odoc points such cross-references at ocaml.org; the `(hosted …)` stanza rewrites them into relative links to the sibling project, given how that project is deployed:
@@ -223,16 +210,13 @@ A site can host several *independent* projects (each its own `wodoc build`, depl
 ```
 The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(client-server …)`; a page that carries no side of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
 
-
 ## A blog
 
 Drop dated `.mld` posts (`YYYY-MM-DD-slug.mld`) in a directory, add a `(blog …)` stanza, and `wodoc build` lists them in the navigation, expands a "latest posts" widget on the landing and can emit an Atom feed for syndication. The full recipe is on its own page: [Adding a blog](./blog.md).
 
-
 ## Markdown and llms.txt for AI tools
 
 By default `wodoc build` also emits, next to every HTML page, a **Markdown twin** and a per-project `llms.txt` / `llms-full.txt` index (the [llms.txt](https://llmstxt.org) convention), and adds a `<link rel="alternate" type="text/markdown">` to each page. This keeps your docs readable by plain-text tooling and LLMs at no extra effort. Turn it off with `(markdown false)` in the config.
-
 
 ## Versioning and deployment
 

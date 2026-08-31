@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Blog`
 
 ```ocaml

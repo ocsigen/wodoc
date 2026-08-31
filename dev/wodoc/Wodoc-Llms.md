@@ -1,4 +1,3 @@
-
 # Module `Wodoc.Llms`
 
 Generate the LLM-friendly index files for a built project doc, from the Markdown twin tree that [`Wodoc.Build`](./Wodoc-Build.md) produces in the output directory.

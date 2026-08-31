@@ -1,8 +1,6 @@
-
 # Adding a blog
 
 wodoc can host an **ultra-simple blog** on a documentation site, with no extra tooling: a blog post is just a plain `.mld` page, like a manual page. wodoc lists the posts (newest first) in the navigation, can show the latest ones on any page, and generates an Atom feed for syndication. This page walks through setting one up and adding an article.
-
 
 ## 1\. Declare the blog
 
@@ -16,7 +14,6 @@ Add a `(blog …)` stanza to your [`doc/wodoc`](./config.md) config:
  (latest 5))        ; how many recent posts {%wodoc:blog-latest%} shows
 ```
 That is the only configuration the blog needs. See the [configuration manual](./config.md) for the full stanza reference.
-
 
 ## 2\. Write an article
 
@@ -38,7 +35,6 @@ The rest of the article: text, code, images, links — anything odoc supports.
 - the **excerpt** (shown in listings and the feed) is the first paragraph.
 **To add an article, just drop a new dated `.mld` file in that directory** and rebuild — wodoc picks it up, lists it and adds it to the feed. Nothing else to edit.
 
-
 ## 3\. Show the latest posts on a page
 
 Put the marker `{%wodoc:blog-latest%}` wherever the recent-posts list should appear — typically the blog's landing page, but also a site home page:
@@ -52,11 +48,9 @@ The latest articles:
 ```
 wodoc replaces it with a `<ul class="wodoc-blog-list">` of the most recent posts (title, date, author, excerpt), styled by your theme (see [Styling](./#styling)). On a page built with a stock odoc it is simply dropped, so the source stays portable.
 
-
 ## 4\. The generated navigation
 
 wodoc builds a navigation section (the `(heading …)` you configured, one entry per post, newest first) and adds it to the left column automatically — you do not list posts by hand.
-
 
 ## 5\. Syndication: the Atom feed
 
@@ -68,7 +62,6 @@ wodoc blog-feed --config doc/wodoc --base-url https://example.org \
                 --title "My Blog" --author "Me" > feed.xml
 ```
 A post's link is `base-url ^ blog-path ^ "/" ^ <post path>`; the feed advertises itself at `base-url ^ feed-path`.
-
 
 ## Turn-key build vs. a flat site
 

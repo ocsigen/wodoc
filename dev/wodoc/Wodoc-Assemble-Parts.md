@@ -1,4 +1,3 @@
-
 # Module `Assemble.Parts`
 
 ```ocaml

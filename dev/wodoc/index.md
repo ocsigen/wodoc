@@ -1,4 +1,3 @@
-
 # Wodoc
 
 *wodoc* (web \+ odoc) is an [odoc](https://github.com/ocaml/odoc) driver that builds complete, styled **websites** from `.mld` and `.mli` sources — not just API documentation.
@@ -8,7 +7,6 @@ It extends odoc with **backward-compatible presentational markers** for arbitrar
 Because wodoc's markers use a custom raw-markup target that stock odoc ignores, **the same sources render as plain semantic documentation** with a stock odoc (for example on [ocaml.org](https://ocaml.org)) and as the **full themed website** when built with wodoc. There is no fork of odoc and no separate dialect to learn.
 
 It can even host an **ultra-simple blog** on your site — dated `.mld` posts, auto-listed in the navigation, with a "latest posts" widget and an Atom feed for syndication. See [Adding a blog](./blog.md).
-
 
 ## Manual
 
@@ -23,7 +21,6 @@ It can even host an **ultra-simple blog** on your site — dated `.mld` posts, a
 ## API reference
 
 wodoc is also an OCaml library: the same passes the `wodoc` command-line tool chains are exposed as modules. See the [API overview](./api.md), or jump to [`Wodoc.Preprocess`](./Wodoc-Preprocess.md), [`Wodoc.Render`](./Wodoc-Render.md), [`Wodoc.Assemble`](./Wodoc-Assemble.md), [`Wodoc.Nav`](./Wodoc-Nav.md), [`Wodoc.Resolve`](./Wodoc-Resolve.md) and [`Wodoc.Convert`](./Wodoc-Convert.md).
-
 
 ## About
 
