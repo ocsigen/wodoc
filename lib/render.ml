@@ -487,7 +487,8 @@ let place_link href block =
     else
       (* keep the blank lines around it; only the content becomes the link *)
       let n = String.length block in
-      let rec first i = if i < n && block.[i] = ' ' then first (i + 1) else i in
+      let blank c = c = ' ' || c = '\n' || c = '\t' || c = '\r' in
+      let rec first i = if i < n && blank block.[i] then first (i + 1) else i in
       let start = first 0 in
       let stop = start + String.length content in
       Printf.sprintf "%s[%s](%s)%s" (String.sub block 0 start) content href
@@ -514,8 +515,15 @@ let tidy_blanks s =
       Buffer.add_string out l;
       Buffer.add_char out '\n')
     else
-      let l = String.trim l in
-      if l = ""
+      (* right only: the left margin is content (an indented code block) *)
+      let n = String.length l in
+      let rec last i =
+        if i > 0 && (l.[i - 1] = ' ' || l.[i - 1] = '\r')
+        then last (i - 1)
+        else i
+      in
+      let l = String.sub l 0 (last n) in
+      if String.trim l = ""
       then (
         incr blank;
         if !blank <= 1 then Buffer.add_char out '\n')
@@ -525,7 +533,8 @@ let tidy_blanks s =
         Buffer.add_char out '\n')
   in
   List.iter line (String.split_on_char '\n' s);
-  Buffer.contents out
+  (* a page that opened or closed on markers would start or end on blank lines *)
+  String.trim (Buffer.contents out) ^ "\n"
 
 (* The Markdown twin of a page reaches us with the very same markers: odoc's
    Markdown backend passes raw markup through verbatim. Markdown has no
