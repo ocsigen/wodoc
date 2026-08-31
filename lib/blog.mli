@@ -21,7 +21,7 @@ val posts : Config.blog -> post list
 val nav_section : Config.blog -> post list -> Config.section
 (** [nav_section blog posts]: a synthetic left-nav {!Config.section} listing the
     posts (heading [blog.heading], one link per post), to splice into the config
-    nav. The link label is "date — title". *)
+    nav. The link label is "date, title". *)
 
 val nav_html : base:string -> Config.blog -> post list -> string
 (** [nav_html ~base blog posts]: the blog's left-nav block as a
@@ -47,7 +47,7 @@ val feed :
 
 val latest_fragment : base:string -> Config.blog -> post list -> string
 (** [latest_fragment ~base blog posts]: the HTML fragment that the
-    [{%wodoc:blog-latest%}] marker expands to — a [<ul class="wodoc-blog-list">]
+    [{%wodoc:blog-latest%}] marker expands to: a [<ul class="wodoc-blog-list">]
     of the [blog.latest] most recent posts (title, date, author, excerpt, link),
     each link prefixed with [base] (the per-page relative root). Empty when there
     are no posts. *)

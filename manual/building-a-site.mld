@@ -3,14 +3,14 @@
 odoc gives you an API reference. wodoc turns the same sources into a {b complete
 website}: a styled home page, prose chapters, the API of one or several packages,
 a shared top menu, a generated left navigation, a version selector, an optional
-blog, Markdown twins for AI tools, and a deployable versioned tree — all from one
+blog, Markdown twins for AI tools, and a deployable versioned tree, all from one
 declarative {{!page-"config"}[doc/wodoc]} config and a single [wodoc build].
 
 This page is the end-to-end walkthrough. It assumes you have read
 {{!page-"overview"}How it works} and points to {{!page-"config"}Configuration}
 and {{!page-"commands"}Commands} for the exhaustive reference of every stanza and
 flag. A {b copy-paste starter} (a menu, a stylesheet and a CI workflow) lives in
-{{:https://github.com/ocsigen/wodoc/tree/master/examples/starter}[examples/starter]} —
+{{:https://github.com/ocsigen/wodoc/tree/master/examples/starter}[examples/starter]}:
 clone it and adjust the names rather than starting from a blank page.
 
 {1 Quickstart}
@@ -58,12 +58,12 @@ wodoc build --config doc/wodoc --out _site/dev --label dev
 ]}
 
 [wodoc build] runs [dune build @doc] itself and assembles every page. The result
-is a complete, {b styled, self-contained} site — no menu file, no stylesheet to
+is a complete, {b styled, self-contained} site: no menu file, no stylesheet to
 host. (Customise later with [--menu] and [(css …)]; see {{!theming}Theming}.)
 
 {2 Add a blog}
 
-Write a dated post — the filename date is the publication date, [@author] the
+Write a dated post: the filename date is the publication date, [@author] the
 author, the first heading the title, the first paragraph the excerpt:
 
 {@text[
@@ -99,15 +99,15 @@ in a generated left-nav section, and the marker expands into a styled list. See
 
 A wodoc site is made of these ingredients; each is covered below.
 
-- a {b home / landing page} — your styled front page, not the bare API index;
-- {b prose pages} — chapters, tutorials, guides (plain [.mld] files);
-- the {b API} — the [.mli] of one package, or several packages side by side;
-- a {b top menu} — the site-wide header (your brand, links), shared by every page;
-- a {b left navigation} — generated from the config, with the current entry marked;
-- a {b version selector} — [dev], released versions and [latest], from a manifest;
-- a {b theme} — the stylesheet that makes all of the above look like a site;
+- a {b home / landing page}: your styled front page, not the bare API index;
+- {b prose pages}: chapters, tutorials, guides (plain [.mld] files);
+- the {b API}: the [.mli] of one package, or several packages side by side;
+- a {b top menu}: the site-wide header (your brand, links), shared by every page;
+- a {b left navigation}: generated from the config, with the current entry marked;
+- a {b version selector}: [dev], released versions and [latest], from a manifest;
+- a {b theme}: the stylesheet that makes all of the above look like a site;
 - optionally a {b blog} and {b Markdown twins} for AI tools;
-- a {b deployment} — a versioned tree published to (typically) GitHub Pages.
+- a {b deployment}: a versioned tree published to (typically) GitHub Pages.
 
 {1 The shape of a built site}
 
@@ -129,7 +129,7 @@ A wodoc site is made of these ingredients; each is covered below.
   latest -> 1.0.0      <- a symlink
 ]}
 
-Everything a page references — the theme, the highlighter, internal links — is
+Everything a page references (the theme, the highlighter, internal links) is
 version-relative, so the site is self-contained and a frozen version keeps working
 forever. (Only the version [<select>] uses the absolute [(url-prefix)] to switch
 versions.)
@@ -137,8 +137,8 @@ versions.)
 {1 [wodoc build]: what it generates, what you supply}
 
 The turn-key {{!page-"commands"}[wodoc build]} runs [dune build @doc] and then
-assembles every page. It {b generates almost everything} — including a default
-theme and top bar — so a basic site needs no theming setup at all.
+assembles every page. It {b generates almost everything}, including a default
+theme and top bar, so a basic site needs no theming setup at all.
 
 {t
   | Part | Who provides it |
@@ -159,15 +159,15 @@ So the minimal build is just:
 wodoc build --config doc/wodoc --out _site/dev --label dev
 ]}
 
-That already produces a {b styled, self-contained site} — a built-in theme and a
+That already produces a {b styled, self-contained site}: a built-in theme and a
 top bar are shipped and linked by per-version relative paths, so it works at any
 deploy path. The rest of this page is about the pieces you may want to customise:
-the home page, the navigation, and — when you outgrow the built-in look — the
+the home page, the navigation, and (when you outgrow the built-in look) the
 theme and the top bar.
 
 {1 The home page}
 
-The landing page is just one of your [.mld] pages, assembled like any other — so
+The landing page is just one of your [.mld] pages, assembled like any other, so
 you style it with the full {{!page-"directives"}directive set} ([{%wodoc:div%}],
 [{%wodoc:@ class=…%}], [{%wodoc:img%}], the semantic block containers…) to make a
 real front page rather than a wall of text.
@@ -187,7 +187,7 @@ gets a real page there instead of a redirect.)
 
 Any [.mld] file compiled by [dune build @doc] becomes a page: write chapters,
 tutorials and guides as ordinary odoc pages and list them in the navigation (next
-section). Keep them {b portable} — see {{!page-"authoring"}Authoring} for which
+section). Keep them {b portable}; see {{!page-"authoring"}Authoring} for which
 constructs survive on ocaml.org and which are wodoc-only chrome. Migrating an old
 wikicréole manual? Run {{!page-"commands"}[wodoc convert]} once to bootstrap the
 [.mld] files, then review them.
@@ -208,7 +208,7 @@ The left column is declared, not hand-written, in the config's [(nav …)] stanz
 ]}
 
 Each [(link "Label" <path> <id>)] gives the visible label, a version-relative
-path and the page's odoc [<id>] — wodoc marks the matching entry [current] on
+path and the page's odoc [<id>]: wodoc marks the matching entry [current] on
 each page automatically (longest-prefix match, so you never hand-maintain
 "current" flags). [(group …)] nests a sub-heading; [(section …)] is a manual
 block, [(api-section …)] an API block. A project whose versions have {e different}
@@ -257,23 +257,23 @@ By default wodoc links its built-in theme ([wodoc.css], shipped per-version). Th
 [(css …)] stanza replaces it; the template does {e not} link odoc's own [odoc.css],
 so your stylesheets carry the whole look. Choose how they are served:
 
-- [(css style.css …)] — {b relative} hrefs: wodoc copies each file (found next to
+- [(css style.css …)]: {b relative} hrefs, wodoc copies each file (found next to
   the config) into every build and links it per-version, so the site stays
   {b self-contained} and works at any deploy path;
-- [(css /css/style.css …)] or a full URL — {b absolute} hrefs, emitted verbatim,
+- [(css /css/style.css …)] or a full URL: {b absolute} hrefs, emitted verbatim,
   which you serve yourself (e.g. a shared site-wide stylesheet at the domain root).
 
 A custom stylesheet must style both the chrome and the content:
 
-- the chrome wodoc emits — [.wodoc-page], [.project-page]/[.twocols]/[.leftcol]/
+- the chrome wodoc emits: [.wodoc-page], [.project-page]/[.twocols]/[.leftcol]/
   [.rightcol], the navigation ([.api-nav], [.api-section], [.ml2]/[.ml3]/…,
   [li.current]), [.docversion]/[.wodoc-version], [.page-toc], [.cs-switch] and the
   blog [.wodoc-blog-*] classes;
-- the odoc {b content} — [.odoc-preamble]/[.odoc-content], headings, code blocks
+- the odoc {b content}: [.odoc-preamble]/[.odoc-content], headings, code blocks
   (highlight.js [.hljs-*] tokens), tables and declaration specs.
 
 The {{:https://github.com/ocsigen/wodoc/tree/master/examples/starter/css}starter
-stylesheet} covers all of these — copy it and recolour. (If you would rather
+stylesheet} covers all of these; copy it and recolour. (If you would rather
 reuse odoc's stock theme for the content, note that [odoc.css] {e is} shipped next
 to each version, so you can link or [@import] it from your [/css/ocsigen-odoc.css].)
 
@@ -325,7 +325,7 @@ readable by plain-text tooling and LLMs at no extra effort. Turn it off with
 
 A build is one version directory; releases are frozen snapshots:
 
-- {b CI builds [dev/]} on each push — [wodoc build --out _site/dev --label dev].
+- {b CI builds [dev/]} on each push: [wodoc build --out _site/dev --label dev].
 - {b A release freezes it}: {{!page-"commands"}[wodoc release]}
   [--site <gh-pages> --version 1.0.0] copies [dev/] to [1.0.0/], repoints the
   [latest] symlink and refreshes [versions.json]. Frozen pages are never rebuilt;
@@ -334,8 +334,8 @@ A build is one version directory; releases are frozen snapshots:
 
 Deploy the tree to GitHub Pages (or any static host). With a {b relative}
 [(css …)] theme and a local [(highlight …)] (as in the starter), the site is
-self-contained and deploys at {b any path} — a [you.github.io] site, a custom
-domain, or a plain project page ([you.github.io/PROJECT/]) — as long as [(pub)]
+self-contained and deploys at {b any path}: a [you.github.io] site, a custom
+domain, or a plain project page ([you.github.io/PROJECT/]), as long as [(pub)]
 matches the path it is served at (so the version selector switches correctly). If
 you keep the {e absolute} stylesheet default instead, then [/css/] must be served
 at the {b domain root} (a user/org site or a custom domain), since

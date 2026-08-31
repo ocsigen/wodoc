@@ -22,20 +22,20 @@ Wodoc.Theme
 
 {1 Where to start}
 
-- {!Wodoc.Preprocess} — rewrite [{%wodoc:…%}] markers to HTML-comment sentinels
+- {!Wodoc.Preprocess}: rewrite [{%wodoc:…%}] markers to HTML-comment sentinels
   before odoc runs.
-- {!Wodoc.Render} — turn those sentinels in odoc's HTML into real nested HTML.
-- {!Wodoc.Assemble} — wrap the rendered HTML in a project's site template.
-- {!Wodoc.Nav} — render a client/server project's API module list from a curated
+- {!Wodoc.Render}: turn those sentinels in odoc's HTML into real nested HTML.
+- {!Wodoc.Assemble}: wrap the rendered HTML in a project's site template.
+- {!Wodoc.Nav}: render a client/server project's API module list from a curated
   odoc index (the manual's own navigation is declared in the
   {{!page-"config"}[doc/wodoc] config}, not here).
-- {!Wodoc.Resolve} — link cross-package "sibling" references odoc left dead.
-- {!Wodoc.Convert} — the wikicréole → [.mld] migration aid.
-- {!Wodoc.Config} — parse the declarative {{!page-"config"}[doc/wodoc]} file.
-- {!Wodoc.Build} — the turn-key [wodoc build]: assemble a whole site from it.
-- {!Wodoc.Blog} — the ultra-simple blog: dated [.mld] posts, a generated nav
+- {!Wodoc.Resolve}: link cross-package "sibling" references odoc left dead.
+- {!Wodoc.Convert}: the wikicréole → [.mld] migration aid.
+- {!Wodoc.Config}: parse the declarative {{!page-"config"}[doc/wodoc]} file.
+- {!Wodoc.Build}: the turn-key [wodoc build]: assemble a whole site from it.
+- {!Wodoc.Blog}: the ultra-simple blog: dated [.mld] posts, a generated nav
   section and a "latest posts" landing fragment.
-- {!Wodoc.Llms} — generate the [llms.txt] / [llms-full.txt] index from the
+- {!Wodoc.Llms}: generate the [llms.txt] / [llms-full.txt] index from the
   Markdown twin tree (the LLM-friendly view of a built site).
-- {!Wodoc.Theme} — the built-in default assets (theme stylesheet, top bar)
+- {!Wodoc.Theme}: the built-in default assets (theme stylesheet, top bar)
   shipped when a project configures none.

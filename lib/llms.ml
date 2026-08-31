@@ -81,8 +81,8 @@ let write ~out ~title ~landing ~order =
       | Some l when Sys.file_exists (Filename.concat out l) -> (
         match first_para (read_file (Filename.concat out l)) with
         | Some s -> s
-        | None -> title ^ " — part of the Ocsigen Web framework (OCaml).")
-      | _ -> title ^ " — part of the Ocsigen Web framework (OCaml)."
+        | None -> title ^ ", part of the Ocsigen Web framework (OCaml).")
+      | _ -> title ^ ", part of the Ocsigen Web framework (OCaml)."
     in
     (* preferred order: nav order first, then the rest alphabetically *)
     let rank p =

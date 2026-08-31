@@ -15,7 +15,7 @@ adds these through a custom raw-markup target, [{%wodoc:DIRECTIVE%}]:
 ]}
 
 In that example, [div … end] wraps a block in a [<div class="card">], and the
-[@] directive adds attributes to the {b next element} — here it puts
+[@] directive adds attributes to the {b next element}: here it puts
 [class="server-code"] on the code block. See the {{!page-"directives"}directives
 reference} for the full list.
 
@@ -68,7 +68,7 @@ This is a deliberate trick to work around a limitation of odoc (the absence of
 presentational markup). odoc's HTML backend only keeps raw markup whose target
 it knows: [{%html:...%}] is emitted verbatim, {b any other target is silently
 dropped} ([| _ -> []] in odoc's generator). That drop is exactly what we want on
-ocaml.org — [{%wodoc:...%}] vanishes and the docs stay semantic. But it also
+ocaml.org: [{%wodoc:...%}] vanishes and the docs stay semantic. But it also
 means that, by the time we get odoc's HTML, our own markers are {e gone}, so the
 {!Wodoc.Render} pass would have nothing left to transform.
 
@@ -83,6 +83,6 @@ so a real [<div>] would also leak into the plain ocaml.org output, defeating the
 
 Note that this rewrite happens on a temporary copy at build time; the committed
 sources always keep the clean [{%wodoc:...%}] form. It also only applies to
-[.mld] text — markers inside [.mli] doc-comments are frozen in the [.cmti] and
+[.mld] text; markers inside [.mli] doc-comments are frozen in the [.cmti] and
 cannot be post-processed this way (a future model-level driver would lift this
 restriction).

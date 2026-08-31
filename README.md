@@ -1,7 +1,7 @@
 # wodoc
 
 **wodoc** (web + odoc) is an [odoc](https://github.com/ocaml/odoc) driver that
-builds complete, styled **websites** from `.mld` and `.mli` sources — not just
+builds complete, styled **websites** from `.mld` and `.mli` sources, not just
 API documentation.
 
 It extends odoc with **backward-compatible presentational markers** for arbitrary
@@ -18,7 +18,7 @@ opam pin add wodoc git+https://github.com/ocsigen/wodoc.git
 
 (or `opam pin add wodoc .` from a clone). This also pins the `odoc` family
 (`odoc`, `odoc-driver`, …) to the small fork wodoc needs, via the `pin-depends`
-in [`wodoc.opam`](wodoc.opam) — no manual setup; `odoc-driver` pulls in the
+in [`wodoc.opam`](wodoc.opam): no manual setup; `odoc-driver` pulls in the
 OCaml version it requires. At run time wodoc shells out to `odoc`/`odoc_driver`
 and to `curl` (for `--menu <URL>`).
 
@@ -39,7 +39,7 @@ adds these through a custom raw-markup target, `{%wodoc:DIRECTIVE%}`:
 ```
 
 In that example, `div … end` wraps a block in a `<div class="card">`, and the
-`@` directive adds attributes to the **next element** — here it puts
+`@` directive adds attributes to the **next element**: here it puts
 `class="server-code"` on the code block. `@` is wodoc's equivalent of
 html_of_wiki's `@@…@@`: it is how you attach an arbitrary class (or `id`,
 `style`, …) to an element that odoc would otherwise render bare, without
@@ -85,7 +85,7 @@ for every page of a project, in one command.
 This is a deliberate trick to work around a limitation of odoc (absence of presentational markup). odoc's HTML
 backend only keeps raw markup whose target it knows: `{%html:...%}` is emitted
 verbatim, **any other target is silently dropped** (`| _ -> []` in odoc's
-generator). That drop is exactly what we want on ocaml.org — `{%wodoc:...%}`
+generator). That drop is exactly what we want on ocaml.org: `{%wodoc:...%}`
 vanishes and the docs stay semantic. But it also means that, by the time we get
 odoc's HTML, our own markers are *gone*, so the `Render` pass would have nothing
 left to transform.
@@ -101,7 +101,7 @@ real `<div>` would also leak into the plain ocaml.org output, defeating the
 
 Note that this rewrite happens on a temporary copy at build time; the committed
 sources always keep the clean `{%wodoc:...%}` form. It also only applies to
-`.mld` text — markers inside `.mli` doc-comments are frozen in the `.cmti` and
+`.mld` text; markers inside `.mli` doc-comments are frozen in the `.cmti` and
 cannot be post-processed this way (a future model-level driver would lift this
 restriction).
 
@@ -114,7 +114,7 @@ restriction).
 | `@ S0 \| S1 \| S2 …` | add attributes at successive nesting levels, each section optionally prefixed by a sibling index (see below) |
 | `img src=… class=… alt=…` | a self-contained `<img>` |
 
-**Several classes**, HTML-style, are written space-separated inside quotes —
+**Several classes**, HTML-style, are written space-separated inside quotes:
 `{%wodoc:@ class="card big shadow"%}`. The quotes are required: without them the
 space ends the value, so `class=card big shadow` would keep only `card`. The
 classes are merged with any class odoc already put on the element (e.g.
@@ -124,7 +124,7 @@ classes are merged with any class odoc already put on the element (e.g.
 ### Attributes on nested elements (`@ S0 | S1 | S2`)
 
 A single element rarely needs more than `@ class=…`, but some structures have no
-outer element to hang a class on — a table being the typical case: odoc emits the
+outer element to hang a class on (a table being the typical case): odoc emits the
 `<table>`, `<tr>` and `<td>` together, with no marker slot before the row or the
 cell. The multi-section form solves this, mirroring html_of_wiki's `@@a@b@c@@`.
 
@@ -142,7 +142,7 @@ before a table:
 ```
 
 puts `class="pricing"` on the `<table>`, `class="headrow"` on the first `<tr>`,
-and `class="firstcell"` on its first `<th>` — exactly html_of_wiki's "class on
+and `class="firstcell"` on its first `<th>`, exactly html_of_wiki's "class on
 the table / on a row / on a cell". Use empty sections to reach a deeper level
 without touching the ones above, e.g. `@ | | class=firstcell`.
 

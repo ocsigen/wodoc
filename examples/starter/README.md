@@ -15,8 +15,8 @@ manual ([`manual/building-a-site.mld`](../../manual/building-a-site.mld)).
 |---|---|---|
 | [`wodoc`](wodoc) | `doc/wodoc` | the declarative build config (project, packages, landing, nav) |
 | [`deploy.yml`](deploy.yml) | `.github/workflows/doc.yml` | build + publish to `gh-pages` |
-| [`menu.html`](menu.html) | `doc/menu.html` | *optional* — a custom top-bar fragment (use with `--menu`) |
-| [`css/`](css) | `doc/css/` | *optional* — a custom theme (use with the `(css …)` stanza) |
+| [`menu.html`](menu.html) | `doc/menu.html` | *optional*, a custom top-bar fragment (use with `--menu`) |
+| [`css/`](css) | `doc/css/` | *optional*, a custom theme (use with the `(css …)` stanza) |
 
 ## Quick start
 
@@ -39,7 +39,7 @@ manual ([`manual/building-a-site.mld`](../../manual/building-a-site.mld)).
    ```
 
    The built-in theme and top bar are shipped inside `_site/dev/` and linked
-   relatively, so the site is self-contained and works at any deploy path —
+   relatively, so the site is self-contained and works at any deploy path,
    including a plain GitHub project page (`you.github.io/PROJECT/`); just set
    `(url-prefix /PROJECT)` so the version selector switches correctly.
 
@@ -56,7 +56,7 @@ cp examples/starter/css/*.css doc/css/
 Then uncomment `(css css/style.css css/ocsigen-odoc.css)` in `doc/wodoc`
 (relative paths are copied per-version, keeping the site self-contained) and add
 `--menu doc/menu.html` to the build command. Absolute `(css /css/…)` hrefs are
-emitted verbatim instead — then you serve `/css/` at the domain root yourself.
+emitted verbatim instead, and then you serve `/css/` at the domain root yourself.
 
 ## Releasing a version
 

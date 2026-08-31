@@ -14,7 +14,7 @@ type item =
   | Group of string * item list
   (** a sub-heading ([<h4>]) and its nested items, one indent level deeper.
           Lets a manual nav reproduce a multi-level menu (sections, subsections,
-          page links) — what the old wikicréole menu expressed with [==]/[===]. *)
+          page links), as the old wikicréole menu expressed with [==]/[===]. *)
 
 type section =
   { heading : string  (** the [<h3>] label of this left-nav block *)
@@ -43,7 +43,7 @@ type blog =
 
 type cs_side =
   { side : string
-    (** key, e.g. "server" — body class [wodoc-server], switch id *)
+    (** key, e.g. "server": body class [wodoc-server], switch id *)
   ; lib : string  (** odoc subtree dir / [Nav.api ~lib], e.g. "eliom.server" *)
   ; indexdoc : string  (** curated index path (relative to the build cwd) *)
   ; heading : string
@@ -108,7 +108,7 @@ type t =
   ; flat : bool
     (** assemble [--flat] (content straddling odoc's preamble boundary) *)
   ; static_copy : (string * string) list
-    (** verbatim copies into the output: (source path, dest under <out>) — e.g.
+    (** verbatim copies into the output: (source path, dest under <out>), e.g.
           a frozen API snapshot, or a manual image *)
   ; blog : blog option  (** an optional [(blog …)] section (see {!type:blog}) *)
   ; markdown : bool
@@ -118,7 +118,7 @@ type t =
   ; css : string list
     (** stylesheet hrefs for the page [<head>]. Each is emitted verbatim when
           absolute ([/…]) or a URL, else made per-page relative ([{{base}}/…]) and,
-          when it names a file next to the config, copied into the output — so a
+          when it names a file next to the config, copied into the output, so a
           project can ship a self-contained theme that works at any deploy path.
           [[]] (the default) ships wodoc's built-in default theme as [wodoc.css]. *)
   }
