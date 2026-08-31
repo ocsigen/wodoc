@@ -17,7 +17,7 @@ That is the only configuration the blog needs. See the [configuration manual](./
 
 ## 2\. Write an article
 
-A post is a plain `.mld` file in the `(dir …)` directory, named `YYYY-MM-DD-slug.mld`. **The date in the file name is the publication date** — there is no metadata file to keep in sync, and posts sort newest-first on it automatically. For example, `blog/posts/2026-06-14-hello-world.mld`:
+A post is a plain `.mld` file in the `(dir …)` directory, named `YYYY-MM-DD-slug.mld`. **The date in the file name is the publication date**: there is no metadata file to keep in sync, and posts sort newest-first on it automatically. For example, `blog/posts/2026-06-14-hello-world.mld`:
 
 ```text
 {0 Hello, world}
@@ -28,16 +28,16 @@ This first paragraph becomes the excerpt shown in the post list and the feed.
 
 {1 A section}
 
-The rest of the article: text, code, images, links — anything odoc supports.
+The rest of the article: text, code, images, links, anything odoc supports.
 ```
 - the **title** is the page's `{0 …}` heading;
 - the **author** is odoc's standard `@author` tag;
 - the **excerpt** (shown in listings and the feed) is the first paragraph.
-**To add an article, just drop a new dated `.mld` file in that directory** and rebuild — wodoc picks it up, lists it and adds it to the feed. Nothing else to edit.
+**To add an article, just drop a new dated `.mld` file in that directory** and rebuild: wodoc picks it up, lists it and adds it to the feed. Nothing else to edit.
 
 ## 3\. Show the latest posts on a page
 
-Put the marker `{%wodoc:blog-latest%}` wherever the recent-posts list should appear — typically the blog's landing page, but also a site home page:
+Put the marker `{%wodoc:blog-latest%}` wherever the recent-posts list should appear, typically the blog's landing page, but also a site home page:
 
 ```text
 {0 Our blog}
@@ -50,7 +50,7 @@ wodoc replaces it with a `<ul class="wodoc-blog-list">` of the most recent posts
 
 ## 4\. The generated navigation
 
-wodoc builds a navigation section (the `(heading …)` you configured, one entry per post, newest first) and adds it to the left column automatically — you do not list posts by hand.
+wodoc builds a navigation section (the `(heading …)` you configured, one entry per post, newest first) and adds it to the left column automatically, so you do not list posts by hand.
 
 ## 5\. Syndication: the Atom feed
 
@@ -65,15 +65,15 @@ A post's link is `base-url ^ blog-path ^ "/" ^ <post path>`; the feed advertises
 
 ## Turn-key build vs. a flat site
 
-If your project is built with the turn-key [`wodoc build`](./commands.md), the `(blog …)` stanza is all you need: `wodoc build` compiles every post, splices the navigation section and expands `{%wodoc:blog-latest%}` on the landing — no script.
+If your project is built with the turn-key [`wodoc build`](./commands.md), the `(blog …)` stanza is all you need: `wodoc build` compiles every post, splices the navigation section and expands `{%wodoc:blog-latest%}` on the landing, with no script.
 
 If instead your blog is part of a **flat site** built with the lower-level [`wodoc assemble`](./commands.md) (as the Ocsigen website is), assemble each post page and:
 
 - pass `--leftnav` the output of [`wodoc blog-nav`](./commands.md) (the post list);
 - pass `--blog-config`/`--blog-base` to expand a `{%wodoc:blog-latest%}` marker on a page (e.g. the site home);
-- pass `--byline "<date> — <author>"` to show the post's date and author under its title;
+- pass `--byline "<date>, <author>"` to show the post's date and author under its title;
 - run [`wodoc blog-feed`](./commands.md) once for the feed.
 
 ## Styling
 
-wodoc emits only semantic markup; the look lives in your stylesheet. The classes to style are `.wodoc-blog-list` (the `<ul>`), `.wodoc-blog-card` (each `<li>`), `.wodoc-blog-title` (the link), `.wodoc-blog-meta` (the date — author line) and `.wodoc-blog-excerpt`.
+wodoc emits only semantic markup; the look lives in your stylesheet. The classes to style are `.wodoc-blog-list` (the `<ul>`), `.wodoc-blog-card` (each `<li>`), `.wodoc-blog-title` (the link), `.wodoc-blog-meta` (the date and author line) and `.wodoc-blog-excerpt`.

@@ -14,6 +14,6 @@ val write :
 ```
 `write ~out ~title ~landing ~order` writes, at the version root `out`:
 
-- `llms.txt`: the index — `# title`, a `>` blockquote summary (the first paragraph of the `landing` Markdown page when given, else a generic line), then a `## Manual` and a `## API` section listing every `.md` page found under `out` (manual \= lowercase-named pages, API \= Capitalised modules), each as `- [H1 title](relative path)`;
+- `llms.txt`: the index, with `# title`, a `>` blockquote summary (the first paragraph of the `landing` Markdown page when given, else a generic line), then a `## Manual` and a `## API` section listing every `.md` page found under `out` (manual \= lowercase-named pages, API \= Capitalised modules), each as `- [H1 title](relative path)`;
 - `llms-full.txt`: all those pages concatenated, for single-shot ingestion.
 `order` is a list of `.md` paths giving the preferred (project-nav) ordering; pages absent from it follow alphabetically. Does nothing if no `.md` page exists under `out` (e.g. markdown generation was skipped).

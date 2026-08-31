@@ -16,7 +16,7 @@ val html : ?strip_anchors:bool -> string -> string
 ```
 `html s` processes the wodoc markers in odoc's HTML `s` and returns the transformed HTML. Markers are consumed; on malformed input the offending marker is left as an HTML comment rather than raising.
 
-`strip_anchors` (default `false`) removes the empty hover-link anchors odoc inserts inside headings — useful for website pages (and required when a heading sits inside a clickable card link, to avoid a nested `<a>`).
+`strip_anchors` (default `false`) removes the empty hover-link anchors odoc inserts inside headings, useful for website pages (and required when a heading sits inside a clickable card link, to avoid a nested `<a>`).
 
 ```ocaml
 val markdown : string -> string

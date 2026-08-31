@@ -1,6 +1,6 @@
 # Authoring: what survives on ocaml.org
 
-The `{%wodoc:...%}` target is unknown to stock odoc, so it is **dropped** when the same sources are built with a stock odoc (for example on ocaml.org). This is the whole point — the docs stay clean and semantic there — but it means you must choose, per construct, whether something is *content* (must survive) or *presentation* (may vanish).
+The `{%wodoc:...%}` target is unknown to stock odoc, so it is **dropped** when the same sources are built with a stock odoc (for example on ocaml.org). This is the whole point (the docs stay clean and semantic there), but it means you must choose, per construct, whether something is *content* (must survive) or *presentation* (may vanish).
 
 ## The rule
 

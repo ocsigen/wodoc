@@ -27,7 +27,7 @@ wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
 ```
 Wrap rendered odoc HTML in a site template, filling the `{{title}}`, `{{preamble}}`, `{{toc}}` and `{{content}}` holes and marking the current navigation entry. `assemble` runs `render` internally, so a typical per-page build is just `preprocess` → odoc → `assemble`.
 
-A site usually shares one menu across every page and project: `--menu <f>` fills a `{{menu}}` hole with that fragment, `--subproject <s>` its `{{subproject}}` label, `--menu-current <id>` highlights the current project in it (scoped to the menu), and `--leftnav <f>` fills every `{{leftnav}}` hole (left column and mobile drawer) from one source. `--base <b>` fills `{{base}}` (the relative path to the doc root). `--byline <t>` inserts a `<p class="wodoc-blog-meta">` just after the page title (e.g. a blog post's "date — author"). `--mdlink <href>` adds a `<link rel="alternate" type="text/markdown">` advertising the page's Markdown twin. `--blog-config <c>` expands a `{%wodoc:blog-latest%}` marker on the page with the latest-posts fragment of the blog declared in config `<c>` (so a page built through this low-level path — e.g. a site home — can carry the blog listing, like `wodoc build` does for the turn-key path), `--blog-base <b>` giving the relative path from the page to the blog root. See [`Wodoc.Assemble`](./Wodoc-Assemble.md) and [the `(blog …)` stanza](./config.md).
+A site usually shares one menu across every page and project: `--menu <f>` fills a `{{menu}}` hole with that fragment, `--subproject <s>` its `{{subproject}}` label, `--menu-current <id>` highlights the current project in it (scoped to the menu), and `--leftnav <f>` fills every `{{leftnav}}` hole (left column and mobile drawer) from one source. `--base <b>` fills `{{base}}` (the relative path to the doc root). `--byline <t>` inserts a `<p class="wodoc-blog-meta">` just after the page title (e.g. a blog post's "date, author"). `--mdlink <href>` adds a `<link rel="alternate" type="text/markdown">` advertising the page's Markdown twin. `--blog-config <c>` expands a `{%wodoc:blog-latest%}` marker on the page with the latest-posts fragment of the blog declared in config `<c>` (so a page built through this low-level path (e.g. a site home) can carry the blog listing, like `wodoc build` does for the turn-key path), `--blog-base <b>` giving the relative path from the page to the blog root. See [`Wodoc.Assemble`](./Wodoc-Assemble.md) and [the `(blog …)` stanza](./config.md).
 
 ## `wodoc nav`
 
@@ -36,7 +36,7 @@ wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>] 
 ```
 Render an API module navigation `<nav>` fragment from a curated odoc index (`{N title}` section headings \+ `{!modules: …}` lists), writing to stdout. `--lib` / `--wrapper` place the module pages; `--skip-title` drops page-title sections. Used internally by `wodoc build` for a client/server project's per-side API nav (see [config](./config.md)).
 
-The **manual's own navigation is not built here** — it is declared declaratively in the project's [`doc/wodoc`](./config.md) config, in the `(nav …)` stanza, and rendered by `wodoc build`. (Earlier versions built it from a wikicréole `menu.wiki`; that is gone.) See [`Wodoc.Nav`](./Wodoc-Nav.md).
+The **manual's own navigation is not built here**: it is declared declaratively in the project's [`doc/wodoc`](./config.md) config, in the `(nav …)` stanza, and rendered by `wodoc build`. (Earlier versions built it from a wikicréole `menu.wiki`; that is gone.) See [`Wodoc.Nav`](./Wodoc-Nav.md).
 
 ## `wodoc resolve-refs`
 
@@ -52,18 +52,18 @@ Link references odoc left dead, rewriting the given files *in place*. With `--si
 ```text
 wodoc convert [--odoc-refs] [--api-side <side>] <file.wiki>
 ```
-A best-effort wikicréole → `.mld` converter to migrate an existing manual: headings, lists, links, code blocks, `{%wodoc:%}` markers for classes and containers, and odoc references from `<<a_api>>`/`<<a_manual>>`. The output is meant to be reviewed by hand. `--odoc-refs` emits native odoc references (`{!M}`) for `a_api` links instead of relative HTML links — for a manual built in the same package as its API. `--api-side <side>` sets the default API side for a sided (client/server) manual. See [`Wodoc.Convert`](./Wodoc-Convert.md).
+A best-effort wikicréole → `.mld` converter to migrate an existing manual: headings, lists, links, code blocks, `{%wodoc:%}` markers for classes and containers, and odoc references from `<<a_api>>`/`<<a_manual>>`. The output is meant to be reviewed by hand. `--odoc-refs` emits native odoc references (`{!M}`) for `a_api` links instead of relative HTML links, for a manual built in the same package as its API. `--api-side <side>` sets the default API side for a sided (client/server) manual. See [`Wodoc.Convert`](./Wodoc-Convert.md).
 
 ## `wodoc build`
 
-For the end-to-end picture — home page, prose pages, navigation, theme, multiple projects and deployment — see [Building a complete site](./building-a-site.md).
+For the end-to-end picture (home page, prose pages, navigation, theme, multiple projects and deployment) see [Building a complete site](./building-a-site.md).
 
 ```text
 wodoc build --config <doc/wodoc> --out <dir> [--menu <menu.html|URL>] [--label <v>]
             [--src <odoc _html>] [--latest] [--local] [--mld-dir <d>] [--nav <f>]
             [--strict-refs]
 ```
-`--menu` is optional: without it, wodoc generates a default top bar. Pass it to use your own shared site menu — a local file *or* an `http(s)` URL (fetched with curl), so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
+`--menu` is optional: without it, wodoc generates a default top bar. Pass it to use your own shared site menu: a local file *or* an `http(s)` URL (fetched with curl), so a project's CI can point straight at the one canonical copy, with no wrapper script to download it first.
 
 `--strict-refs` fails the build on markup that was meant to become a link or an image and did not: a reference odoc could not resolve and no rewriting pass could repair, or a wikicréole image a wiki conversion left behind (`{{file.png|alt}}`: odoc has no image syntax, so it survives as literal text). Every build reports those; `--strict-refs` is how a doc CI keeps them from shipping.
 
@@ -71,11 +71,11 @@ Only *repairable* references count. A reference into a dependency the site does 
 
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 
-The turn-key command: assemble a whole odoc HTML tree into the themed site from ONE per-project config file (a dune-style S-expression `doc/wodoc`, fully documented in [Configuration](./config.md)) — replacing a project's `build.sh` *and* its hand-written navigation (`menu.wiki` / `nav.html` / `leftnav.html` / `template.html`, all gone). It generates the page template and the left navigation (version selector, on-this-page, the config-declared nav), then fills the shared menu, marks the current project/package, resolves sibling references and ships the assets, the version redirect and the `latest` symlink. Without `--src` it builds the odoc HTML itself: `dune build @doc` by default, or — when the config has `(odoc-driver <pkg>)` — `odoc_driver <pkg> --remap` on the *installed* package (the engine ocaml.org uses), needed for a client/server package whose `<pkg>.server`/`<pkg>.client` libraries share module names and would collide under `dune build @doc`.
+The turn-key command: assemble a whole odoc HTML tree into the themed site from ONE per-project config file (a dune-style S-expression `doc/wodoc`, fully documented in [Configuration](./config.md)), replacing a project's `build.sh` *and* its hand-written navigation (`menu.wiki` / `nav.html` / `leftnav.html` / `template.html`, all gone). It generates the page template and the left navigation (version selector, on-this-page, the config-declared nav), then fills the shared menu, marks the current project/package, resolves sibling references and ships the assets, the version redirect and the `latest` symlink. Without `--src` it builds the odoc HTML itself: `dune build @doc` by default, or (when the config has `(odoc-driver <pkg>)`) `odoc_driver <pkg> --remap` on the *installed* package (the engine ocaml.org uses), needed for a client/server package whose `<pkg>.server`/`<pkg>.client` libraries share module names and would collide under `dune build @doc`.
 
 ### Markdown twins and the llms.txt index (for AIs)
 
-Alongside the themed HTML, `wodoc build` emits a **Markdown twin** of every page, so the documentation is consumable by AIs/LLMs as plain Markdown (the [llms.txt](https://llmstxt.org/) convention). It uses odoc's Markdown backend (`odoc markdown-generate`, or the `@doc-markdown` dune alias) on the *same* compiled artifacts that produce the HTML, so nothing is recompiled. The `.md` files are placed next to their `.html` pages (odoc's Markdown layout is flat — `Mod/Sub/index.html` has the twin `Mod-Sub.md`), and each HTML page advertises its twin with `<link rel="alternate" type="text/markdown">`.
+Alongside the themed HTML, `wodoc build` emits a **Markdown twin** of every page, so the documentation is consumable by AIs/LLMs as plain Markdown (the [llms.txt](https://llmstxt.org/) convention). It uses odoc's Markdown backend (`odoc markdown-generate`, or the `@doc-markdown` dune alias) on the *same* compiled artifacts that produce the HTML, so nothing is recompiled. The `.md` files are placed next to their `.html` pages (odoc's Markdown layout is flat, `Mod/Sub/index.html` has the twin `Mod-Sub.md`), and each HTML page advertises its twin with `<link rel="alternate" type="text/markdown">`.
 
 Two index files are written at the version root: `llms.txt` (the project name, a one-line summary, then a Manual and an API section linking every page) and `llms-full.txt` (all pages concatenated, for single-shot ingestion). The site's root `/llms.txt` (built by the vitrine) links each project's `llms.txt` in turn.
 
@@ -88,7 +88,7 @@ Markdown generation is **on by default**, and a project that asks for it **fails
 ```text
 wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..
 ```
-`odoc_driver --remap` names a reference to a *wrapped* library's module by a FLAT path (`Eliom_content`), but the qualified project deploys it under its wrapper — `Eliom/Content` for a renamed module, `Eliom/Eliom_react` for one that kept its name. Since that mapping is not uniform, this post-pass over a co-located multi-project `<root>` PROBES each wrapped project's tree: for a flat `<W>_<x>` segment after a `<dir>.<lib>/`, it tries `<W>/<Cap x>` then `<W>/<W>_<x>` and keeps the link whose target exists. `--wrapped <dir>=<Wrapper>` (repeatable) lists the wrapped projects (e.g. `eliom=Eliom`, `ocsigen-toolkit=Ot`).
+`odoc_driver --remap` names a reference to a *wrapped* library's module by a FLAT path (`Eliom_content`), but the qualified project deploys it under its wrapper: `Eliom/Content` for a renamed module, `Eliom/Eliom_react` for one that kept its name. Since that mapping is not uniform, this post-pass over a co-located multi-project `<root>` PROBES each wrapped project's tree: for a flat `<W>_<x>` segment after a `<dir>.<lib>/`, it tries `<W>/<Cap x>` then `<W>/<W>_<x>` and keeps the link whose target exists. `--wrapped <dir>=<Wrapper>` (repeatable) lists the wrapped projects (e.g. `eliom=Eliom`, `ocsigen-toolkit=Ot`).
 
 ### Releasing a stable version
 
@@ -99,7 +99,7 @@ wodoc release --site <gh-pages-dir> --version <v> [--from dev]
 
 | Flag | Meaning |
 | --- | --- |
-| `--site <gh-pages-dir>` | a working copy of the project's `gh-pages` branch — the deployed site root that holds `dev/`, the version directories, the `latest` symlink and `versions.json` |
+| `--site <gh-pages-dir>` | a working copy of the project's `gh-pages` branch, the deployed site root that holds `dev/`, the version directories, the `latest` symlink and `versions.json` |
 | `--version <v>` | the name of the new frozen version directory to create, e.g. `12.0` |
 | `--from <dir>` | the *existing* directory to copy from (default `dev`) |
 It copies `<site>/<from>` → `<site>/<version>`, repoints the `latest` symlink at `<version>`, writes the project-root redirect to `latest/` if missing, and regenerates `versions.json`. Older version directories are left untouched.
@@ -110,36 +110,36 @@ git clone -b gh-pages git@github.com:ocsigen/eliom eliom-gh
 wodoc release --site eliom-gh --version 12.0
 cd eliom-gh && git add -A && git commit -m "doc: release 12.0" && git push
 ```
-A release's docs are therefore **exactly the `dev` docs at that point** — no rebuild. This is the procedure for *odoc-driver* projects (eliom, ocsigen-toolkit, ocsigen-start), whose `build` documents the *installed* package: you cannot cheaply rebuild an old version from source, so you freeze the current `dev` instead.
+A release's docs are therefore **exactly the `dev` docs at that point**, with no rebuild. This is the procedure for *odoc-driver* projects (eliom, ocsigen-toolkit, ocsigen-start), whose `build` documents the *installed* package: you cannot cheaply rebuild an old version from source, so you freeze the current `dev` instead.
 
 ### Documenting an older tag or branch
 
-`release` cannot reach back into git history — it only freezes the current `dev`. To build the docs of an **older tag or a branch**, check it out and run `build` with that `--label` (and `--latest` if it should become the current version):
+`release` cannot reach back into git history: it only freezes the current `dev`. To build the docs of an **older tag or a branch**, check it out and run `build` with that `--label` (and `--latest` if it should become the current version):
 
 ```text
 git checkout v0.1.0
 wodoc build --config doc/wodoc --out <gh-pages>/0.1.0 --label 0.1.0 \
             --menu https://ocsigen.org/doc/menu.html --latest
 ```
-`--label <v>` names the output (version) directory — it is the version segment of the deployed URL (`/<project>/<v>/…`) and the entry added to the version selector (default `dev`); `--latest` repoints the `latest` symlink at this build. This is the *rebuild-from-ref* path, used by `dune build @doc` projects (those without `(odoc-driver …)`), where `build` compiles the checked-out sources. In CI it is a manual workflow run: set the workflow's `label` input to the version, `ref` to the tag/branch, and tick `set_latest`. (For an odoc-driver project the same idea means installing that version of the package first, since `build` documents the installed package, not the checkout.)
+`--label <v>` names the output (version) directory: it is the version segment of the deployed URL (`/<project>/<v>/…`) and the entry added to the version selector (default `dev`); `--latest` repoints the `latest` symlink at this build. This is the *rebuild-from-ref* path, used by `dune build @doc` projects (those without `(odoc-driver …)`), where `build` compiles the checked-out sources. In CI it is a manual workflow run: set the workflow's `label` input to the version, `ref` to the tag/branch, and tick `set_latest`. (For an odoc-driver project the same idea means installing that version of the package first, since `build` documents the installed package, not the checkout.)
 
 ### The version selector
 
-Each page carries a version `<select>` in its left column. Both `build` and `release` (re)write a `versions.json` manifest at the project root — the single source of truth listing `dev` first, then the version directories newest-first (numeric, so `10.0.0` sorts above `2.0.0`), with the directory the `latest` symlink points at recorded under `"latest"`. The page script reads it and rebuilds the menu on load, so even an old frozen page lists the current set without being rewritten. A release therefore touches only this one file.
+Each page carries a version `<select>` in its left column. Both `build` and `release` (re)write a `versions.json` manifest at the project root, the single source of truth listing `dev` first, then the version directories newest-first (numeric, so `10.0.0` sorts above `2.0.0`), with the directory the `latest` symlink points at recorded under `"latest"`. The page script reads it and rebuilds the menu on load, so even an old frozen page lists the current set without being rewritten. A release therefore touches only this one file.
 
 The entry that `latest` points at is labelled *"`<v>` (latest)"* and keeps the canonical `/<project>/latest/` URL when chosen; other versions navigate to their own numbered URL. The menu is built statically too (as a fallback baked into the page), so it still works if the manifest cannot be fetched.
 
 ### Client/server projects
 
-A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a `(client-server …)` block: one `(server …)`/`(client …)`/`(ppx …)` side per library, each with its `(lib <pkg>.<side>)`, a curated `(indexdoc <file>)` (turned into a section-grouped module nav), a `(heading …)` and the `(wrapper <Module>)` the modules sit under. wodoc then gives every page its side's API nav, a body colour (`wodoc-server` / `wodoc-client` / …) and a client/server switch button, and shares one manual nav across the sides (from the config's `(section …)` blocks, like any project). The `(hosted …)` block lists the sibling Ocsigen projects whose cross-references odoc points at `ocaml.org`: wodoc rewrites those to relative links into their wodoc docs (other dependencies stay on `ocaml.org`). The whole client/server build is still ONE declarative `doc/wodoc` and a single `wodoc build` — no `build.sh`.
+A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a `(client-server …)` block: one `(server …)`/`(client …)`/`(ppx …)` side per library, each with its `(lib <pkg>.<side>)`, a curated `(indexdoc <file>)` (turned into a section-grouped module nav), a `(heading …)` and the `(wrapper <Module>)` the modules sit under. wodoc then gives every page its side's API nav, a body colour (`wodoc-server` / `wodoc-client` / …) and a client/server switch button, and shares one manual nav across the sides (from the config's `(section …)` blocks, like any project). The `(hosted …)` block lists the sibling Ocsigen projects whose cross-references odoc points at `ocaml.org`: wodoc rewrites those to relative links into their wodoc docs (other dependencies stay on `ocaml.org`). The whole client/server build is still ONE declarative `doc/wodoc` and a single `wodoc build`, no `build.sh`.
 
 ### Manual at the version root
 
-A single-package `dune build @doc` project puts BOTH its manual and its API under a `<package>/` subdirectory, unlike an odoc-driver project (eliom) whose manual sits at the version root. Add `(manual-root)` to deploy the package at the version root instead (strip the leading `<package>/` from output paths, the `(landing …)` and the `(nav …)` links) — so `ocsigen.org/<project>/<v>/page.html` is the manual URL and cross-project links resolve. Internal links are relative, so the uniform strip keeps them valid.
+A single-package `dune build @doc` project puts BOTH its manual and its API under a `<package>/` subdirectory, unlike an odoc-driver project (eliom) whose manual sits at the version root. Add `(manual-root)` to deploy the package at the version root instead (strip the leading `<package>/` from output paths, the `(landing …)` and the `(nav …)` links), so `ocsigen.org/<project>/<v>/page.html` is the manual URL and cross-project links resolve. Internal links are relative, so the uniform strip keeps them valid.
 
 ### Manual-only / archived projects (no `dune build @doc`)
 
-A project with no buildable library API — an archived project (ocsimore) or a tool whose libraries are internal (html\_of\_wiki) — has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc builds them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc package. The pages *are* the manual: the landing `index.html` is a real page (no redirect). The left nav is the config's `(nav …)` sections like any project (in-page anchors are just links with a `#fragment`); a project that builds *several* version directories with different manuals passes each version's nav with `--nav <file>` (same `(nav …)` syntax) instead. Add `(flat)` if the first content straddles odoc's preamble boundary. `(static-copy <src> <dest>)…` copies trees in verbatim — e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
+A project with no buildable library API (an archived project such as ocsimore, or a tool whose libraries are internal such as html\_of\_wiki) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc builds them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc package. The pages *are* the manual: the landing `index.html` is a real page (no redirect). The left nav is the config's `(nav …)` sections like any project (in-page anchors are just links with a `#fragment`); a project that builds *several* version directories with different manuals passes each version's nav with `--nav <file>` (same `(nav …)` syntax) instead. Add `(flat)` if the first content straddles odoc's preamble boundary. `(static-copy <src> <dest>)…` copies trees in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
 
 The syntax-highlight starter is always shipped as `wodoc-highlight.js` and loaded version-relatively. Its built-in default is *Ocsigen-oriented*: on top of plain OCaml it teaches odoc's bundled `highlight.js` the eliom (`let%client` / `%server` / `%shared` / `%rpc`, `~%x` injection), lwt (`let*` / `and*` / `let+`) and js\_of\_ocaml (`##`) syntax, so any Ocsigen project colours correctly with no per-project file. A project whose code blocks use yet another syntax overrides the shipped file with `(highlight …)` in the config. See [`Wodoc.Build`](./Wodoc-Build.md).
 

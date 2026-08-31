@@ -1,6 +1,6 @@
 # Wodoc
 
-> *wodoc* (web \+ odoc) is an [odoc](https://github.com/ocaml/odoc) driver that builds complete, styled **websites** from `.mld` and `.mli` sources — not just API documentation.
+> *wodoc* (web \+ odoc) is an [odoc](https://github.com/ocaml/odoc) driver that builds complete, styled **websites** from `.mld` and `.mli` sources, not just API documentation.
 
 ## Manual
 - [Wodoc](wodoc/index.md)

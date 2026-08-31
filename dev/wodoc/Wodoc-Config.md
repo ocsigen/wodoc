@@ -10,7 +10,7 @@ type entry = {
 ```ocaml
 type item = 
   | Link of entry
-  | Group of string * item list (* a sub-heading (<h4>) and its nested items, one indent level deeper. Lets a manual nav reproduce a multi-level menu (sections, subsections, page links) — what the old wikicréole menu expressed with ==/===. *)
+  | Group of string * item list (* a sub-heading (<h4>) and its nested items, one indent level deeper. Lets a manual nav reproduce a multi-level menu (sections, subsections, page links), as the old wikicréole menu expressed with ==/===. *)
 ```
 ```ocaml
 type section = {
@@ -31,7 +31,7 @@ an ultra-simple blog: a directory of dated `.mld` posts that wodoc builds like a
 
 ```ocaml
 type cs_side = {
-  side : string; (* key, e.g. "server" — body class wodoc-server, switch id *)
+  side : string; (* key, e.g. "server": body class wodoc-server, switch id *)
   lib : string; (* odoc subtree dir / Nav.api ~lib, e.g. "eliom.server" *)
   indexdoc : string; (* curated index path (relative to the build cwd) *)
   heading : string; (* API-nav heading + switch-button label, e.g. "Server API" *)
@@ -62,10 +62,10 @@ type t = {
   mld_dir : string option; (* direct-mld build (a manual-only / archived project with no dune build @doc): compile every .mld in this dir straight with odoc (preprocess -> compile -> link -> html-generate). The pages are the manual; the landing index.html is a real page (no redirect). *)
   mld_package : string; (* odoc --package for the direct-mld compile (the src subtree) *)
   flat : bool; (* assemble --flat (content straddling odoc's preamble boundary) *)
-  static_copy : (string * string) list; (* verbatim copies into the output: (source path, dest under <out>) — e.g. a frozen API snapshot, or a manual image *)
+  static_copy : (string * string) list; (* verbatim copies into the output: (source path, dest under <out>), e.g. a frozen API snapshot, or a manual image *)
   blog : blog option; (* an optional (blog …) section (see blog) *)
   markdown : bool; (* emit the Markdown twin of every page + the llms.txt/llms-full.txt index (for AI/LLM consumption). On by default; (markdown false) turns it off. *)
-  css : string list; (* stylesheet hrefs for the page <head>. Each is emitted verbatim when absolute (/…) or a URL, else made per-page relative ({{base}}/…) and, when it names a file next to the config, copied into the output — so a project can ship a self-contained theme that works at any deploy path. [] (the default) ships wodoc's built-in default theme as wodoc.css. *)
+  css : string list; (* stylesheet hrefs for the page <head>. Each is emitted verbatim when absolute (/…) or a URL, else made per-page relative ({{base}}/…) and, when it names a file next to the config, copied into the output, so a project can ship a self-contained theme that works at any deploy path. [] (the default) ships wodoc's built-in default theme as wodoc.css. *)
 }
 ```
 ```ocaml
