@@ -14,7 +14,7 @@ is plain odoc.
   | [blog-latest] | expand into the blog's "latest posts" list (see {{!page-"blog"}Adding a blog}) |
 }
 
-{b Several classes}, HTML-style, are written space-separated inside quotes —
+{b Several classes}, HTML-style, are written space-separated inside quotes:
 [{%wodoc:@ class="card big shadow"%}]. The quotes are required: without them the
 space ends the value, so [class=card big shadow] would keep only [card]. The
 classes are merged with any class odoc already put on the element (e.g.
@@ -44,7 +44,7 @@ wodoc re-nests these into correctly balanced HTML, hoisting them out of the
 {1 The [@] directive}
 
 [{%wodoc:@ key=val …%}] adds attributes to the {b next element} without wrapping
-it in a container — it is wodoc's equivalent of html_of_wiki's [@@…@@]. Put it on
+it in a container: it is wodoc's equivalent of html_of_wiki's [@@…@@]. Put it on
 its own line just before the element. Typical use: tag a code block so the theme
 can colour it.
 
@@ -56,7 +56,7 @@ can colour it.
 {1 Attributes on nested elements ([@ S0 | S1 | S2])}
 
 A single element rarely needs more than [@ class=…], but some structures have no
-outer element to hang a class on — a table being the typical case: odoc emits the
+outer element to hang a class on (a table being the typical case): odoc emits the
 [<table>], [<tr>] and [<td>] together, with no marker slot before the row or the
 cell. The multi-section form solves this, mirroring html_of_wiki's [@@a@b@c@@].
 
@@ -74,7 +74,7 @@ before a table:
 ]}
 
 puts [class="pricing"] on the [<table>], [class="headrow"] on the first [<tr>],
-and [class="firstcell"] on its first [<th>] — exactly html_of_wiki's "class on
+and [class="firstcell"] on its first [<th>], exactly html_of_wiki's "class on
 the table / on a row / on a cell". Use empty sections to reach a deeper level
 without touching the ones above, e.g. [@ | | class=firstcell].
 
@@ -97,5 +97,5 @@ stacking several before one table styles several rows:
 [{%wodoc:img src=… class=… alt=…%}] emits a self-contained [<img>]. Use it only
 for {b chrome} (logos, decorative images that need not appear on ocaml.org). For
 {b content} images that must survive on ocaml.org, use native odoc [{image:url}]
-and, if you need a class, wrap it with [{%wodoc:@ …%}] — see
+and, if you need a class, wrap it with [{%wodoc:@ …%}]; see
 {{!page-"authoring"}Authoring}.

@@ -13,7 +13,7 @@ val wiki_to_mld : ?default_side:string -> ?odoc_refs:bool -> string -> string
     [default_side] (e.g. ["server"]/["client"], default [""]) controls plain
     [<<a_api|...>>] references carrying neither [subproject] nor [project]: when
     set, they link into that side of the API ([../<pkg>.<side>/...]) rather than
-    becoming an in-package odoc reference — used for a sided project's manual,
+    becoming an in-package odoc reference, used for a sided project's manual,
     whose bare API references are understood to be server-side.
 
     [odoc_refs] (default [false]): emit native odoc references for [a_api]

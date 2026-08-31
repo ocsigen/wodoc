@@ -2,19 +2,19 @@
 
 ## 1.0
 
-Simplified setup — `wodoc build` now produces a styled, self-contained site with
+Simplified setup: `wodoc build` now produces a styled, self-contained site with
 no theme configuration:
 
 - A built-in default theme is shipped as `wodoc.css` and a default top bar is
   generated, both linked by per-version relative paths (the site works at any
   deploy path). `--menu` is now optional (it overrides the default bar), and the
-  stylesheet is chosen by `(css …)` — a relative href is copied into the build, an
+  stylesheet is chosen by `(css …)`: a relative href is copied into the build, an
   absolute/URL href is used verbatim; omitting it ships the built-in theme.
 - The highlight starter is always linked relatively (no shared absolute path).
 
 Config simplifications (breaking):
 
-- `(client-server …)` now implies `(odoc-driver <project>)` — declare only the
+- `(client-server …)` now implies `(odoc-driver <project>)`, so declare only the
   client/server block, not both.
 - `(mld-dir <dir> [<package>])` can carry the odoc package inline; `mld-package`
   still sets it when the directory is passed on the CLI (`--mld-dir`).
@@ -71,11 +71,11 @@ and `.mli` sources. It provides:
 - `Preprocess`: rewrite `{%wodoc:..%}` markers into `{%html:<!--wodoc:..-->%}`
   so stock odoc preserves them as HTML comments.
 - `Render`: turn the markers in odoc's HTML output into real, correctly nested
-  HTML — containers (`div`/`a`/`span`, the semantic blocks
+  HTML: containers (`div`/`a`/`span`, the semantic blocks
   `section`/`header`/`nav`/`article`/`aside`/`footer`, and `end`), multi-level
   attribute injection
-  (`@ S0 | S1 | S2`, html_of_wiki's `@@` equivalent: successive nesting levels — e.g.
-  table / row / cell — mirroring html_of_wiki's `@@a@b@c@@`; each section may
+  (`@ S0 | S1 | S2`, html_of_wiki's `@@` equivalent: successive nesting levels, e.g.
+  table / row / cell, mirroring html_of_wiki's `@@a@b@c@@`; each section may
   start with a 1-based sibling index to reach the Nth row/cell rather than the
   first, sibling skipping respecting nesting), and self-contained
   images (`img`). Hoists structural tags out of odoc's forced `<p>` wrappers.
@@ -99,7 +99,7 @@ and `.mli` sources. It provides:
   (`../<pkg>.<side>/<path>/index.html`, or another project's `/wodoc/<P>/…`),
   with the right page and odoc anchor for a `val`/`type` (`#val-x`/`#type-x`).
   `<<a_manual chapter=c [fragment=f]|text>>` becomes a relative link to the
-  sibling manual page (`c.html[#f]`) — robust for hyphenated chapters, section
+  sibling manual page (`c.html[#f]`), robust for hyphenated chapters, section
   anchors and same-side, and valid on both ocaml.org and ocsigen.org; with
   `project=` it links to that project's manual. Headings are
   normalised so each page emits a single level-0 title (`{0}`): a second
@@ -107,7 +107,7 @@ and `.mli` sources. It provides:
   heading. A leading `@@id="x"@@` anchor on a heading becomes an odoc heading
   label (`{N:x ...}`) so cross-page fragment references resolve. Output is meant
   to be reviewed by hand.
-- `Assemble`: build a full page — extract the odoc parts, render the content
+- `Assemble`: build a full page: extract the odoc parts, render the content
   fragment (never the template chrome), fill a project-provided template
   (holes `{{title}}`/`{{preamble}}`/`{{toc}}`/`{{content}}`), mark the current
   navigation entry via `data-wodoc-page`. `?preamble` toggles the page title;
@@ -115,12 +115,12 @@ and `.mli` sources. It provides:
   containers span the odoc preamble/content boundary. The chrome stays in the
   project, wodoc stays generic.
 - `Nav`: render a project's API module navigation from a curated odoc index
-  (`{N title}` sections + `{!modules: …}` lists) — used by `wodoc build` for a
+  (`{N title}` sections + `{!modules: …}` lists), used by `wodoc build` for a
   client/server project's per-side module list. A manual's own navigation is
   declared in the `doc/wodoc` config (the `(nav …)` stanza), not from a
   wikicréole menu.
-- `Resolve`: link references odoc left dead — cross-package "sibling" references
-  built in the same tree, and cross-project references to other hosted projects —
+- `Resolve`: link references odoc left dead: cross-package "sibling" references
+  built in the same tree, and cross-project references to other hosted projects,
   rewriting the HTML in place. A hosted project declares its deployed layout
   (`multilib` / `root` / `subdir`); a `subdir` entry rewrites links to a
   multi-package project (e.g. `js_of_ocaml`, `tyxml`) into its per-package
@@ -153,7 +153,7 @@ and `.mli` sources. It provides:
   each post like any page, auto-lists them in a generated left-nav section, and
   expands a landing marker (`{%html:<!--wodoc-blog-latest-->%}`, or
   `{%wodoc:blog-latest%}` in preprocessed builds) into a styled "latest posts"
-  list (`.wodoc-blog-list`/`-card`/`-title`/`-meta`/`-excerpt`). Generic — no
+  list (`.wodoc-blog-list`/`-card`/`-title`/`-meta`/`-excerpt`). Generic: no
   project-specific assumptions; styled from the project's own stylesheet. A page
   built through the low-level `wodoc assemble` path (e.g. a separately built site
   home) can carry the same listing with `--blog-config`/`--blog-base`. For such a
@@ -167,10 +167,10 @@ and `.mli` sources. It provides:
   config turns it off.
 - `wodoc requalify-xrefs`: post-pass over a co-located multi-project site that
   fixes flat cross-project links to a wrapped library (`Eliom_content` →
-  `Eliom/Content`) — `odoc_driver --remap` names the reference by the flat path
+  `Eliom/Content`): `odoc_driver --remap` names the reference by the flat path
   while the qualified project deploys it under its wrapper; the non-uniform
   mapping (renamed vs kept module names) is resolved by probing the target tree.
-- `wodoc release`: the stable-version release procedure — freeze the CI-built
+- `wodoc release`: the stable-version release procedure: freeze the CI-built
   `dev/` as `<version>/`, repoint the `latest` symlink and refresh the
   `versions.json` manifest (the only file a release rewrites; the CI only
   rebuilds `dev/`, and releases are frozen snapshots of it).

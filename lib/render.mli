@@ -28,7 +28,7 @@ val html : ?strip_anchors:bool -> string -> string
     marker is left as an HTML comment rather than raising.
 
     [strip_anchors] (default [false]) removes the empty hover-link anchors odoc
-    inserts inside headings — useful for website pages (and required when a
+    inserts inside headings, useful for website pages (and required when a
     heading sits inside a clickable card link, to avoid a nested [<a>]). *)
 
 val markdown : string -> string

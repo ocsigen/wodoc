@@ -2,7 +2,7 @@
 
 The wodoc documentation published at <https://ocsigen.org/wodoc/> is built
 entirely with **odoc** and themed with the Ocsigen site chrome by **wodoc
-itself** — wodoc dogfoods its own turn-key `wodoc build` command. The same odoc
+itself**: wodoc dogfoods its own turn-key `wodoc build` command. The same odoc
 sources are also what ocaml.org renders.
 
 ## Sources
@@ -22,7 +22,7 @@ stock odoc and so would drop any wodoc marker. wodoc here only adds the **chrome
 shown verbatim inside code blocks, as documentation.
 
 The page template and the left-column navigation are **not** files here: `wodoc
-build` generates them — the template from `Wodoc.Build`, the left navigation
+build` generates them: the template from `Wodoc.Build`, the left navigation
 (version selector, on-this-page, manual + API sections) from the `(nav …)`
 stanza of [`doc/wodoc`](wodoc). The shared menu is not kept here either: `wodoc
 build` fetches the single canonical copy served at

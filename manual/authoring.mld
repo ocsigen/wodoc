@@ -2,7 +2,7 @@
 
 The [{%wodoc:...%}] target is unknown to stock odoc, so it is {b dropped} when
 the same sources are built with a stock odoc (for example on ocaml.org). This is
-the whole point — the docs stay clean and semantic there — but it means you must
+the whole point (the docs stay clean and semantic there), but it means you must
 choose, per construct, whether something is {e content} (must survive) or {e
 presentation} (may vanish).
 
