@@ -26,6 +26,14 @@ Config simplifications (breaking):
 - Direct-mld builds link every page against all the others, so references between
   the pages of a manual resolve. They used to be compiled and linked one page at
   a time, which left every reference to a not-yet-compiled page dead.
+- The Markdown twins no longer carry the wodoc markers. odoc's Markdown backend
+  passes raw markup through verbatim, so every directive reached the twin as an
+  HTML comment: the site's own `index.md` held 100 of them and the tutorial's
+  `basics.md` 134, which defeats the point of a readable twin. The
+  presentational directives are dropped; `img` becomes a Markdown image and the
+  target of `a` is carried over to its block's first heading (or around a
+  one-line block), so no image or link is lost. `wodoc render --markdown`
+  applies the pass for a site that builds its twins by hand.
 - The Markdown twins and the `llms.txt`/`llms-full.txt` indexes are now required:
   a build that cannot produce them fails, where it used to warn and carry on.
   They are published files and a version directory is deployed wholesale, so a
