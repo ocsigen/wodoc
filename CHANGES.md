@@ -39,6 +39,10 @@ Config simplifications (breaking):
   They are published files and a version directory is deployed wholesale, so a
   skipped generation deleted the twins already online while the CI stayed green.
   `(markdown false)` opts a project out, as before.
+- A single-package odoc-driver project can land on its `index.mld`
+  (`(landing index.html)`). The root `index.html` of its tree was taken for
+  odoc's package list and skipped, and the version root redirect that replaced
+  it pointed at itself: a redirect loop on the home page.
 
 Cross-project references:
 

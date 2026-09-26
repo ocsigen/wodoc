@@ -822,6 +822,11 @@ let run
   (* direct-mld build (manual-only/archived): the pages ARE the manual and the
      landing index.html is a real page, so keep it and write no redirect. *)
   let mld_mode = c.mld_dir <> None in
+  (* the root index.html of [src] is a real page in a direct-mld build, and in a
+     single-package odoc-driver build, whose [src] is the package's own subtree
+     ([_wodoc-html/<pkg>]): its index.mld. Only [dune build @doc]'s root holds
+     odoc's package list. *)
+  let root_index_is_page = mld_mode || c.odoc_driver <> None in
   (* the pages to assemble: the explicit (packages …) subtrees, or — by default —
      every .html odoc produced (recursively), skipping its support assets and the
      top-level package-list index (replaced by the redirect below). Default covers
@@ -845,7 +850,8 @@ let run
                then walk (if rel = "" then e else Filename.concat rel e))
             (Sys.readdir abs)
         else if
-          Filename.check_suffix rel ".html" && (mld_mode || rel <> "index.html")
+          Filename.check_suffix rel ".html"
+          && (root_index_is_page || rel <> "index.html")
         then acc := rel :: !acc
       in
       walk ""; List.sort compare !acc
