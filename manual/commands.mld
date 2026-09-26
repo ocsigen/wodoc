@@ -225,9 +225,10 @@ copy of that [dev] snapshot taken at release time. Run it on a checkout of the
   | [--from <dir>] | the {e existing} directory to copy from (default [dev]) |
 }
 
-It copies [<site>/<from>] → [<site>/<version>], repoints the [latest] symlink at
-[<version>], (re)writes the project-root redirect to [latest/] and the
-project-root [404.html] (see the version selector below), and regenerates
+It copies [<site>/<from>] → [<site>/<version>], points the copy's links into
+the other projects' [dev] docs at their [latest] docs, repoints the [latest]
+symlink at [<version>], (re)writes the project-root redirect to [latest/] and
+the project-root [404.html] (see the version selector below), and regenerates
 [versions.json]. Older version directories are left untouched.
 
 {@text[
@@ -242,6 +243,17 @@ rebuild. This is the procedure for {e odoc-driver} projects (eliom,
 ocsigen-toolkit, ocsigen-start), whose [build] documents the {e installed}
 package: you cannot cheaply rebuild an old version from source, so you freeze the
 current [dev] instead.
+
+The one change is to the links into other projects: a [dev] build links against
+their [dev] docs (a development doc documents against development APIs), and a
+frozen version must not follow them as they move on. [release] rewrites exactly
+the links wodoc emitted for them (relative, climbing from the page to the root of
+the co-located projects, then into [<project>/dev/]) to [<project>/latest/]. To
+repair a version frozen before [release] did it:
+
+{@text[
+wodoc pin-deps --site <gh-pages-dir> --version <v>
+]}
 
 {2 Documenting an older tag or branch}
 

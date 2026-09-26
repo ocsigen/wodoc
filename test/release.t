@@ -81,3 +81,48 @@ link inside it:
   1.0
   $ test -e site2/1.0/1.0 || echo "no nested link"
   no nested link
+
+A dev build links against the dev docs of the projects it depends on, and a
+release freezes dev without rebuilding it: the frozen copy points those links
+at the dependencies' latest docs instead. Only the links that climb from the
+page to the root of the co-located projects are rewritten (the page's base,
+then ../..), not a link within the version:
+
+  $ mkdir -p site3/dev/Mod
+  $ touch site3/dev/wodoc-highlight.js
+  $ cat > site3/dev/index.html <<'HTML'
+  > <a href="./../../eliom/dev/server-services.html">dep</a>
+  > <a href="./Mod/index.html">own</a>
+  > HTML
+  $ cat > site3/dev/Mod/index.html <<'HTML'
+  > <a href="../../../lwt/dev/lwt/Lwt/index.html">dep</a>
+  > <a href="../../dev/index.html">not a dependency link</a>
+  > HTML
+  $ wodoc release --site site3 --version 1.0
+  wodoc release: 2 pages now link to the latest docs of their dependencies
+  wodoc release: froze dev -> 1.0, latest -> 1.0
+  $ cat site3/1.0/index.html site3/1.0/Mod/index.html
+  <a href="./../../eliom/latest/server-services.html">dep</a>
+  <a href="./Mod/index.html">own</a>
+  <a href="../../../lwt/latest/lwt/Lwt/index.html">dep</a>
+  <a href="../../dev/index.html">not a dependency link</a>
+
+The dev docs themselves are untouched:
+
+  $ grep -c '/dev/' site3/dev/index.html site3/dev/Mod/index.html
+  site3/dev/index.html:1
+  site3/dev/Mod/index.html:2
+
+`wodoc pin-deps` does the same on a version released before `release` did it,
+and refuses the dev docs:
+
+  $ cp -R site3/dev site3/0.9
+  $ wodoc pin-deps --site site3 --version 0.9
+  wodoc pin-deps: 2 pages of site3/0.9 now link to latest
+  $ grep -o 'eliom/[a-z]*/' site3/0.9/index.html
+  eliom/latest/
+  $ wodoc pin-deps --site site3 --version 0.9
+  wodoc pin-deps: 0 pages of site3/0.9 now link to latest
+  $ wodoc pin-deps --site site3 --version dev
+  wodoc pin-deps: site3/dev is not a released version directory
+  [1]

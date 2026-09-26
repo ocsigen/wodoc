@@ -1287,9 +1287,57 @@ let run
   write_manifest ~root:(Filename.dirname out);
   if local then local_assets ~menu ~out
 
+(* [pin_deps ~dir] points the links of the version directory [dir] into the
+   other projects' [dev] docs at their [latest] docs, and returns the number of
+   pages rewritten. A [dev] build links against the dev docs of the projects it
+   depends on (see [dep_version] in {!run}), and a release freezes [dev] without
+   rebuilding it: the released pages would otherwise follow the development docs
+   of their dependencies. Such a link is the one {!Resolve.deps} emits: relative,
+   climbing from the page to the root of the co-located projects (the page's
+   base, then [../..]), then into [<project>/dev/]. Only that exact climb is
+   rewritten, so links within the version are left alone. *)
+let pin_deps ~dir =
+  let count = ref 0 in
+  let rec walk rel =
+    let abs = if rel = "" then dir else Filename.concat dir rel in
+    if Sys.is_directory abs
+    then
+      Array.iter
+        (fun e -> walk (if rel = "" then e else Filename.concat rel e))
+        (Sys.readdir abs)
+    else if Filename.check_suffix rel ".html"
+    then begin
+      let depth = List.length (String.split_on_char '/' rel) - 1 in
+      let base =
+        if depth = 0
+        then "."
+        else String.concat "/" (List.init depth (fun _ -> ".."))
+      in
+      let root = "href=\"" ^ base ^ "/../../" in
+      let re = Str.regexp (Str.quote root ^ "\\([A-Za-z0-9_.-]+\\)/dev/") in
+      let page = read_file abs in
+      let pinned = Str.global_replace re (root ^ "\\1/latest/") page in
+      if pinned <> page then (write_file abs pinned; incr count)
+    end
+  in
+  walk ""; !count
+
+(* [pin_version_deps ~site ~version]: {!pin_deps} on the already released
+   [<site>/<version>], to repair a version frozen before [release] did it. *)
+let pin_version_deps ~site ~version =
+  let dir = Filename.concat site version in
+  if version = "dev" || not (Sys.file_exists dir && Sys.is_directory dir)
+  then (
+    Printf.eprintf "wodoc pin-deps: %s is not a released version directory\n"
+      dir;
+    exit 1);
+  Printf.eprintf "wodoc pin-deps: %d pages of %s now link to latest\n"
+    (pin_deps ~dir) dir
+
 (* [release ~site ~from ~version]: the stable-version release procedure. The CI
    only ever (re)builds [<site>/dev]; a stable version is a frozen snapshot of it.
-   Copy [<site>/<from>] (default "dev") to [<site>/<version>], repoint the
+   Copy [<site>/<from>] (default "dev") to [<site>/<version>], point its links
+   into the other projects' dev docs at their latest ({!pin_deps}), repoint the
    [latest] symlink at it, and (re)write the project-root redirect and 404 page.
    Older version directories are left untouched. *)
 let release ~site ~from ~version =
@@ -1307,6 +1355,13 @@ let release ~site ~from ~version =
   then (
     Printf.eprintf "wodoc release: copy %s -> %s failed\n" src dst;
     exit 1);
+  (* a frozen version links to the released docs of its dependencies *)
+  let pinned = pin_deps ~dir:dst in
+  if pinned > 0
+  then
+    Printf.eprintf
+      "wodoc release: %d pages now link to the latest docs of their dependencies\n"
+      pinned;
   point_latest ~root:site version;
   (* the project-root redirect points at the stable [latest] symlink, so it does
      not change between releases. Always (over)write it: a project migrated from
