@@ -63,6 +63,11 @@ Cross-project references:
   each module's synopsis, and odoc resolves the references in the module's own page,
   not in those copies.
 
+Version selector:
+
+- Choosing a version whose tree lacks the current page (a renamed module, a
+  merged manual page) goes to that version's index, instead of a 404.
+
 ## 0.1
 
 First release: an odoc driver that builds complete, styled websites from `.mld`

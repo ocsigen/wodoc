@@ -280,6 +280,10 @@ canonical [/<project>/latest/] URL when chosen; other versions navigate to their
 own numbered URL. The menu is built statically too (as a fallback baked into the
 page), so it still works if the manifest cannot be fetched.
 
+Choosing a version keeps the current page when it exists in that version, and
+otherwise goes to that version's index: pages move between versions (a renamed
+module, a merged manual page).
+
 {2 Client/server projects}
 
 A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a
