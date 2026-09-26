@@ -83,6 +83,9 @@ Version selector:
   root, which GitHub Pages serves for any missing path: it sends the reader to the
   index of the requested version, or to `latest`. It covers the pages frozen by an
   older wodoc, whose selector cannot tell a missing page, and old external links.
+- A `latest` that is not a symlink (a stale copy of a version directory, left by
+  an older doc setup) is replaced by one, with a note. The link used to be
+  created inside it, and `/latest/` kept serving the stale copy.
 
 ## 0.1
 

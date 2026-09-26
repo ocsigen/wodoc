@@ -377,6 +377,24 @@ let latest_target ~root =
   try Some (Filename.basename (Unix.readlink (Filename.concat root "latest")))
   with _ -> None
 
+(* [point_latest ~root version] makes [<root>/latest] a symlink to [version].
+   A [latest] that is not a symlink (a stale copy of a version directory, left by
+   an older doc setup) is replaced, with a note: [ln -sfn] would create the link
+   INSIDE it, and [/latest/] would keep serving the stale copy. *)
+let point_latest ~root version =
+  let latest = Filename.concat root "latest" in
+  (match Unix.lstat latest with
+  | {Unix.st_kind = Unix.S_LNK; _} -> Unix.unlink latest
+  | _ ->
+      Printf.eprintf "wodoc: %s is not a symlink: replacing it by one to %s\n"
+        latest version;
+      if Sys.command ("rm -rf " ^ Filename.quote latest) <> 0
+      then (
+        Printf.eprintf "wodoc: cannot remove %s\n" latest;
+        exit 1)
+  | exception Unix.Unix_error (Unix.ENOENT, _, _) -> ());
+  Unix.symlink version latest
+
 (* numeric-aware comparison of version strings, component by component on '.'
    ("12.0.1" > "2.0"); non-numeric components fall back to string compare. *)
 let compare_version a b =
@@ -1246,10 +1264,7 @@ let run
   | _ -> ());
   if set_latest
   then begin
-    ignore
-      (Sys.command
-         (Printf.sprintf "ln -sfn %s %s" (Filename.quote label)
-            (Filename.quote (Filename.concat (Filename.dirname out) "latest"))));
+    point_latest ~root:(Filename.dirname out) label;
     (* project-root redirect: <project>/index.html -> latest/index.html. Stable
        target (always the `latest` symlink), so the project is reachable from
        ocsigen.org/wodoc/<project>/ regardless of which version was just built. *)
@@ -1285,10 +1300,7 @@ let release ~site ~from ~version =
   then (
     Printf.eprintf "wodoc release: copy %s -> %s failed\n" src dst;
     exit 1);
-  ignore
-    (Sys.command
-       (Printf.sprintf "ln -sfn %s %s" (Filename.quote version)
-          (Filename.quote (Filename.concat site "latest"))));
+  point_latest ~root:site version;
   (* the project-root redirect points at the stable [latest] symlink, so it does
      not change between releases. Always (over)write it: a project migrated from
      an older doc setup may carry a STALE root redirect on gh-pages (e.g. lwt's
