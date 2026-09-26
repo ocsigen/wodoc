@@ -76,6 +76,12 @@ val versions : out:string -> label:string -> string list
 val write_manifest : root:string -> unit
 ```
 ```ocaml
+val not_found_page : string
+```
+```ocaml
+val write_not_found : root:string -> unit
+```
+```ocaml
 val asset_re : Str.regexp
 ```
 ```ocaml

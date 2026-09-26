@@ -197,9 +197,11 @@ A wodoc site is made of these ingredients; each is covered below.
       Myproj/index.html
     wodoc.css          <- the theme (built-in default, or your (css …))
     wodoc-highlight.js
-    versions.json      <- the version manifest (drives the <select>)
   1.0.0/               <- a frozen release (wodoc release)
   latest -> 1.0.0      <- a symlink
+  index.html           <- redirect to latest/
+  404.html             <- a missing page: to its version's index
+  versions.json        <- the version manifest (drives the <select>)
 ```
 Everything a page references (the theme, the highlighter, internal links) is version-relative, so the site is self-contained and a frozen version keeps working forever. (Only the version `<select>` uses the absolute `(url-prefix)` to switch versions.)
 
@@ -696,7 +698,7 @@ wodoc release --site <gh-pages-dir> --version <v> [--from dev]
 | `--site <gh-pages-dir>` | a working copy of the project's `gh-pages` branch, the deployed site root that holds `dev/`, the version directories, the `latest` symlink and `versions.json` |
 | `--version <v>` | the name of the new frozen version directory to create, e.g. `12.0` |
 | `--from <dir>` | the *existing* directory to copy from (default `dev`) |
-It copies `<site>/<from>` → `<site>/<version>`, repoints the `latest` symlink at `<version>`, writes the project-root redirect to `latest/` if missing, and regenerates `versions.json`. Older version directories are left untouched.
+It copies `<site>/<from>` → `<site>/<version>`, repoints the `latest` symlink at `<version>`, (re)writes the project-root redirect to `latest/` and the project-root `404.html` (see the version selector below), and regenerates `versions.json`. Older version directories are left untouched.
 
 ```text
 # on the gh-pages checkout, after dev has been built & deployed
@@ -719,9 +721,13 @@ wodoc build --config doc/wodoc --out <gh-pages>/0.1.0 --label 0.1.0 \
 
 ### The version selector
 
-Each page carries a version `<select>` in its left column. Both `build` and `release` (re)write a `versions.json` manifest at the project root, the single source of truth listing `dev` first, then the version directories newest-first (numeric, so `10.0.0` sorts above `2.0.0`), with the directory the `latest` symlink points at recorded under `"latest"`. The page script reads it and rebuilds the menu on load, so even an old frozen page lists the current set without being rewritten. A release therefore touches only this one file.
+Each page carries a version `<select>` in its left column. Both `build` and `release` (re)write a `versions.json` manifest at the project root, the single source of truth listing `dev` first, then the version directories newest-first (numeric, so `10.0.0` sorts above `2.0.0`), with the directory the `latest` symlink points at recorded under `"latest"`. The page script reads it and rebuilds the menu on load, so even an old frozen page lists the current set without being rewritten. A release therefore rewrites no page of an older version.
 
 The entry that `latest` points at is labelled *"`<v>` (latest)"* and keeps the canonical `/<project>/latest/` URL when chosen; other versions navigate to their own numbered URL. The menu is built statically too (as a fallback baked into the page), so it still works if the manifest cannot be fetched.
+
+Choosing a version keeps the current page when it exists in that version, and otherwise goes to that version's index: pages move between versions (a renamed module, a merged manual page). A page frozen by an older wodoc swaps the version segment blindly; for it, and for old external links, `release` (and `build --latest`) writes a `404.html` at the project root, which GitHub Pages serves for any missing path of the site. It sends the reader to the index of the requested version, or to `latest` when that version does not exist. It finds the project prefix on its own (the shortest prefix of the path that serves a `versions.json`), so it works at any deploy path.
+
+The two mechanisms are independent. Without the `404.html`, the selector of the pages built by this wodoc still falls back to the version's index; only the pages frozen by an older wodoc and the old external links reach the host's generic 404 page, as before. The next `release` writes the file, so a site gets it without any action; to cover a site already released right away, copy the `404.html` of any release to the root of the `gh-pages` branch. Netlify and Cloudflare Pages serve a root `404.html` the same way; on another host, declare it as the error page of the site, or leave it: it is a harmless file there.
 
 ### Client/server projects
 
@@ -1092,6 +1098,12 @@ val versions : out:string -> label:string -> string list
 ```
 ```ocaml
 val write_manifest : root:string -> unit
+```
+```ocaml
+val not_found_page : string
+```
+```ocaml
+val write_not_found : root:string -> unit
 ```
 ```ocaml
 val asset_re : Str.regexp
