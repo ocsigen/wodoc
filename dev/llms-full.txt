@@ -528,7 +528,7 @@ A single-package `dune build @doc` project puts both its manual and its API unde
 
 ### Manual-only / archived projects: `(mld-dir …)`
 
-A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc `--package`. (When the directory is passed on the CLI with `--mld-dir` (for a per-version manual), set the package with a standalone `(mld-package <pkg>)` instead.) The pages *are* the manual, so the landing `index.html` is a real page (no redirect). Add `(flat)` when the first content straddles odoc's preamble boundary. `(static-copy <src> [<dest>])` (repeatable) copies a tree in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
+A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc `--package`. (When the directory is passed on the CLI with `--mld-dir` (for a per-version manual), set the package with a standalone `(mld-package <pkg>)` instead.) The pages *are* the manual, so the landing `index.html` is a real page (no redirect). Add `(flat)` when the first content straddles odoc's preamble boundary. `(static-copy <src> [<dest>])` (repeatable) copies a tree in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image. `<dest>` (the basename of `<src>` by default) is replaced on every build, so it must be a relative path inside the version directory, with no `.` or `..` segment.
 
 ## Client/server projects: `(client-server …)`
 
@@ -1089,6 +1089,9 @@ val leftnav : latest:string option -> Config.t -> string list -> string
 val latest_target : root:string -> string option
 ```
 ```ocaml
+val point_latest : root:string -> string -> unit
+```
+```ocaml
 val compare_version : string -> string -> int
 ```
 ```ocaml
@@ -1296,6 +1299,9 @@ val parse_hosted :
 ```
 ```ocaml
 val parse_blog : Sexp.t list -> blog option
+```
+```ocaml
+val check_static_dest : string -> string
 ```
 ```ocaml
 val parse_static_copy : Sexp.t list -> (string * string) list

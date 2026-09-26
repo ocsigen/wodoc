@@ -64,6 +64,9 @@ val leftnav : latest:string option -> Config.t -> string list -> string
 val latest_target : root:string -> string option
 ```
 ```ocaml
+val point_latest : root:string -> string -> unit
+```
+```ocaml
 val compare_version : string -> string -> int
 ```
 ```ocaml

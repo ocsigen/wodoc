@@ -107,6 +107,9 @@ val parse_hosted :
 val parse_blog : Sexp.t list -> blog option
 ```
 ```ocaml
+val check_static_dest : string -> string
+```
+```ocaml
 val parse_static_copy : Sexp.t list -> (string * string) list
 ```
 ```ocaml
