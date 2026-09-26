@@ -123,19 +123,51 @@ type t =
           [[]] (the default) ships wodoc's built-in default theme as [wodoc.css]. *)
   }
 
+(* A stanza wodoc does not read is an error, not silently ignored: a typo, or a
+   stanza left over from an older wodoc, would otherwise drop a setting with no
+   warning (a (pub …) left in place of (url-prefix …), for one, kept building
+   with the default prefix). The retired stanzas carry a hint. *)
+let retired =
+  [ "pub", "it is now (url-prefix ...)"
+  ; "anchor-menu", "declare the left navigation with (nav ...)"
+  ; "manual-menu", "declare the left navigation with (nav ...)" ]
+
+(* [check_keys ~where known items] raises [Sexp.Error] on the first [(key …)] of
+   [items] whose key is not in [known]. Bare atoms are left alone. *)
+let check_keys ~where known items =
+  List.iter
+    (function
+      | Sexp.List (Atom k :: _) when List.mem k known -> ()
+      | Sexp.List (Atom k :: _) ->
+          let hint =
+            match List.assoc_opt k retired with
+            | Some h -> h
+            | None -> "expected one of: " ^ String.concat ", " known
+          in
+          raise
+            (Sexp.Error
+               (Printf.sprintf "unknown stanza (%s ...) in %s: %s" k where hint))
+      | Sexp.List _ ->
+          raise (Sexp.Error (Printf.sprintf "malformed stanza in %s" where))
+      | Sexp.Atom _ -> ())
+    items
+
 let parse_entry = function
   | Sexp.List [Atom label; Atom path; Atom current] -> {label; path; current}
   | Sexp.List [Atom label; Atom path] -> {label; path; current = ""}
   | _ -> raise (Sexp.Error "bad (link <label> <path> [<current>]) entry")
 
 (* a nav section body: a flat list of [(link …)] and nested [(group …)] blocks.
-   Anything else is ignored, so comments and stray atoms are harmless. *)
+   Stray atoms are ignored; any other list is an error (see {!check_keys}). *)
 let rec parse_items items =
+  check_keys ~where:"a (nav ...) section" ["link"; "group"] items;
   List.filter_map
     (function
       | Sexp.List (Atom "link" :: rest) -> Some (Link (parse_entry (List rest)))
       | Sexp.List (Atom "group" :: Atom heading :: rest) ->
           Some (Group (heading, parse_items rest))
+      | Sexp.List (Atom "group" :: _) ->
+          raise (Sexp.Error "bad (group <heading> ...) entry")
       | _ -> None)
     items
 
@@ -145,6 +177,7 @@ let parse_section api = function
   | _ -> raise (Sexp.Error "bad nav section")
 
 let parse_nav_blocks blocks =
+  check_keys ~where:"(nav ...)" ["section"; "api-section"] blocks;
   List.filter_map
     (function
       | Sexp.List (Atom "section" :: rest) ->
@@ -180,6 +213,10 @@ let parse_client_server stanzas =
       List.filter_map
         (function
           | Sexp.List (Atom side :: fields) ->
+              check_keys
+                ~where:(Printf.sprintf "(client-server (%s ...))" side)
+                ["lib"; "indexdoc"; "heading"; "wrapper"; "skip"]
+                fields;
               Some
                 { side
                 ; lib = Sexp.field_atom_default "lib" "" fields
@@ -217,6 +254,7 @@ let parse_hosted stanzas =
 let parse_blog stanzas =
   match Sexp.fields "blog" stanzas with
   | fields :: _ ->
+      check_keys ~where:"(blog ...)" ["dir"; "out"; "heading"; "latest"] fields;
       let latest =
         match
           int_of_string_opt (Sexp.field_atom_default "latest" "5" fields)
@@ -240,8 +278,35 @@ let parse_static_copy stanzas =
       | _ -> None)
     (Sexp.fields "static-copy" stanzas)
 
+(* the top-level stanzas {!of_string} reads *)
+let stanza_names =
+  [ "project"
+  ; "title"
+  ; "url-prefix"
+  ; "menu-current"
+  ; "packages"
+  ; "landing"
+  ; "highlight"
+  ; "profile"
+  ; "odoc-driver"
+  ; "doc-manual"
+  ; "manual-files"
+  ; "sibling"
+  ; "nav"
+  ; "client-server"
+  ; "hosted"
+  ; "manual-root"
+  ; "mld-dir"
+  ; "mld-package"
+  ; "flat"
+  ; "static-copy"
+  ; "blog"
+  ; "markdown"
+  ; "css" ]
+
 let of_string s =
   let stanzas = Sexp.parse s in
+  check_keys ~where:"the config" stanza_names stanzas;
   let project =
     match Sexp.field_atom "project" stanzas with
     | Some p -> p

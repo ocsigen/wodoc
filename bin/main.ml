@@ -79,7 +79,17 @@ let resolve_blog cfg (c : Wodoc.Config.t) =
       }
   | _ -> c
 
-let config_of cfg = resolve_blog cfg (Wodoc.Config.of_string (read_file cfg))
+(* read a config (or a --nav file) with [parse]; a malformed or unknown stanza
+   is a user error, reported with the file name instead of an uncaught
+   exception *)
+let read_config parse f =
+  match parse (read_file f) with
+  | v -> v
+  | exception Wodoc.Sexp.Error m ->
+      Printf.eprintf "wodoc: %s: %s\n" f m;
+      exit 1
+
+let config_of cfg = resolve_blog cfg (read_config Wodoc.Config.of_string cfg)
 
 let () =
   match Array.to_list Sys.argv with
@@ -308,7 +318,7 @@ let () =
       in
       let c =
         match List.assoc_opt "nav" flags with
-        | Some f -> {c with nav = Wodoc.Config.nav_of_string (read_file f)}
+        | Some f -> {c with nav = read_config Wodoc.Config.nav_of_string f}
         | None -> c
       in
       let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in
