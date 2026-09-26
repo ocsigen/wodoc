@@ -202,13 +202,19 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
 
   <script>
 %s    var wodocPub = "%s";
-    // Switch version: keep the current page, swapping only the version segment.
+    // Switch version: keep the current page, swapping only the version segment,
+    // unless that page does not exist in the target version (a renamed module,
+    // a merged manual page): then go to that version's index.
     function wodocVersion(v) {
       if (!v) return;
       var re = new RegExp('^(' + wodocPub + '/)[^/]+');
       var p = location.pathname;
-      location.href =
-        re.test(p) ? p.replace(re, '$1' + v) : wodocPub + '/' + v + '/index.html';
+      var home = wodocPub + '/' + v + '/index.html';
+      if (!re.test(p)) { location.href = home; return; }
+      var target = p.replace(re, '$1' + v);
+      fetch(target, { method: 'HEAD' })
+        .then(function (r) { location.href = r.ok ? target : home; })
+        .catch(function () { location.href = target; });
     }
     // Build the version <select> from the project's versions.json (the single
     // source of truth, refreshed on every build/release), so even older frozen
@@ -432,6 +438,64 @@ let write_manifest ~root =
   write_file
     (Filename.concat root "versions.json")
     (Printf.sprintf "{\"latest\":%s,\"list\":%s}\n" latest list)
+
+(* 404.html at the project root, which GitHub Pages serves for any missing path
+   of the site. Pages move between versions (a renamed module, a merged manual
+   page) and a frozen version keeps the selector it was built with, which swaps
+   only the version segment, so a switch from such a page lands on a missing
+   one; old external links do too. The page sends the reader to the index of
+   the version they asked for, or to the latest one. It does not know its own
+   deploy path: the project prefix is the shortest prefix of the requested path
+   that serves a versions.json, and the segment after it is the version. A
+   generated artifact, never customised, so always (over)written. *)
+let not_found_page =
+  {|<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="robots" content="noindex"/>
+<title>Page not found</title></head>
+<body>
+<p id="wodoc-404">This page does not exist in this version of the documentation.</p>
+<script>
+(function () {
+  var segs = location.pathname.split('/').filter(function (s) { return s; });
+  var msg = document.getElementById('wodoc-404');
+  function go(url, text) {
+    if (url === location.pathname) return;
+    var a = document.createElement('a');
+    a.href = url; a.textContent = text;
+    msg.appendChild(document.createTextNode(' '));
+    msg.appendChild(a);
+    location.replace(url);
+  }
+  // the first [i] segments are tried as the project prefix
+  function probe(i) {
+    if (i >= segs.length) return;
+    var base = segs.slice(0, i).map(function (s) { return '/' + s; }).join('');
+    fetch(base + '/versions.json')
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (m) {
+        var v = segs[i], list = m.list || [];
+        var home = function (v) { return base + '/' + v + '/index.html'; };
+        // a page missing from a known version: that version's index;
+        // otherwise (unknown version, or its index itself missing): latest
+        if (!(v === 'latest' || list.indexOf(v) >= 0)
+            || home(v) === location.pathname)
+          v = m.latest ? 'latest' : list[0];
+        if (v)
+          go(home(v), 'Go to the index of version '
+             + (v === 'latest' ? m.latest : v) + '.');
+      }, function () { probe(i + 1); });
+  }
+  probe(0);
+})();
+</script>
+</body>
+</html>
+|}
+
+let write_not_found ~root =
+  write_file (Filename.concat root "404.html") not_found_page
 
 (* Fetch the root-absolute assets the built pages reference (/css/…, /img/…, …)
    from the menu URL's site, into the parent of [out], so the result is viewable
@@ -1187,7 +1251,8 @@ let run
       (Filename.concat (Filename.dirname out) "index.html")
       (Printf.sprintf
          "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>%s documentation</title></head>\n<body></body>\n</html>\n"
-         (esc c.title))
+         (esc c.title));
+    write_not_found ~root:(Filename.dirname out)
   end;
   (* refresh the version manifest the page script reads (now that this build's
      dir and any new [latest] symlink are in place) *)
@@ -1197,8 +1262,8 @@ let run
 (* [release ~site ~from ~version]: the stable-version release procedure. The CI
    only ever (re)builds [<site>/dev]; a stable version is a frozen snapshot of it.
    Copy [<site>/<from>] (default "dev") to [<site>/<version>], repoint the
-   [latest] symlink at it, and ensure the project-root redirect exists. Older
-   version directories are left untouched. *)
+   [latest] symlink at it, and (re)write the project-root redirect and 404 page.
+   Older version directories are left untouched. *)
 let release ~site ~from ~version =
   let src = Filename.concat site from in
   if not (Sys.file_exists src)
@@ -1227,13 +1292,14 @@ let release ~site ~from ~version =
   let idx = Filename.concat site "index.html" in
   write_file idx
     "<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"/>\n<meta http-equiv=\"refresh\" content=\"0; url=latest/index.html\"/>\n<link rel=\"canonical\" href=\"latest/index.html\"/>\n<title>Documentation</title></head>\n<body></body>\n</html>\n";
+  write_not_found ~root:site;
   (* GitHub Pages: serve the static odoc/wodoc site as-is. Without this, Pages runs
      Jekyll, which is slow on large API sites and skips underscore-prefixed odoc
      directories. Written once at the site root if missing. *)
   let nj = Filename.concat site ".nojekyll" in
   if not (Sys.file_exists nj) then write_file nj "";
   (* refresh the version manifest so the new version + [latest] target show up in
-     every page's selector — this is the only file a release needs to rewrite. *)
+     every page's selector: no page of an older version needs rewriting. *)
   write_manifest ~root:site;
   Printf.eprintf "wodoc release: froze %s -> %s, latest -> %s\n" from version
     version

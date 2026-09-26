@@ -226,8 +226,9 @@ copy of that [dev] snapshot taken at release time. Run it on a checkout of the
 }
 
 It copies [<site>/<from>] → [<site>/<version>], repoints the [latest] symlink at
-[<version>], writes the project-root redirect to [latest/] if missing, and
-regenerates [versions.json]. Older version directories are left untouched.
+[<version>], (re)writes the project-root redirect to [latest/] and the
+project-root [404.html] (see the version selector below), and regenerates
+[versions.json]. Older version directories are left untouched.
 
 {@text[
 # on the gh-pages checkout, after dev has been built & deployed
@@ -273,12 +274,32 @@ source of truth listing [dev] first, then the version directories newest-first
 (numeric, so [10.0.0] sorts above [2.0.0]), with the directory the [latest]
 symlink points at recorded under ["latest"]. The page script reads it and
 rebuilds the menu on load, so even an old frozen page lists the current set
-without being rewritten. A release therefore touches only this one file.
+without being rewritten. A release therefore rewrites no page of an older
+version.
 
 The entry that [latest] points at is labelled {e "[<v>] (latest)"} and keeps the
 canonical [/<project>/latest/] URL when chosen; other versions navigate to their
 own numbered URL. The menu is built statically too (as a fallback baked into the
 page), so it still works if the manifest cannot be fetched.
+
+Choosing a version keeps the current page when it exists in that version, and
+otherwise goes to that version's index: pages move between versions (a renamed
+module, a merged manual page). A page frozen by an older wodoc swaps the version
+segment blindly; for it, and for old external links, [release] (and [build
+--latest]) writes a [404.html] at the project root, which GitHub Pages serves
+for any missing path of the site. It sends the reader to the index of the
+requested version, or to [latest] when that version does not exist. It finds
+the project prefix on its own (the shortest prefix of the path that serves a
+[versions.json]), so it works at any deploy path.
+
+The two mechanisms are independent. Without the [404.html], the selector of the
+pages built by this wodoc still falls back to the version's index; only the
+pages frozen by an older wodoc and the old external links reach the host's
+generic 404 page, as before. The next [release] writes the file, so a site gets
+it without any action; to cover a site already released right away, copy the
+[404.html] of any release to the root of the [gh-pages] branch. Netlify and
+Cloudflare Pages serve a root [404.html] the same way; on another host, declare
+it as the error page of the site, or leave it: it is a harmless file there.
 
 {2 Client/server projects}
 
