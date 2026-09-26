@@ -1173,12 +1173,19 @@ let run
     (fun (csrc, dest) ->
        if Sys.file_exists csrc
        then (
+         (* replace [d], so a rebuild in the same output does not copy [csrc]
+            inside the previous copy; {!Config} keeps [dest] strictly inside
+            [out] *)
          let d = Filename.concat out dest in
          mkdir_p (Filename.dirname d);
-         ignore
-           (Sys.command
-              (Printf.sprintf "cp -a %s %s" (Filename.quote csrc)
-                 (Filename.quote d)))))
+         if
+           Sys.command
+             (Printf.sprintf "rm -rf %s && cp -a %s %s" (Filename.quote d)
+                (Filename.quote csrc) (Filename.quote d))
+           <> 0
+         then (
+           Printf.eprintf "wodoc build: static copy %s -> %s failed\n" csrc d;
+           exit 1)))
     c.static_copy;
   (* the stylesheet: with no (css …) configured, ship the built-in default theme
      as wodoc.css; otherwise copy each configured RELATIVE css file (found next to
