@@ -69,6 +69,12 @@ type t = {
 }
 ```
 ```ocaml
+val retired : (string * string) list
+```
+```ocaml
+val check_keys : where:string -> string list -> Sexp.t list -> unit
+```
+```ocaml
 val parse_entry : Sexp.t -> entry
 ```
 ```ocaml
@@ -102,6 +108,9 @@ val parse_blog : Sexp.t list -> blog option
 ```
 ```ocaml
 val parse_static_copy : Sexp.t list -> (string * string) list
+```
+```ocaml
+val stanza_names : string list
 ```
 ```ocaml
 val of_string : string -> t
