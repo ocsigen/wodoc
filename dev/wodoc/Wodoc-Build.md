@@ -161,5 +161,11 @@ val run :
   unit
 ```
 ```ocaml
+val pin_deps : dir:string -> int
+```
+```ocaml
+val pin_version_deps : site:string -> version:string -> unit
+```
+```ocaml
 val release : site:string -> from:string -> version:string -> unit
 ```
