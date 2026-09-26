@@ -32,6 +32,14 @@ wodoc build --config doc/wodoc --out <site>/<label> \
             --menu https://ocsigen.org/doc/menu.html --label <label> [--latest] [--local]
 ]}
 
+Every stanza below is checked: a stanza wodoc does not read, at the top level,
+inside [(client-server …)] or [(blog …)], or among the sections and entries of a
+[(nav …)] (in the config or in a [--nav] file), fails the build with the file
+name and the stanzas expected there. A typo, or a stanza left over from an older
+wodoc, would otherwise drop a setting silently. A retired stanza names its
+replacement: [(pub …)] is now [(url-prefix …)], and [(anchor-menu …)] and
+[(manual-menu …)] give way to [(nav …)].
+
 {1 Core stanzas}
 
 {t

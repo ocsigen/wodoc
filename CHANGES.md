@@ -19,6 +19,14 @@ Config simplifications (breaking):
 - `(mld-dir <dir> [<package>])` can carry the odoc package inline; `mld-package`
   still sets it when the directory is passed on the CLI (`--mld-dir`).
 - The `pub` stanza is renamed `url-prefix`.
+- A stanza wodoc does not read is an error, with the file name and the stanzas
+  expected there, where it used to be ignored: at the top level of the config,
+  inside `(client-server …)` and `(blog …)`, and among the sections and entries
+  of a `(nav …)`, in the config or a `--nav` file. A `(pub …)` left in place of
+  `(url-prefix …)` kept building with the default prefix, and a mistyped nav
+  entry vanished from the menu, with no warning. The retired stanzas name their
+  replacement. Any config error is now reported with its file name instead of
+  as an uncaught exception.
 - A block container a marker opens or closes (`section`, `header`, `nav`, …) is
   taken out of the paragraph odoc wraps the marker in, at either end of it. A
   closing tag left inside ended that paragraph where the browser saw it, leaving
