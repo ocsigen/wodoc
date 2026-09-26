@@ -66,3 +66,18 @@ A stale project-root redirect left by an older doc setup (e.g. lwt carried a
   wodoc release: froze dev -> 10.0.1, latest -> 10.0.1
   $ grep -o 'url=[^"]*' site/index.html
   url=latest/index.html
+
+A `latest` that is not a symlink (a stale copy of a version directory, left by
+an older doc setup) is replaced by one, with a note, instead of receiving the
+link inside it:
+
+  $ mkdir -p site2/dev site2/latest
+  $ touch site2/dev/wodoc-highlight.js
+  $ echo '<html>stale copy</html>' > site2/latest/index.html
+  $ wodoc release --site site2 --version 1.0
+  wodoc: site2/latest is not a symlink: replacing it by one to 1.0
+  wodoc release: froze dev -> 1.0, latest -> 1.0
+  $ readlink site2/latest
+  1.0
+  $ test -e site2/1.0/1.0 || echo "no nested link"
+  no nested link

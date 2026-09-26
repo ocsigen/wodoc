@@ -83,6 +83,18 @@ Version selector:
   root, which GitHub Pages serves for any missing path: it sends the reader to the
   index of the requested version, or to `latest`. It covers the pages frozen by an
   older wodoc, whose selector cannot tell a missing page, and old external links.
+- A `latest` that is not a symlink (a stale copy of a version directory, left by
+  an older doc setup) is replaced by one, with a note. The link used to be
+  created inside it, and `/latest/` kept serving the stale copy.
+
+Rebuilds:
+
+- `(static-copy <src> [<dest>])` replaces its destination, so a second build in
+  the same output no longer copies the tree inside the previous copy
+  (`api/api-snapshot/…`), and a file removed from the source disappears from the
+  copy. The destination must be a relative path inside the version directory,
+  with no `.` or `..` segment; a malformed entry is an error instead of being
+  dropped, and so is a failed copy.
 
 ## 0.1
 

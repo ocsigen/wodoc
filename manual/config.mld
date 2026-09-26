@@ -171,7 +171,9 @@ standalone [(mld-package <pkg>)] instead.) The pages {e are} the manual, so
 the landing [index.html] is a real page (no redirect). Add [(flat)] when the
 first content straddles odoc's preamble boundary. [(static-copy <src> [<dest>])]
 (repeatable) copies a tree in verbatim, e.g. a frozen API snapshot that can no
-longer be recompiled, or a manual image.
+longer be recompiled, or a manual image. [<dest>] (the basename of [<src>] by
+default) is replaced on every build, so it must be a relative path inside the
+version directory, with no [.] or [..] segment.
 
 {1 Client/server projects: [(client-server …)]}
 

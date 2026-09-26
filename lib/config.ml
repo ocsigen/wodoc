@@ -270,12 +270,30 @@ let parse_blog stanzas =
   | [] -> None
 
 (* (static-copy <src> <dest>) ...  — repeatable *)
+(* The destination is replaced on every build (so a rebuild in the same output
+   does not nest the copy inside the previous one), so it must name a path
+   strictly inside the version directory: relative, with no [.] or [..]
+   segment. *)
+let check_static_dest dest =
+  let segs = String.split_on_char '/' dest in
+  if
+    dest = ""
+    || (not (Filename.is_relative dest))
+    || List.exists (fun s -> s = "" || s = "." || s = "..") segs
+  then
+    raise
+      (Sexp.Error
+         (Printf.sprintf
+            "bad (static-copy ...) destination %S: expected a relative path inside the version directory, with no . or .. segment"
+            dest));
+  dest
+
 let parse_static_copy stanzas =
-  List.filter_map
+  List.map
     (function
-      | [Sexp.Atom src; Sexp.Atom dest] -> Some (src, dest)
-      | [Sexp.Atom src] -> Some (src, Filename.basename src)
-      | _ -> None)
+      | [Sexp.Atom src; Sexp.Atom dest] -> src, check_static_dest dest
+      | [Sexp.Atom src] -> src, check_static_dest (Filename.basename src)
+      | _ -> raise (Sexp.Error "bad (static-copy <src> [<dest>]) entry"))
     (Sexp.fields "static-copy" stanzas)
 
 (* the top-level stanzas {!of_string} reads *)
