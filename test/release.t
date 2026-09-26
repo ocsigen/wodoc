@@ -23,6 +23,16 @@ redirect to latest/ is written:
   $ grep -o 'url=[^"]*' site/index.html
   url=latest/index.html
 
+A 404 page is written at the project root too. GitHub Pages serves it for any
+missing path of the site; it sends the reader to the index of the requested
+version, finding the project prefix as the path's shortest prefix that serves a
+versions.json:
+
+  $ grep -c 'versions.json' site/404.html
+  1
+  $ grep -o "location.replace(url)" site/404.html
+  location.replace(url)
+
 The version manifest read by the page selector lists dev first, then the
 versions newest-first, and records which one `latest` points at:
 

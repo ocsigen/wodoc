@@ -67,6 +67,10 @@ Version selector:
 
 - Choosing a version whose tree lacks the current page (a renamed module, a
   merged manual page) goes to that version's index, instead of a 404.
+- `wodoc release` (and `wodoc build --latest`) writes a `404.html` at the project
+  root, which GitHub Pages serves for any missing path: it sends the reader to the
+  index of the requested version, or to `latest`. It covers the pages frozen by an
+  older wodoc, whose selector cannot tell a missing page, and old external links.
 
 ## 0.1
 
