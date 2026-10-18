@@ -19,7 +19,7 @@ doc: "https://ocsigen.org/wodoc/latest/"
 bug-reports: "https://github.com/ocsigen/wodoc/issues"
 depends: [
   "dune" {>= "3.0"}
-  "ocaml" {>= "4.08"}
+  "ocaml" {>= "5.1"}
   "odoc" {>= "3.0"}
   "odoc-driver" {>= "3.0"}
   "yojson" {>= "2.0"}
