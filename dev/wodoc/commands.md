@@ -36,7 +36,7 @@ wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>] 
 ```
 Render an API module navigation `<nav>` fragment from a curated odoc index (`{N title}` section headings \+ `{!modules: …}` lists), writing to stdout. `--lib` / `--wrapper` place the module pages; `--skip-title` drops page-title sections. Used internally by `wodoc build` for a client/server project's per-side API nav (see [config](./config.md)).
 
-The **manual's own navigation is not built here**: it is declared declaratively in the project's [`doc/wodoc`](./config.md) config, in the `(nav …)` stanza, and rendered by `wodoc build`. (Earlier versions built it from a wikicréole `menu.wiki`; that is gone.) See [`Wodoc.Nav`](./Wodoc-Nav.md).
+The **manual's own navigation is not built here**: it is declared declaratively in the project's [`doc/wodoc`](./config.md) config, in the `(nav …)` stanza (or taken from the manual's own tree with `(page-tree)`), and rendered by `wodoc build`. (Earlier versions built it from a wikicréole `menu.wiki`; that is gone.) See [`Wodoc.Nav`](./Wodoc-Nav.md).
 
 ## `wodoc resolve-refs`
 

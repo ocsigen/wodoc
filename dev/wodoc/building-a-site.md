@@ -162,6 +162,15 @@ The left column is declared, not hand-written, in the config's `(nav …)` stanz
 ```
 Each `(link "Label" <path> <id>)` gives the visible label, a version-relative path and the page's odoc `<id>`: wodoc marks the matching entry `current` on each page automatically (longest-prefix match, so you never hand-maintain "current" flags). `(group …)` nests a sub-heading; `(section …)` is a manual block, `(api-section …)` an API block. A project whose versions have *different* manuals can pass a per-version navigation with `wodoc build --nav <file>` (same syntax). The full grammar is in [Configuration](./config.md).
 
+Since odoc 3, a manual can also be a tree of directories (`odoc-pages/<dir>/`, ordered by `@children_order`): odoc shows it in its sidebar, and ocaml.org displays it as is. A `(page-tree)` entry puts that tree in the left column, so both sites show the same menu from one source:
+
+```text
+(nav
+ (section "Manual"
+  (page-tree)))
+```
+Without a `(nav …)` stanza, wodoc uses that tree by default, in a section named after the project. The tree is read from the `sidebar.json` that `odoc_driver` writes, so it needs an `odoc_driver` build (`(odoc-driver …)` or `(client-server …)`). See `(page-tree …)` in [Configuration](./config.md).
+
 ## API docs: one package or several
 
 For a single library, `(packages myproj)` assembles its `dune build @doc` output. List several to document them side by side:
