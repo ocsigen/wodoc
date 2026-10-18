@@ -9,18 +9,38 @@ type entry =
   ; current : string  (** data-wodoc-page id (highlighted on its own pages) *)
   }
 
-type item =
+(* A nav item is parameterised by what a page tree holds: the config declares
+   page trees by their index page ([string item]); {!Build.run} expands them
+   into links and groups, leaving [expanded item]s, where no page tree can
+   remain since [expanded] has no value. *)
+type 'tree item =
   | Link of entry
-  | Group of string * item list
-  (** a sub-heading ([<h4>]) and its nested items, one indent level deeper.
-          Lets a manual nav reproduce a multi-level menu (sections, subsections,
-          page links), as the old wikicréole menu expressed with [==]/[===]. *)
+  | Group of 'tree group
+  | Page_tree of 'tree
+  (** [(page-tree [<index>])]: the page tree odoc builds from the manual's
+          directories ([odoc-pages/<dir>/], ordered by [@children_order]), below
+          the page [<index>] (default [index.html]), as odoc_driver writes it
+          in [sidebar.json], without its library and source entries. Expanded
+          before rendering, so the left column follows the same tree as
+          ocaml.org. *)
 
-type section =
+and 'tree group =
+  { heading : string
+  ; index : string option
+    (** the page the heading links to (a directory of a page tree whose index
+          page is clickable), relative to the version root *)
+  ; items : 'tree item list }
+(** a sub-heading ([<h4>]) and its nested items, one indent level deeper. Lets
+    a manual nav reproduce a multi-level menu (sections, subsections, page
+    links), as the old wikicréole menu expressed with [==]/[===]. *)
+
+type expanded = |
+
+type 'tree section =
   { heading : string  (** the [<h3>] label of this left-nav block *)
   ; api : bool
     (** [api-section] -> class "api-nav"; else "api-nav manual-nav" *)
-  ; items : item list }
+  ; items : 'tree item list }
 
 type blog =
   { dir : string
@@ -78,7 +98,11 @@ type t =
   ; manual_files : string option
     (** package dir to receive manual/files (examples, images) *)
   ; siblings : (string * string list) list  (** resolve-refs sibling table *)
-  ; nav : section list
+  ; nav : string section list option
+    (** the [(nav …)] stanza; [None] when the config has none: the left
+          column then shows the manual tree odoc builds, as
+          [(nav (section <title> (page-tree)))] would, if odoc_driver wrote its
+          [sidebar.json] *)
   ; client_server : cs_side list
     (** when non-empty, the project is client/server: instead of one nav from
           [nav], wodoc builds a per-side API nav from each side's curated index,
@@ -157,17 +181,22 @@ let parse_entry = function
   | Sexp.List [Atom label; Atom path] -> {label; path; current = ""}
   | _ -> raise (Sexp.Error "bad (link <label> <path> [<current>]) entry")
 
-(* a nav section body: a flat list of [(link …)] and nested [(group …)] blocks.
-   Stray atoms are ignored; any other list is an error (see {!check_keys}). *)
+(* a nav section body: a flat list of [(link …)], nested [(group …)] blocks and
+   [(page-tree …)] placeholders. Stray atoms are ignored; any other list is an
+   error (see {!check_keys}). *)
 let rec parse_items items =
-  check_keys ~where:"a (nav ...) section" ["link"; "group"] items;
+  check_keys ~where:"a (nav ...) section" ["link"; "group"; "page-tree"] items;
   List.filter_map
     (function
       | Sexp.List (Atom "link" :: rest) -> Some (Link (parse_entry (List rest)))
       | Sexp.List (Atom "group" :: Atom heading :: rest) ->
-          Some (Group (heading, parse_items rest))
+          Some (Group {heading; index = None; items = parse_items rest})
       | Sexp.List (Atom "group" :: _) ->
           raise (Sexp.Error "bad (group <heading> ...) entry")
+      | Sexp.List [Atom "page-tree"] -> Some (Page_tree "index.html")
+      | Sexp.List [Atom "page-tree"; Atom index] -> Some (Page_tree index)
+      | Sexp.List (Atom "page-tree" :: _) ->
+          raise (Sexp.Error "bad (page-tree [<index page>]) entry")
       | _ -> None)
     items
 
@@ -189,12 +218,13 @@ let parse_nav_blocks blocks =
 
 let parse_nav stanzas =
   match Sexp.fields "nav" stanzas with
-  | blocks :: _ -> parse_nav_blocks blocks
-  | [] -> []
+  | blocks :: _ -> Some (parse_nav_blocks blocks)
+  | [] -> None
 
 (* parse a standalone [(nav …)] file (the [--nav <file>] per-version override),
-   reusing the same syntax as the [(nav …)] stanza inside a [doc/wodoc] config. *)
-let nav_of_string s = parse_nav (Sexp.parse s)
+   reusing the same syntax as the [(nav …)] stanza inside a [doc/wodoc] config. A
+   file without one (an empty file) declares an empty nav. *)
+let nav_of_string s = Some (Option.value ~default:[] (parse_nav (Sexp.parse s)))
 
 let parse_siblings stanzas =
   List.filter_map

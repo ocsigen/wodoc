@@ -196,7 +196,7 @@ let posts (b : Config.blog) =
       let c = compare q.date p.date in
       if c <> 0 then c else compare p.slug q.slug)
 
-let nav_section (b : Config.blog) (posts : post list) : Config.section =
+let nav_section (b : Config.blog) (posts : post list) : _ Config.section =
   { heading = b.heading
   ; api = false
   ; items =

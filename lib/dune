@@ -1,4 +1,4 @@
 (library
  (name wodoc)
  (public_name wodoc)
- (libraries str unix))
+ (libraries str unix yojson))

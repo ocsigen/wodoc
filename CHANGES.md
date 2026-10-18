@@ -54,6 +54,16 @@ Config simplifications (breaking):
 
 Navigation:
 
+- `(page-tree [<index>])` in a `(nav …)` section is the manual tree odoc 3
+  builds from the manual's directories (`odoc-pages/<dir>/`, ordered by
+  `@children_order`), read from the `sidebar.json` odoc_driver writes. The
+  left column then follows the same tree as ocaml.org, from one source,
+  instead of a hand-written list that can drift from the manual. The tree
+  starts with its index page; a directory is a sub-heading, linked to its
+  index page unless it is `@toc_status hidden`.
+- Without a `(nav …)` stanza, the left column is that manual tree, when
+  odoc_driver wrote a `sidebar.json`.
+- A page listed more than once in the left column is reported with a warning.
 - The manual pages installed in subdirectories of `odoc-pages/` get their
   wodoc markers preprocessed too (odoc-driver builds).
 

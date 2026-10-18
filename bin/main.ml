@@ -555,7 +555,8 @@ let () =
         Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu
           ~assets_dir:(Filename.dirname cfg) ~local ~set_latest ~strict_refs
       with
-      | Wodoc.Lint.Dead_markup m -> prerr_endline m; exit 1
+      | Wodoc.Lint.Dead_markup m | Wodoc.Page_tree.Missing m ->
+          prerr_endline m; exit 1
       | Wodoc.Build.Missing_markdown m -> markdown_failed m)
   | _ :: "requalify-xrefs" :: args ->
       (* Post-pass over a co-located multi-project site: rewrite flat

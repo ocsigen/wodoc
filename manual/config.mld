@@ -55,9 +55,9 @@ replacement: [(pub …)] is now [(url-prefix …)], and [(anchor-menu …)] and
 
 {1 Navigation: the [(nav …)] stanza}
 
-The left-column navigation is described declaratively here, and {b this is the only
-way to define navigation}; the old wikicréole [menu.wiki] is gone. [(nav …)]
-holds an ordered list of sections:
+The left-column navigation is described declaratively here, or taken from the
+manual's own tree when the config has no [(nav …)] (see below); the old
+wikicréole [menu.wiki] is gone. [(nav …)] holds an ordered list of sections:
 
 {@text[
 (nav
@@ -84,6 +84,28 @@ holds an ordered list of sections:
   items, indented one level deeper. Groups nest, so a section can reproduce a
   multi-level menu (section → subsection → page links).
 
+- [(page-tree [<index>])]: the {b manual tree} odoc builds, in place of a
+  hand-written list. Since odoc 3, a manual can be a tree of directories:
+  pages installed under [odoc-pages/<dir>/] form a node, whose [index.mld]
+  gives the title (or [@short_title]) and the order of its children
+  ([@children_order], where a directory is written [<dir>/]). odoc shows that
+  tree in the sidebar of every page, and ocaml.org displays it as is.
+  [odoc_driver] also writes it as data, in a [sidebar.json] next to each
+  package's pages. wodoc reads it there and expands the tree of the page
+  [<index>] (default [index.html], relative to the HTML root like a
+  [(link …)] path) into links and groups: first [<index>] itself, then the pages and
+  directories below it. A page is a link, a directory a group, whose heading
+  links to the directory's index page unless that page says
+  [@toc_status hidden]. [<index>] can be the index page of a directory, to
+  show only that part of the tree; when that page is [@toc_status hidden], the
+  tree starts with the directory's pages. The library and source entries of
+  the sidebar are left out (the API has its own navigation). The left column
+  then follows the same tree as ocaml.org, from a single source. It needs
+  odoc 3 pages built by [odoc_driver] ([(odoc-driver …)] or
+  [(client-server …)]): [dune build @doc] writes no [sidebar.json], and does
+  not build the pages of subdirectories. A missing or unreadable
+  [sidebar.json], or one that does not show [<index>], stops the build.
+
 To point at an {b in-page anchor} (a one-page manual), put the fragment in the
 path: [(link "Section 2" index.html#sec2 index)].
 
@@ -96,6 +118,47 @@ A nested example (one [<h3>] section, an [<h4>] subsection, indented links):
   (link "Service handlers"   server-outputs.html server-outputs))
  (link "Sessions" server-state.html server-state))
 ]}
+
+The same menu from the manual's own tree, after the manual's index page:
+
+{@text[
+(section "Reference manual"
+ (page-tree))
+]}
+
+with the manual laid out as:
+
+{@text[
+doc/index.mld              @children_order intro server/
+doc/intro.mld
+doc/server/index.mld       @children_order services/ state
+                           @toc_status hidden
+                           {0 Server-side programming}
+doc/server/services/…
+doc/server/state.mld
+]}
+
+dune's [(documentation)] stanza installs only the top-level pages, so the
+subdirectories are installed with an [(install)] stanza in [doc/dune]:
+
+{@text[
+(install
+ (section doc)
+ (package mypkg)
+ (files
+  (glob_files_rec
+   (server/*.mld with_prefix odoc-pages/server))))
+]}
+
+{b Without a [(nav …)] stanza}, when [odoc_driver] wrote a [sidebar.json], the
+left column is the manual tree, in a section named after the project's
+[(title …)]: the same as [(nav (section <title> (page-tree)))]. Otherwise it
+has no manual navigation. An empty [(nav)] declares no manual navigation at
+all.
+
+A page should appear only once in the left column, or it is highlighted twice
+on its own pages: wodoc warns about a page listed more than once, for example
+by a [(link …)] and by a [(page-tree)].
 
 {2 Per-version navigation: [--nav]}
 
