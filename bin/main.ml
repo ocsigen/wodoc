@@ -11,6 +11,18 @@ let markdown_failed what =
     what;
   exit 1
 
+(* wodoc's work trees ([_wodoc-html], [_wodoc-md]) are rebuilt from scratch on
+   every build: a page renamed or removed since the previous build would
+   otherwise stay in them, in odoc's sidebar and in the published site. *)
+let reset_work_dirs dirs =
+  List.iter
+    (fun d ->
+       if Sys.command ("rm -rf " ^ Filename.quote d) <> 0
+       then (
+         prerr_endline ("wodoc build: cannot remove " ^ d);
+         exit 1))
+    dirs
+
 (* Render every linked [.odocl] under [odocls] with odoc's markdown backend into
    [out], producing a flat-module markdown tree parallel to the HTML one (used by
    the odoc_driver route, which keeps its linked odocls). Source-implementation
@@ -337,6 +349,7 @@ let () =
                    link -> html-generate -> markdown-generate). Output goes under
                    <pkg>/ if a package is set, else at the html / md root. *)
               let work = "_wodoc-html" in
+              reset_work_dirs [work];
               let odoc = Filename.concat work "odoc" in
               let html = Filename.concat work "html" in
               let md = Filename.concat work "md" in
@@ -487,6 +500,7 @@ let () =
                      prerr_endline "wodoc build: dune build @doc-manual failed";
                      exit 1));
                 let work = "_wodoc-html" in
+                reset_work_dirs [work; "_wodoc-md"];
                 let odocls = Filename.concat work "_odocls" in
                 if
                   Sys.command

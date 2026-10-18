@@ -99,6 +99,9 @@ Rebuilds:
   copy. The destination must be a relative path inside the version directory,
   with no `.` or `..` segment; a malformed entry is an error instead of being
   dropped, and so is a failed copy.
+- Each build starts from empty work trees (`_wodoc-html`, `_wodoc-md`). A page
+  renamed or removed since the previous build used to stay there, in odoc's
+  sidebar and in the published site.
 
 ## 0.1
 
