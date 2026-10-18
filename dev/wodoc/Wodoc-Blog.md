@@ -17,7 +17,7 @@ val posts : Config.blog -> post list
 `posts blog`: the posts found in `blog.dir` (file names `YYYY-MM-DD-slug.mld`), newest first. Files that do not match the dated naming are skipped.
 
 ```ocaml
-val nav_section : Config.blog -> post list -> Config.section
+val nav_section : Config.blog -> post list -> _ Config.section
 ```
 `nav_section blog posts`: a synthetic left-nav [`Config.section`](./Wodoc-Config.md#type-section) listing the posts (heading `blog.heading`, one link per post), to splice into the config nav. The link label is "date, title".
 

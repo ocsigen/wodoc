@@ -1,15 +1,6 @@
 # Module `Wodoc.Build`
 
 ```ocaml
-val read_file : string -> string
-```
-```ocaml
-val write_file : string -> string -> unit
-```
-```ocaml
-val is_url : string -> bool
-```
-```ocaml
 val is_external : string -> bool
 ```
 ```ocaml
@@ -52,13 +43,21 @@ val nav_href : string -> string
 val nav_link : int -> Config.entry -> string
 ```
 ```ocaml
-val render_items : Stdlib.Buffer.t -> int -> Config.item list -> unit
+val render_items : 
+  Stdlib.Buffer.t ->
+  int ->
+  Config.expanded Config.item list ->
+  unit
 ```
 ```ocaml
-val manual_nav : Config.t -> string
+val manual_nav : Config.expanded Config.section list -> string
 ```
 ```ocaml
-val leftnav : latest:string option -> Config.t -> string list -> string
+val leftnav : 
+  latest:string option ->
+  Config.expanded Config.section list ->
+  string list ->
+  string
 ```
 ```ocaml
 val latest_target : root:string -> string option
@@ -121,7 +120,7 @@ val drop_prefix : string -> string -> string
 val cs_current : Config.cs_side list -> string -> string
 ```
 ```ocaml
-val nav_entry_paths : Config.t -> string list
+val nav_paths : Config.expanded Config.section list -> string list
 ```
 ```ocaml
 val strip_index : string -> string
@@ -141,7 +140,7 @@ val md_alternate :
   string
 ```
 ```ocaml
-val nav_md_order : Config.t -> string list
+val nav_md_order : Config.expanded Config.section list -> string list
 ```
 ```ocaml
 exception Missing_markdown of string

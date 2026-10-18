@@ -8,15 +8,28 @@ type entry = {
 }
 ```
 ```ocaml
-type item = 
+type 'tree item = 
   | Link of entry
-  | Group of string * item list (* a sub-heading (<h4>) and its nested items, one indent level deeper. Lets a manual nav reproduce a multi-level menu (sections, subsections, page links), as the old wikicréole menu expressed with ==/===. *)
+  | Group of 'tree group
+  | Page_tree of 'tree (* (page-tree [<index>]): the page tree odoc builds from the manual's directories (odoc-pages/<dir>/, ordered by @children_order), below the page <index> (default index.html), as odoc_driver writes it in sidebar.json, without its library and source entries. Expanded before rendering, so the left column follows the same tree as ocaml.org. *)
 ```
 ```ocaml
-type section = {
+and 'tree group = {
+  heading : string;
+  index : string option; (* the page the heading links to (a directory of a page tree whose index page is clickable), relative to the version root *)
+  items : 'tree item list;
+}
+```
+a sub-heading (`<h4>`) and its nested items, one indent level deeper. Lets a manual nav reproduce a multi-level menu (sections, subsections, page links), as the old wikicréole menu expressed with `==`/`===`.
+
+```ocaml
+type expanded = |
+```
+```ocaml
+type 'tree section = {
   heading : string; (* the <h3> label of this left-nav block *)
   api : bool; (* api-section -> class "api-nav"; else "api-nav manual-nav" *)
-  items : item list;
+  items : 'tree item list;
 }
 ```
 ```ocaml
@@ -55,7 +68,7 @@ type t = {
   doc_manual : bool; (* also build the @doc-manual alias (examples) *)
   manual_files : string option; (* package dir to receive manual/files (examples, images) *)
   siblings : (string * string list) list; (* resolve-refs sibling table *)
-  nav : section list;
+  nav : string section list option; (* the (nav …) stanza; None when the config has none: the left column then shows the manual tree odoc builds, as (nav (section <title> (page-tree))) would, if odoc_driver wrote its sidebar.json *)
   client_server : cs_side list; (* when non-empty, the project is client/server: instead of one nav from nav, wodoc builds a per-side API nav from each side's curated index, shows a client/server switch, and colours the body by side. The manual nav is shared, taken from nav's manual ((section …)) blocks. *)
   hosted : (string * (string * Resolve.layout * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. See Resolve.layout for the layout token (multilib/root/subdir). *)
   manual_root : bool; (* deploy the package's pages at the version ROOT instead of under a <package>/ subdirectory: strip the leading <package>/ segment from output paths, the landing and the nav links. Makes a single-package dune build @doc project (ocsigenserver, i18n) match the layout of odoc-driver projects (eliom: manual at the version root, e.g. /ocsigenserver/latest/config.html) so cross-project links resolve. The package's internal relative links are preserved (the same prefix is stripped from every page). *)
@@ -78,19 +91,19 @@ val check_keys : where:string -> string list -> Sexp.t list -> unit
 val parse_entry : Sexp.t -> entry
 ```
 ```ocaml
-val parse_items : Sexp.t list -> item list
+val parse_items : Sexp.t list -> string item list
 ```
 ```ocaml
-val parse_section : bool -> Sexp.t -> section
+val parse_section : bool -> Sexp.t -> string section
 ```
 ```ocaml
-val parse_nav_blocks : Sexp.t list -> section list
+val parse_nav_blocks : Sexp.t list -> string section list
 ```
 ```ocaml
-val parse_nav : Sexp.t list -> section list
+val parse_nav : Sexp.t list -> string section list option
 ```
 ```ocaml
-val nav_of_string : string -> section list
+val nav_of_string : string -> string section list option
 ```
 ```ocaml
 val parse_siblings : Sexp.t list -> (string * string list) list

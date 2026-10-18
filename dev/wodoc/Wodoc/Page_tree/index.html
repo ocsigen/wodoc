@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Module Wodoc.Page_tree — Wodoc</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/ocsigen-odoc.css"/>
+  <link rel="alternate" type="text/markdown" href="../../../wodoc/Wodoc-Page_tree.md"/>
+  <script src="../../../highlight.pack.js"></script>
+  <script src="../../../wodoc-highlight.js"></script>
+</head>
+<body class="wodoc-page wodoc-doc wodoc-project-wodoc">
+  <!-- Shared site menu — THE single source of truth for the header, top menu and
+     drawer of EVERY Ocsigen doc page (vitrine + all projects). Canonical copy
+     lives here in ocsigen.github.io; each project's build fetches it. Injected
+     by `wodoc assemble --menu`. Holes filled by the tool (braces omitted here so
+     this comment is not itself rewritten by the hole-filler):
+       subproject  the sub-project name shown next to the Ocsigen logo
+                   (empty on the vitrine), via --subproject
+       leftnav     the project's left navigation, expanded into BOTH the mobile
+                   drawer (below) and the left column (in the page template),
+                   via --leftnav
+     The current entry is highlighted by adding the `current` class to the
+     element carrying data-wodoc-page=<id>: --current on the vitrine (page id),
+     --menu-current in a project (the project id). Nothing is hardcoded here, so
+     this file is the ONLY place the menu is defined.
+
+     Links are the FINAL site paths (/<project>/, /<page>): the target layout
+     where each project is served at ocsigen.org/<project>/ — no transitional
+     /wodoc/ prefix. -->
+<div class="page-header">
+  <p class="logo-ocsigen"><a href="/"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a></p>
+  <p class="logo-subproject">Wodoc</p>
+
+  <div class="mainmenu">
+    <p class="mainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></p>
+    <p class="mainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></p>
+    <p class="mainmenu-blog" data-wodoc-page="blog"><a href="/blog/">Blog</a></p>
+    <p data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></p>
+    <p data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></p>
+    <p data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></p>
+    <p data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></p>
+    <p data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></p>
+    <p data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></p>
+  </div>
+
+  <form id="googlesearch" action="https://google.com/search">
+    <input name="q" id="gsearch-box" placeholder="Search using Google"/>
+    <label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label>
+    <input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/>
+  </form>
+
+  <aside class="how-drawer">
+    <input id="how-drawer-toggle" type="checkbox"/>
+    <label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label>
+    <nav class="how-drawer-content">
+      <ul class="drawermainmenu">
+        <li class="drawermainmenu-home" data-wodoc-page="githubio"><a href="/">Home</a></li>
+        <li class="drawermainmenu-doc" data-wodoc-page="tuto"><a href="/tuto/">Doc</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="eliom"><a href="/eliom/">Eliom</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="js_of_ocaml"><a href="/js_of_ocaml/">Js_of_ocaml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigenserver"><a href="/ocsigenserver/">Server</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="lwt"><a href="/lwt/">Lwt</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="tyxml"><a href="/tyxml/">Tyxml</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-toolkit"><a href="/ocsigen-toolkit/">Toolkit</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-start"><a href="/ocsigen-start/">Start</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsipersist"><a href="/ocsipersist/">Ocsipersist</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="reactiveData"><a href="/reactiveData/">ReactiveData</a></li>
+        <li class="drawermainmenu-project" data-wodoc-page="ocsigen-i18n"><a href="/ocsigen-i18n/">i18n</a></li>
+        <li class="drawermainmenu-project current" data-wodoc-page="wodoc"><a href="/wodoc/">Wodoc</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="projects"><a href="/projects">Other projects</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="papers"><a href="/papers">Research papers</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="credits"><a href="/credits">Who does Ocsigen?</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="contributing"><a href="/contributing">Contributing</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="blog"><a href="/blog/">Blog</a></li>
+        <li class="drawermainmenu-page" data-wodoc-page="install"><a href="/install">Installation</a></li>
+        <li class="drawermainmenu-page"><a href="https://github.com/ocsigen">Source code</a></li>
+      </ul>
+      <!-- On mobile the left column is hidden; its menu lives here in the burger
+           (.how-doctree, shown only on narrow screens), as the old site did.
+           Empty on the vitrine; the leftnav hole is filled (with the same
+           fragment as the left column) only on project pages. -->
+      <nav class="how-doctree"><div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<ul class="api-section">
+<li class="ml3 current" data-wodoc-page="wodoc/index.html"><a href="../../../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../../../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="wodoc/building-a-site.html"><a href="../../../wodoc/building-a-site.html">Building a complete site</a></li>
+<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../../../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../../../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../../../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../../../wodoc/commands.html">Commands</a></li>
+<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../../../wodoc/blog.html">Adding a blog</a></li>
+</ul>
+</nav>
+<nav class="api-nav">
+<h3>API</h3>
+<ul class="api-section">
+<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../../../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+</nav>
+    </nav>
+  </aside>
+</div>
+
+
+  <div class="project-page">
+    <div class="twocols">
+      <nav class="leftcol">
+        <div class="docversion">
+  <label>Version:
+    <select class="wodoc-version" onchange="wodocVersion(this.value)">
+      <option value="dev">dev</option>
+    </select>
+  </label>
+</div>
+<div class="page-toc">
+  <h3>On this page</h3>
+  
+</div>
+<nav class="api-nav manual-nav">
+<h3>Manual</h3>
+<ul class="api-section">
+<li class="ml3 current" data-wodoc-page="wodoc/index.html"><a href="../../../wodoc/index.html">Overview</a></li>
+<li class="ml3" data-wodoc-page="wodoc/overview.html"><a href="../../../wodoc/overview.html">How it works</a></li>
+<li class="ml3" data-wodoc-page="wodoc/building-a-site.html"><a href="../../../wodoc/building-a-site.html">Building a complete site</a></li>
+<li class="ml3" data-wodoc-page="wodoc/directives.html"><a href="../../../wodoc/directives.html">Directives</a></li>
+<li class="ml3" data-wodoc-page="wodoc/authoring.html"><a href="../../../wodoc/authoring.html">Authoring</a></li>
+<li class="ml3" data-wodoc-page="wodoc/config.html"><a href="../../../wodoc/config.html">Configuration</a></li>
+<li class="ml3" data-wodoc-page="wodoc/commands.html"><a href="../../../wodoc/commands.html">Commands</a></li>
+<li class="ml3" data-wodoc-page="wodoc/blog.html"><a href="../../../wodoc/blog.html">Adding a blog</a></li>
+</ul>
+</nav>
+<nav class="api-nav">
+<h3>API</h3>
+<ul class="api-section">
+<li class="ml2" data-wodoc-page="wodoc/api.html"><a href="../../../wodoc/api.html">API overview</a></li>
+</ul>
+</nav>
+
+      </nav>
+      <article class="rightcol">
+        <header class="odoc-preamble"><h1>Module <code><span>Wodoc.Page_tree</span></code></h1><p>The manual's page tree, as odoc shows it in its sidebar.</p><p>odoc 3 builds a tree from the manual's directories: each subdirectory of <code>odoc-pages/</code> is a node, its <code>index.mld</code> gives the node title (or <code>@short_title</code>) and the order of its children (<code>@children_order</code>). The generated pages show that tree in their sidebar, and ocaml.org shows it as is. odoc_driver also writes it as data, in a <code>sidebar.json</code> next to each package's pages. This module reads it, so that wodoc's left column follows the same tree.</p></header>
+        <div class="odoc-content"><div class="odoc-spec"><div class="spec exception anchored" id="exception-Missing"><code><span><span class="keyword">exception</span> </span><span><span class="exception">Missing</span> <span class="keyword">of</span> string</span></code></div><div class="spec-doc"><p>Raised by <a href="#val-items"><code>items</code></a> when the tree cannot be read, or does not show the expected page.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-has_sidebar"><code><span><span class="keyword">val</span> has_sidebar : <span><span class="label">src</span>:string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> bool</span></code></div><div class="spec-doc"><p><code>has_sidebar ~src page</code> is <code>true</code> if odoc_driver wrote the sidebar of the page <code>page</code> of the odoc HTML tree <code>src</code>: a <code>sidebar.json</code> in the page's directory or above it, up to <code>src</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-items"><code><span><span class="keyword">val</span> items : <span><span class="label">src</span>:string <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> <span><span><a href="../Config/index.html#type-expanded">Config.expanded</a> <a href="../Config/index.html#type-item">Config.item</a></span> list</span></span></code></div><div class="spec-doc"><p><code>items ~src index</code> is the manual tree of the page <code>index</code> of the odoc HTML tree <code>src</code>, as nav items: <code>index</code> itself (unless odoc does not link it, for a directory with <code>@toc_status hidden</code>), then the pages and directories below it. A page is a <a href="../Config/index.html#type-item.Link"><code>Config.item.Link</code></a>, a directory a <a href="../Config/index.html#type-item.Group"><code>Config.item.Group</code></a>, linked to its index page when odoc makes it clickable. The libraries and the source tree are left out: wodoc renders the API navigation separately.</p><p><code>index</code> is a page path relative to <code>src</code>. For a directory hidden with <code>@toc_status hidden</code>, <code>index</code> is its <code>index.html</code> page, which odoc does not link.</p><ul class="at-tags"><li class="raises"><span class="at-tag">raises</span> <a href="#exception-Missing"><code>Missing</code></a> <p>if there is no <code>sidebar.json</code> for <code>index</code>, if it cannot be read, or if it does not show <code>index</code>.</p></li></ul></div></div></div>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    var wodocPub = "/wodoc";
+    // Switch version: keep the current page, swapping only the version segment,
+    // unless that page does not exist in the target version (a renamed module,
+    // a merged manual page): then go to that version's index.
+    function wodocVersion(v) {
+      if (!v) return;
+      var re = new RegExp('^(' + wodocPub + '/)[^/]+');
+      var p = location.pathname;
+      var home = wodocPub + '/' + v + '/index.html';
+      if (!re.test(p)) { location.href = home; return; }
+      var target = p.replace(re, '$1' + v);
+      fetch(target, { method: 'HEAD' })
+        .then(function (r) { location.href = r.ok ? target : home; })
+        .catch(function () { location.href = target; });
+    }
+    // Build the version <select> from the project's versions.json (the single
+    // source of truth, refreshed on every build/release), so even older frozen
+    // pages list the current set. Falls back to the baked <option>s on failure.
+    (function () {
+      var seg = (location.pathname.match(
+        new RegExp('^' + wodocPub + '/([^/]+)')) || [])[1];
+      function select(sel) {
+        var i;
+        for (i = 0; i < sel.options.length; i++)
+          if (sel.options[i].value === seg) { sel.selectedIndex = i; return; }
+        if (seg) {
+          var o = document.createElement('option');
+          o.value = seg; o.textContent = seg; o.selected = true;
+          sel.insertBefore(o, sel.firstChild);
+        }
+      }
+      fetch(wodocPub + '/versions.json')
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (m) {
+          var list = m.list || [], latest = m.latest;
+          document.querySelectorAll('.wodoc-version').forEach(function (sel) {
+            sel.innerHTML = '';
+            list.forEach(function (v) {
+              var o = document.createElement('option');
+              if (v === latest) { o.value = 'latest'; o.textContent = v + ' (latest)'; }
+              else { o.value = v; o.textContent = v; }
+              sel.appendChild(o);
+            });
+            select(sel);
+          });
+        })
+        .catch(function () {
+          document.querySelectorAll('.wodoc-version').forEach(select);
+        });
+    })();
+  </script>
+</body>
+</html>

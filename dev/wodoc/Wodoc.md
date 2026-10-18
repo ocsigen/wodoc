@@ -35,6 +35,11 @@ module Nav : sig ... end
 Build a project's API module navigation from a curated odoc index.
 
 ```ocaml
+module Page_tree : sig ... end
+```
+The manual's page tree, as odoc shows it in its sidebar.
+
+```ocaml
 module Preprocess : sig ... end
 ```
 Pre-processing of odoc source files.
@@ -56,3 +61,8 @@ module Sexp : sig ... end
 module Theme : sig ... end
 ```
 Built-in default assets shipped by `wodoc build`, so it produces a styled, self-contained site with no theme setup. Each is overridable: the stylesheet via the `(css …)` config stanza, the top menu via `--menu`.
+
+```ocaml
+module Util : sig ... end
+```
+Small helpers shared by wodoc's modules.

@@ -465,7 +465,7 @@ Every stanza below is checked: a stanza wodoc does not read, at the top level, i
 
 ## Navigation: the `(nav …)` stanza
 
-The left-column navigation is described declaratively here, and **this is the only way to define navigation**; the old wikicréole `menu.wiki` is gone. `(nav …)` holds an ordered list of sections:
+The left-column navigation is described declaratively here, or taken from the manual's own tree when the config has no `(nav …)` (see below); the old wikicréole `menu.wiki` is gone. `(nav …)` holds an ordered list of sections:
 
 ```text
 (nav
@@ -479,6 +479,7 @@ The left-column navigation is described declaratively here, and **this is the on
 - `(api-section <heading> <item> …)`: an **API** block (`<nav class="api-nav">`); use it for hand-curated API links. (A client/server project's per-module API nav is generated automatically instead; see below.)
 - `(link <label> <path> [<current>])`: one entry. `<path>` is taken relative to the version root (the per-page `base` is prefixed automatically), *unless* it is absolute (`/talks/…`) or a URL (`https://…`), in which case it is emitted verbatim. `<current>` is an optional `data-wodoc-page` id: the entry is highlighted on the page whose id matches (an API subtree's top directory, or a manual page's own basename). Omit it for a link that never needs highlighting.
 - `(group <heading> <item> …)`: a **sub-heading** (`<h4>`) and its nested items, indented one level deeper. Groups nest, so a section can reproduce a multi-level menu (section → subsection → page links).
+- `(page-tree [<index>])`: the **manual tree** odoc builds, in place of a hand-written list. Since odoc 3, a manual can be a tree of directories: pages installed under `odoc-pages/<dir>/` form a node, whose `index.mld` gives the title (or `@short_title`) and the order of its children (`@children_order`, where a directory is written `<dir>/`). odoc shows that tree in the sidebar of every page, and ocaml.org displays it as is. `odoc_driver` also writes it as data, in a `sidebar.json` next to each package's pages. wodoc reads it there and expands the tree of the page `<index>` (default `index.html`, relative to the HTML root like a `(link …)` path) into links and groups: first `<index>` itself, then the pages and directories below it. A page is a link, a directory a group, whose heading links to the directory's index page unless that page says `@toc_status hidden`. `<index>` can be the index page of a directory, to show only that part of the tree; when that page is `@toc_status hidden`, the tree starts with the directory's pages. The library and source entries of the sidebar are left out (the API has its own navigation). The left column then follows the same tree as ocaml.org, from a single source. It needs odoc 3 pages built by `odoc_driver` (`(odoc-driver …)` or `(client-server …)`): `dune build @doc` writes no `sidebar.json`, and does not build the pages of subdirectories. A missing or unreadable `sidebar.json`, or one that does not show `<index>`, stops the build.
 To point at an **in-page anchor** (a one-page manual), put the fragment in the path: `(link "Section 2" index.html#sec2 index)`.
 
 A nested example (one `<h3>` section, an `<h4>` subsection, indented links):
@@ -490,6 +491,36 @@ A nested example (one `<h3>` section, an `<h4>` subsection, indented links):
   (link "Service handlers"   server-outputs.html server-outputs))
  (link "Sessions" server-state.html server-state))
 ```
+The same menu from the manual's own tree, after the manual's index page:
+
+```text
+(section "Reference manual"
+ (page-tree))
+```
+with the manual laid out as:
+
+```text
+doc/index.mld              @children_order intro server/
+doc/intro.mld
+doc/server/index.mld       @children_order services/ state
+                           @toc_status hidden
+                           {0 Server-side programming}
+doc/server/services/…
+doc/server/state.mld
+```
+dune's `(documentation)` stanza installs only the top-level pages, so the subdirectories are installed with an `(install)` stanza in `doc/dune`:
+
+```text
+(install
+ (section doc)
+ (package mypkg)
+ (files
+  (glob_files_rec
+   (server/*.mld with_prefix odoc-pages/server))))
+```
+**Without a `(nav …)` stanza**, when `odoc_driver` wrote a `sidebar.json`, the left column is the manual tree, in a section named after the project's `(title …)`: the same as `(nav (section <title> (page-tree)))`. Otherwise it has no manual navigation. An empty `(nav)` declares no manual navigation at all.
+
+A page should appear only once in the left column, or it is highlighted twice on its own pages: wodoc warns about a page listed more than once, for example by a `(link …)` and by a `(page-tree)`.
 
 ### Per-version navigation: `--nav`
 
@@ -990,7 +1021,7 @@ val posts : Config.blog -> post list
 `posts blog`: the posts found in `blog.dir` (file names `YYYY-MM-DD-slug.mld`), newest first. Files that do not match the dated naming are skipped.
 
 ```ocaml
-val nav_section : Config.blog -> post list -> Config.section
+val nav_section : Config.blog -> post list -> _ Config.section
 ```
 `nav_section blog posts`: a synthetic left-nav [`Config.section`](./Wodoc-Config.md#type-section) listing the posts (heading `blog.heading`, one link per post), to splice into the config nav. The link label is "date, title".
 
@@ -1031,15 +1062,6 @@ val expand : fragment:string -> string -> string
 
 # Module `Wodoc.Build`
 
-```ocaml
-val read_file : string -> string
-```
-```ocaml
-val write_file : string -> string -> unit
-```
-```ocaml
-val is_url : string -> bool
-```
 ```ocaml
 val is_external : string -> bool
 ```
@@ -1083,13 +1105,21 @@ val nav_href : string -> string
 val nav_link : int -> Config.entry -> string
 ```
 ```ocaml
-val render_items : Stdlib.Buffer.t -> int -> Config.item list -> unit
+val render_items : 
+  Stdlib.Buffer.t ->
+  int ->
+  Config.expanded Config.item list ->
+  unit
 ```
 ```ocaml
-val manual_nav : Config.t -> string
+val manual_nav : Config.expanded Config.section list -> string
 ```
 ```ocaml
-val leftnav : latest:string option -> Config.t -> string list -> string
+val leftnav : 
+  latest:string option ->
+  Config.expanded Config.section list ->
+  string list ->
+  string
 ```
 ```ocaml
 val latest_target : root:string -> string option
@@ -1152,7 +1182,7 @@ val drop_prefix : string -> string -> string
 val cs_current : Config.cs_side list -> string -> string
 ```
 ```ocaml
-val nav_entry_paths : Config.t -> string list
+val nav_paths : Config.expanded Config.section list -> string list
 ```
 ```ocaml
 val strip_index : string -> string
@@ -1172,7 +1202,7 @@ val md_alternate :
   string
 ```
 ```ocaml
-val nav_md_order : Config.t -> string list
+val nav_md_order : Config.expanded Config.section list -> string list
 ```
 ```ocaml
 exception Missing_markdown of string
@@ -1214,15 +1244,28 @@ type entry = {
 }
 ```
 ```ocaml
-type item = 
+type 'tree item = 
   | Link of entry
-  | Group of string * item list (* a sub-heading (<h4>) and its nested items, one indent level deeper. Lets a manual nav reproduce a multi-level menu (sections, subsections, page links), as the old wikicréole menu expressed with ==/===. *)
+  | Group of 'tree group
+  | Page_tree of 'tree (* (page-tree [<index>]): the page tree odoc builds from the manual's directories (odoc-pages/<dir>/, ordered by @children_order), below the page <index> (default index.html), as odoc_driver writes it in sidebar.json, without its library and source entries. Expanded before rendering, so the left column follows the same tree as ocaml.org. *)
 ```
 ```ocaml
-type section = {
+and 'tree group = {
+  heading : string;
+  index : string option; (* the page the heading links to (a directory of a page tree whose index page is clickable), relative to the version root *)
+  items : 'tree item list;
+}
+```
+a sub-heading (`<h4>`) and its nested items, one indent level deeper. Lets a manual nav reproduce a multi-level menu (sections, subsections, page links), as the old wikicréole menu expressed with `==`/`===`.
+
+```ocaml
+type expanded = |
+```
+```ocaml
+type 'tree section = {
   heading : string; (* the <h3> label of this left-nav block *)
   api : bool; (* api-section -> class "api-nav"; else "api-nav manual-nav" *)
-  items : item list;
+  items : 'tree item list;
 }
 ```
 ```ocaml
@@ -1261,7 +1304,7 @@ type t = {
   doc_manual : bool; (* also build the @doc-manual alias (examples) *)
   manual_files : string option; (* package dir to receive manual/files (examples, images) *)
   siblings : (string * string list) list; (* resolve-refs sibling table *)
-  nav : section list;
+  nav : string section list option; (* the (nav …) stanza; None when the config has none: the left column then shows the manual tree odoc builds, as (nav (section <title> (page-tree))) would, if odoc_driver wrote its sidebar.json *)
   client_server : cs_side list; (* when non-empty, the project is client/server: instead of one nav from nav, wodoc builds a per-side API nav from each side's curated index, shows a client/server switch, and colours the body by side. The manual nav is shared, taken from nav's manual ((section …)) blocks. *)
   hosted : (string * (string * Resolve.layout * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. See Resolve.layout for the layout token (multilib/root/subdir). *)
   manual_root : bool; (* deploy the package's pages at the version ROOT instead of under a <package>/ subdirectory: strip the leading <package>/ segment from output paths, the landing and the nav links. Makes a single-package dune build @doc project (ocsigenserver, i18n) match the layout of odoc-driver projects (eliom: manual at the version root, e.g. /ocsigenserver/latest/config.html) so cross-project links resolve. The package's internal relative links are preserved (the same prefix is stripped from every page). *)
@@ -1284,19 +1327,19 @@ val check_keys : where:string -> string list -> Sexp.t list -> unit
 val parse_entry : Sexp.t -> entry
 ```
 ```ocaml
-val parse_items : Sexp.t list -> item list
+val parse_items : Sexp.t list -> string item list
 ```
 ```ocaml
-val parse_section : bool -> Sexp.t -> section
+val parse_section : bool -> Sexp.t -> string section
 ```
 ```ocaml
-val parse_nav_blocks : Sexp.t list -> section list
+val parse_nav_blocks : Sexp.t list -> string section list
 ```
 ```ocaml
-val parse_nav : Sexp.t list -> section list
+val parse_nav : Sexp.t list -> string section list option
 ```
 ```ocaml
-val nav_of_string : string -> section list
+val nav_of_string : string -> string section list option
 ```
 ```ocaml
 val parse_siblings : Sexp.t list -> (string * string list) list
@@ -1431,6 +1474,34 @@ val api :
 
 ---
 
+# Module `Wodoc.Page_tree`
+
+The manual's page tree, as odoc shows it in its sidebar.
+
+odoc 3 builds a tree from the manual's directories: each subdirectory of `odoc-pages/` is a node, its `index.mld` gives the node title (or `@short_title`) and the order of its children (`@children_order`). The generated pages show that tree in their sidebar, and ocaml.org shows it as is. odoc\_driver also writes it as data, in a `sidebar.json` next to each package's pages. This module reads it, so that wodoc's left column follows the same tree.
+
+```ocaml
+exception Missing of string
+```
+Raised by [`items`](./#val-items) when the tree cannot be read, or does not show the expected page.
+
+```ocaml
+val has_sidebar : src:string -> string -> bool
+```
+`has_sidebar ~src page` is `true` if odoc\_driver wrote the sidebar of the page `page` of the odoc HTML tree `src`: a `sidebar.json` in the page's directory or above it, up to `src`.
+
+```ocaml
+val items : src:string -> string -> Config.expanded Config.item list
+```
+`items ~src index` is the manual tree of the page `index` of the odoc HTML tree `src`, as nav items: `index` itself (unless odoc does not link it, for a directory with `@toc_status hidden`), then the pages and directories below it. A page is a [`Config.item.Link`](./Wodoc-Config.md#type-item.Link), a directory a [`Config.item.Group`](./Wodoc-Config.md#type-item.Group), linked to its index page when odoc makes it clickable. The libraries and the source tree are left out: wodoc renders the API navigation separately.
+
+`index` is a page path relative to `src`. For a directory hidden with `@toc_status hidden`, `index` is its `index.html` page, which odoc does not link.
+
+raises [`Missing`](./#exception-Missing) if there is no sidebar.json for index, if it cannot be read, or if it does not show index.
+
+
+---
+
 # Module `Wodoc.Preprocess`
 
 Pre-processing of odoc source files.
@@ -1445,6 +1516,11 @@ This only applies to source text odoc reads directly (i.e. `.mld` files). Marker
 val string : string -> string
 ```
 `string s` rewrites every `{%wodoc:d%}` occurrence in `s` into `{%html:%}`. Other content is left untouched.
+
+```ocaml
+val tree : string -> unit
+```
+`tree dir` applies [`string`](./#val-string) in place to every `.mld` file below the directory `dir`, at any depth. Symbolic links are followed, each directory once; an entry that cannot be read (a dangling link) is skipped with a warning on `stderr`.
 
 
 ---
@@ -1608,6 +1684,28 @@ The default stylesheet, shipped as `wodoc.css` and linked per-version when no `(
 
 ---
 
+# Module `Wodoc.Util`
+
+Small helpers shared by wodoc's modules.
+
+```ocaml
+val read_file : string -> string
+```
+`read_file f` is the contents of the file `f`.
+
+```ocaml
+val write_file : string -> string -> unit
+```
+`write_file f s` writes `s` to the file `f`, replacing its contents.
+
+```ocaml
+val is_url : string -> bool
+```
+`is_url p` is `true` if `p` is an `http://` or `https://` URL.
+
+
+---
+
 # Module `Wodoc`
 
 ```ocaml
@@ -1645,6 +1743,11 @@ module Nav : sig ... end
 Build a project's API module navigation from a curated odoc index.
 
 ```ocaml
+module Page_tree : sig ... end
+```
+The manual's page tree, as odoc shows it in its sidebar.
+
+```ocaml
 module Preprocess : sig ... end
 ```
 Pre-processing of odoc source files.
@@ -1666,3 +1769,8 @@ module Sexp : sig ... end
 module Theme : sig ... end
 ```
 Built-in default assets shipped by `wodoc build`, so it produces a styled, self-contained site with no theme setup. Each is overridable: the stylesheet via the `(css …)` config stanza, the top menu via `--menu`.
+
+```ocaml
+module Util : sig ... end
+```
+Small helpers shared by wodoc's modules.
