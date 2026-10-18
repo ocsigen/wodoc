@@ -52,6 +52,21 @@ Config simplifications (breaking):
   odoc's package list and skipped, and the version root redirect that replaced
   it pointed at itself: a redirect loop on the home page.
 
+Navigation:
+
+- `(page-tree [<index>])` in a `(nav …)` section is the manual tree odoc 3
+  builds from the manual's directories (`odoc-pages/<dir>/`, ordered by
+  `@children_order`), read from the `sidebar.json` odoc_driver writes. The
+  left column then follows the same tree as ocaml.org, from one source,
+  instead of a hand-written list that can drift from the manual. The tree
+  starts with its index page; a directory is a sub-heading, linked to its
+  index page unless it is `@toc_status hidden`.
+- Without a `(nav …)` stanza, the left column is that manual tree, when
+  odoc_driver wrote a `sidebar.json`.
+- A page listed more than once in the left column is reported with a warning.
+- The manual pages installed in subdirectories of `odoc-pages/` get their
+  wodoc markers preprocessed too (odoc-driver builds).
+
 Cross-project references:
 
 - `(hosted …)` is now honoured by every project, not only the client/server ones:
@@ -99,6 +114,9 @@ Rebuilds:
   copy. The destination must be a relative path inside the version directory,
   with no `.` or `..` segment; a malformed entry is an error instead of being
   dropped, and so is a failed copy.
+- Each build starts from empty work trees (`_wodoc-html`, `_wodoc-md`). A page
+  renamed or removed since the previous build used to stay there, in odoc's
+  sidebar and in the published site.
 
 ## 0.1
 

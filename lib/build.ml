@@ -3,19 +3,7 @@
    left-navigation (from the config, replacing menu.wiki) and cross-reference
    resolution — the OCaml replacement for a project's build.sh. *)
 
-let read_file f =
-  let ic = open_in_bin f in
-  let n = in_channel_length ic in
-  let s = really_input_string ic n in
-  close_in ic; s
-
-let write_file f s =
-  let oc = open_out_bin f in
-  output_string oc s; close_out oc
-
-let is_url p =
-  String.starts_with ~prefix:"http://" p
-  || String.starts_with ~prefix:"https://" p
+open Util
 
 (* an href/path is "external" — emitted verbatim — when absolute ([/…]) or a URL;
    otherwise it is relative (resolved against the per-page [{{base}}], and shipped
@@ -306,9 +294,10 @@ let nav_link ml (e : Config.entry) =
 
 (* render a section body into [b] at indent level [ml]: consecutive [Link]s share
    one [<ul class="api-section">]; a [Group] closes it, emits an [<h4>] sub-heading
-   and recurses one level deeper. [ml] feeds the CSS [.mlN] padding (3 = manual
-   top level, deeper groups 4, 5, …; 2 = an api section's flush level). *)
-let rec render_items b ml items =
+   (a link to the group's index page, if it has one) and recurses one level
+   deeper. [ml] feeds the CSS [.mlN] padding (3 = manual top level, deeper groups
+   4, 5, …; 2 = an api section's flush level). *)
+let rec render_items b ml (items : Config.expanded Config.item list) =
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
   let ul = ref false in
   let close () =
@@ -325,19 +314,29 @@ let rec render_items b ml items =
             add "<ul class=\"api-section\">";
             ul := true);
           Buffer.add_string b (nav_link ml e)
-      | Config.Group (h, children) ->
+      | Config.Group {heading; index; items} ->
           close ();
-          add (Printf.sprintf "<h4 class=\"ml%d\">%s</h4>" ml (esc h));
-          render_items b (ml + 1) children)
+          add
+            (match index with
+            | None ->
+                Printf.sprintf "<h4 class=\"ml%d\">%s</h4>" ml (esc heading)
+            | Some p ->
+                Printf.sprintf
+                  "<h4 class=\"ml%d\" data-wodoc-page=\"%s\"><a href=\"%s\">%s</a></h4>"
+                  ml p (nav_href p) (esc heading));
+          render_items b (ml + 1) items
+      | Config.Page_tree _ -> .)
     items;
   close ()
 
-(* the manual left-nav block from the config [(section …)] stanzas (the
-   non-[api] sections of [(nav …)]) — a [<nav class="api-nav manual-nav">]. Empty
-   when the project declares no manual sections. Shared by the normal left column
-   and the client/server one (which used to take this from a wiki menu.wiki). *)
-let manual_nav (c : Config.t) =
-  let manual = List.filter (fun (s : Config.section) -> not s.api) c.nav in
+(* the manual left-nav block from the [(section …)] stanzas (the non-[api]
+   sections of [(nav …)]): a [<nav class="api-nav manual-nav">]. Empty when the
+   project declares no manual sections. Shared by the normal left column and the
+   client/server one (which used to take this from a wiki menu.wiki). *)
+let manual_nav nav =
+  let manual =
+    List.filter (fun (s : Config.expanded Config.section) -> not s.api) nav
+  in
   if manual = []
   then ""
   else begin
@@ -345,7 +344,7 @@ let manual_nav (c : Config.t) =
     let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
     add "<nav class=\"api-nav manual-nav\">";
     List.iter
-      (fun (s : Config.section) ->
+      (fun (s : Config.expanded Config.section) ->
          add (Printf.sprintf "<h3>%s</h3>" (esc s.heading));
          render_items b 3 s.items)
       manual;
@@ -353,17 +352,19 @@ let manual_nav (c : Config.t) =
     Buffer.contents b
   end
 
-(* the left column: version selector + on-this-page + the config-driven nav.
+(* the left column: version selector + on-this-page + the [(nav …)] sections.
    {{base}} and {{toc}} stay as holes, filled per page by Assemble. *)
-let leftnav ~latest (c : Config.t) names =
+let leftnav ~latest nav names =
   let b = Buffer.create 1024 in
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
   Buffer.add_string b (docversion ~latest names);
   Buffer.add_string b page_toc;
-  Buffer.add_string b (manual_nav c);
-  let apis = List.filter (fun (s : Config.section) -> s.api) c.nav in
+  Buffer.add_string b (manual_nav nav);
+  let apis =
+    List.filter (fun (s : Config.expanded Config.section) -> s.api) nav
+  in
   List.iter
-    (fun (s : Config.section) ->
+    (fun (s : Config.expanded Config.section) ->
        add "<nav class=\"api-nav\">";
        add (Printf.sprintf "<h3>%s</h3>" (esc s.heading));
        render_items b 2 s.items;
@@ -661,17 +662,22 @@ let cs_current sides rel =
       in
       String.map (fun c -> if c = '/' then '.' else c) rest
 
-(* the local (relative) entry paths declared in the config nav — the candidates
-   for the "current" highlight (cross-project / absolute entries are excluded). *)
-let nav_entry_paths (c : Config.t) =
-  let local p = not (is_external p) in
-  let rec items acc = function
-    | [] -> acc
-    | Config.Link e :: t ->
-        items (if local e.path then e.path :: acc else acc) t
-    | Config.Group (_, sub) :: t -> items (items acc sub) t
+(* the local (relative) page paths of the nav, in declaration order: its
+   entries and the index pages of its groups. Cross-project / absolute entries
+   are left out: they are never "current" and have no twin in this project. *)
+let nav_paths nav =
+  let local p = p <> "" && not (is_external p) in
+  let rec items : Config.expanded Config.item list -> string list = function
+    | [] -> []
+    | Config.Link e :: t -> (if local e.path then [e.path] else []) @ items t
+    | Config.Group {index; items = sub; _} :: t ->
+        (match index with Some p when local p -> [p] | _ -> [])
+        @ items sub @ items t
+    | Config.Page_tree _ :: _ -> .
   in
-  List.fold_left (fun acc (s : Config.section) -> items acc s.items) [] c.nav
+  List.concat_map
+    (fun (s : Config.expanded Config.section) -> items s.items)
+    nav
 
 (* drop a trailing "index.html" so a directory page compares as its directory *)
 let strip_index p =
@@ -746,17 +752,8 @@ let md_alternate ~md_src ~base ~rel ~orel =
   | _ -> ""
 
 (* the markdown paths of the project's nav entries, in declaration order — the
-   preferred Manual ordering for the llms.txt index ({!Llms.write}). Only local
-   entries (not absolute/cross-project or URLs) have a twin in this project. *)
-let nav_md_order (c : Config.t) =
-  let local p = p <> "" && not (is_external p) in
-  let rec items = function
-    | [] -> []
-    | Config.Link e :: t ->
-        (if local e.path then [md_twin e.path] else []) @ items t
-    | Config.Group (_, sub) :: t -> items sub @ items t
-  in
-  List.concat_map (fun (s : Config.section) -> items s.items) c.nav
+   preferred Manual ordering for the llms.txt index ({!Llms.write}). *)
+let nav_md_order nav = List.map md_twin (nav_paths nav)
 
 (* [run cfg ~src ~out ~label ~menu ~set_latest]: assemble [src] (an odoc _html
    tree) into [out]/<label-relative> using the project [cfg]. *)
@@ -801,33 +798,71 @@ let run
         String.sub rel (String.length p) (String.length rel - String.length p)
     | _ -> rel
   in
-  let rec strip_items items =
+  (* the left-nav sections: page trees expanded from odoc_driver's sidebar.json
+     (see {!Page_tree}), then every local path stripped like the pages it
+     names *)
+  let rec expand (items : string Config.item list) :
+    Config.expanded Config.item list
+    =
+    List.concat_map
+      (function
+        | Config.Link e -> [Config.Link e]
+        | Config.Group g -> [Config.Group {g with items = expand g.items}]
+        | Config.Page_tree index -> Page_tree.items ~src index)
+      items
+  in
+  let rec strip_items (items : Config.expanded Config.item list) =
     List.map
       (function
         | Config.Link e -> Config.Link {e with path = strip e.path}
-        | Config.Group (h, children) -> Config.Group (h, strip_items children))
+        | Config.Group g ->
+            Config.Group
+              { g with
+                index = Option.map strip g.index
+              ; items = strip_items g.items }
+        | Config.Page_tree _ -> .)
       items
   in
-  let c =
-    match strip_pfx with
-    | None -> c
-    | Some _ ->
-        { c with
-          landing = strip c.landing
-        ; nav =
-            List.map
-              (fun (s : Config.section) -> {s with items = strip_items s.items})
-              c.nav }
+  (* without a [(nav …)] stanza, the manual tree odoc builds, when odoc_driver
+     wrote its sidebar.json *)
+  let nav =
+    match c.nav with
+    | Some nav -> nav
+    | None when Page_tree.has_sidebar ~src "index.html" ->
+        [ { Config.heading = c.title
+          ; api = false
+          ; items = [Config.Page_tree "index.html"] } ]
+    | None -> []
   in
+  let sections =
+    List.map
+      (fun (s : string Config.section) ->
+         {s with items = strip_items (expand s.items)})
+      nav
+  in
+  (* a page listed twice (a hand-written link to a page of a page tree, two
+     overlapping page trees) would be highlighted twice on its own pages *)
+  (let seen = Hashtbl.create 64 in
+   List.iter
+     (fun p ->
+        match Hashtbl.find_opt seen p with
+        | None -> Hashtbl.add seen p false
+        | Some false ->
+            Printf.eprintf
+              "wodoc: warning: %s is listed more than once in the left navigation\n"
+              p;
+            Hashtbl.replace seen p true
+        | Some true -> ())
+     (nav_paths sections));
+  let c = {c with landing = strip c.landing} in
   (* blog: discover the dated posts (newest first) and splice a generated nav
-     section into the config nav, so every page's left column lists them and the
+     section into the left nav, so every page's left column lists them and the
      per-page "current" highlight can match a post page. *)
   let blog_posts = match c.blog with Some b -> Blog.posts b | None -> [] in
-  let c =
+  let sections =
     match c.blog with
-    | Some b when blog_posts <> [] ->
-        {c with nav = c.nav @ [Blog.nav_section b blog_posts]}
-    | _ -> c
+    | Some b when blog_posts <> [] -> sections @ [Blog.nav_section b blog_posts]
+    | _ -> sections
   in
   (* the "latest posts" fragment that the {%wodoc:blog-latest%} marker expands to,
      per page (the link base differs by page depth); a no-op without a blog. *)
@@ -903,8 +938,8 @@ let run
         let tmpl = replace_hole (template c) "pub" c.url_prefix in
         (* left nav: version selector + on-this-page + the config-declared
            [(nav …)] sections. *)
-        let nav = leftnav ~latest c vs in
-        let nav_paths = nav_entry_paths c in
+        let nav = leftnav ~latest sections vs in
+        let nav_paths = nav_paths sections in
         fun rel ->
           (* output position after manual-root stripping drives base/current *)
           let orel = strip rel in
@@ -926,7 +961,13 @@ let run
         let script = cs_switch_script c sides in
         let switch = cs_switch sides in
         (* the shared manual nav comes from the config [(section …)] stanzas *)
-        let manual_nav = manual_nav c in
+        let manual_nav = manual_nav sections in
+        (* a page the manual nav lists (also in a directory of a page tree, which
+           [cs_current] would take for a library) is highlighted by its path *)
+        let manual_paths = nav_paths sections in
+        let current rel =
+          if List.mem rel manual_paths then rel else cs_current sides rel
+        in
         let default_side = match sides with s :: _ -> s.side | [] -> "" in
         let api_nav =
           List.map
@@ -979,7 +1020,7 @@ let run
           let page =
             Assemble.page ~base ~menu:menu_html ~subproject
               ~menu_current:c.menu_current ~leftnav:(leftnav_of nav_side)
-              ~template:(tmpl_of side) ~current:(cs_current sides rel) ~mdlink
+              ~template:(tmpl_of side) ~current:(current rel) ~mdlink
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in
@@ -1080,7 +1121,7 @@ let run
          so AIs/LLMs get a structured entry point and a single-file dump *)
       Llms.write ~out ~title:c.title
         ~landing:(Some (md_twin c.landing))
-        ~order:(nav_md_order c)
+        ~order:(nav_md_order sections)
   | None -> ());
   (* blog posts: each post .mld is compiled straight with odoc (preprocess ->
      compile -> link -> html-generate, the direct-mld pipeline), then assembled
@@ -1090,8 +1131,8 @@ let run
   (match c.blog with
   | Some _ when blog_posts <> [] ->
       let tmpl = replace_hole (template c) "pub" c.url_prefix in
-      let nav = leftnav ~latest c vs in
-      let nav_paths = nav_entry_paths c in
+      let nav = leftnav ~latest sections vs in
+      let nav_paths = nav_paths sections in
       let work = "_wodoc-blog" in
       let odoc = Filename.concat work "odoc"
       and html = Filename.concat work "html" in

@@ -17,3 +17,9 @@
 val string : string -> string
 (** [string s] rewrites every [{%wodoc:d%}] occurrence in [s] into
     [{%html:<!--wodoc:d-->%}]. Other content is left untouched. *)
+
+val tree : string -> unit
+(** [tree dir] applies {!string} in place to every [.mld] file below the
+    directory [dir], at any depth. Symbolic links are followed, each directory
+    once; an entry that cannot be read (a dangling link) is skipped with a
+    warning on [stderr]. *)

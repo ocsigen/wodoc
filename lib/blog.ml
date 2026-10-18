@@ -6,6 +6,8 @@
    metadata, the generated left-nav section and the "latest posts" landing
    fragment. Generic — no project-specific assumptions. Driven by {!Config.blog}. *)
 
+open Util
+
 type post =
   { date : string
   ; slug : string
@@ -14,12 +16,6 @@ type post =
   ; title : string
   ; author : string
   ; excerpt : string }
-
-let read_file f =
-  let ic = open_in_bin f in
-  let n = in_channel_length ic in
-  let s = really_input_string ic n in
-  close_in ic; s
 
 let is_ws c = c = ' ' || c = '\t' || c = '\n' || c = '\r'
 
@@ -200,7 +196,7 @@ let posts (b : Config.blog) =
       let c = compare q.date p.date in
       if c <> 0 then c else compare p.slug q.slug)
 
-let nav_section (b : Config.blog) (posts : post list) : Config.section =
+let nav_section (b : Config.blog) (posts : post list) : _ Config.section =
   { heading = b.heading
   ; api = false
   ; items =

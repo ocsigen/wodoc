@@ -1,8 +1,4 @@
-let read_file f =
-  let ic = open_in_bin f in
-  let n = in_channel_length ic in
-  let s = really_input_string ic n in
-  close_in ic; s
+open Wodoc.Util
 
 (* The Markdown twins and the llms.txt index are published files, not a bonus: a
    project deploys its version directory with clean:true, so a build that quietly
@@ -14,6 +10,18 @@ let markdown_failed what =
     "wodoc build: %s\nwodoc build: the Markdown twins and llms.txt are part of the site; fix the\n\  error above, or opt out with (markdown false) in the wodoc config.\n"
     what;
   exit 1
+
+(* wodoc's work trees ([_wodoc-html], [_wodoc-md]) are rebuilt from scratch on
+   every build: a page renamed or removed since the previous build would
+   otherwise stay in them, in odoc's sidebar and in the published site. *)
+let reset_work_dirs dirs =
+  List.iter
+    (fun d ->
+       if Sys.command ("rm -rf " ^ Filename.quote d) <> 0
+       then (
+         prerr_endline ("wodoc build: cannot remove " ^ d);
+         exit 1))
+    dirs
 
 (* Render every linked [.odocl] under [odocls] with odoc's markdown backend into
    [out], producing a flat-module markdown tree parallel to the HTML one (used by
@@ -341,6 +349,7 @@ let () =
                    link -> html-generate -> markdown-generate). Output goes under
                    <pkg>/ if a package is set, else at the html / md root. *)
               let work = "_wodoc-html" in
+              reset_work_dirs [work];
               let odoc = Filename.concat work "odoc" in
               let html = Filename.concat work "html" in
               let md = Filename.concat work "md" in
@@ -438,9 +447,10 @@ let () =
                 in
                 let main_pkg = match pkgs with p :: _ -> p | [] -> pkg in
                 (* The installed manual .mld carry {%wodoc:%} markers; rewrite
-                   them in place to HTML comments (idempotent) so odoc keeps them
-                   for Assemble's render pass. Best-effort: skip a package that
-                   has no installed odoc-pages. *)
+                   them in place to HTML comments (idempotent), in every
+                   directory of the manual tree, so odoc keeps them for
+                   Assemble's render pass. Best-effort: skip a package that has
+                   no installed odoc-pages. *)
                 (let tmp = Filename.temp_file "wodoc-doc" "" in
                  let doc_root =
                    if
@@ -462,18 +472,7 @@ let () =
                             "odoc-pages"
                         in
                         if Sys.file_exists pages
-                        then
-                          Array.iter
-                            (fun e ->
-                               if Filename.check_suffix e ".mld"
-                               then (
-                                 let f = Filename.concat pages e in
-                                 let out =
-                                   Wodoc.Preprocess.string (read_file f)
-                                 in
-                                 let oc = open_out_bin f in
-                                 output_string oc out; close_out oc))
-                            (Sys.readdir pages))
+                        then Wodoc.Preprocess.tree pages)
                      pkgs);
                 (* Interactive examples (toplevel, demos) are a dune alias, not
                    something odoc_driver produces. When the project ships them
@@ -491,6 +490,7 @@ let () =
                      prerr_endline "wodoc build: dune build @doc-manual failed";
                      exit 1));
                 let work = "_wodoc-html" in
+                reset_work_dirs [work; "_wodoc-md"];
                 let odocls = Filename.concat work "_odocls" in
                 if
                   Sys.command
@@ -555,7 +555,8 @@ let () =
         Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu
           ~assets_dir:(Filename.dirname cfg) ~local ~set_latest ~strict_refs
       with
-      | Wodoc.Lint.Dead_markup m -> prerr_endline m; exit 1
+      | Wodoc.Lint.Dead_markup m | Wodoc.Page_tree.Missing m ->
+          prerr_endline m; exit 1
       | Wodoc.Build.Missing_markdown m -> markdown_failed m)
   | _ :: "requalify-xrefs" :: args ->
       (* Post-pass over a co-located multi-project site: rewrite flat

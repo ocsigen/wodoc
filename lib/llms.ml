@@ -7,15 +7,7 @@
    structure at a glance and can fetch any page; llms-full.txt is every page
    concatenated for single-shot ingestion. *)
 
-let read_file f =
-  let ic = open_in_bin f in
-  let n = in_channel_length ic in
-  let s = really_input_string ic n in
-  close_in ic; s
-
-let write_file f s =
-  let oc = open_out_bin f in
-  output_string oc s; close_out oc
+open Util
 
 (* relative ".md" paths under [out] (the version root), sorted *)
 let md_files out =

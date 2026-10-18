@@ -68,7 +68,7 @@ mistyped entry would otherwise vanish from the menu):
   > (nav (section "Manual" (link "Home" index.html) (lnk "Intro" intro.html)))
   > CFG
   $ build
-  wodoc: doc/wodoc: unknown stanza (lnk ...) in a (nav ...) section: expected one of: link, group
+  wodoc: doc/wodoc: unknown stanza (lnk ...) in a (nav ...) section: expected one of: link, group, page-tree
   [1]
 
 The same holds for a standalone --nav file:
@@ -78,5 +78,5 @@ The same holds for a standalone --nav file:
   > CFG
   $ echo '(nav (section "Manual" (lnk "Intro" intro.html)))' > nav
   $ wodoc build --config doc/wodoc --nav nav --out out/dev
-  wodoc: nav: unknown stanza (lnk ...) in a (nav ...) section: expected one of: link, group
+  wodoc: nav: unknown stanza (lnk ...) in a (nav ...) section: expected one of: link, group, page-tree
   [1]
