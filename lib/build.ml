@@ -3,19 +3,7 @@
    left-navigation (from the config, replacing menu.wiki) and cross-reference
    resolution — the OCaml replacement for a project's build.sh. *)
 
-let read_file f =
-  let ic = open_in_bin f in
-  let n = in_channel_length ic in
-  let s = really_input_string ic n in
-  close_in ic; s
-
-let write_file f s =
-  let oc = open_out_bin f in
-  output_string oc s; close_out oc
-
-let is_url p =
-  String.starts_with ~prefix:"http://" p
-  || String.starts_with ~prefix:"https://" p
+open Util
 
 (* an href/path is "external" — emitted verbatim — when absolute ([/…]) or a URL;
    otherwise it is relative (resolved against the per-page [{{base}}], and shipped

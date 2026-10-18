@@ -1,8 +1,4 @@
-let read_file f =
-  let ic = open_in_bin f in
-  let n = in_channel_length ic in
-  let s = really_input_string ic n in
-  close_in ic; s
+open Wodoc.Util
 
 (* The Markdown twins and the llms.txt index are published files, not a bonus: a
    project deploys its version directory with clean:true, so a build that quietly
