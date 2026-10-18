@@ -447,9 +447,10 @@ let () =
                 in
                 let main_pkg = match pkgs with p :: _ -> p | [] -> pkg in
                 (* The installed manual .mld carry {%wodoc:%} markers; rewrite
-                   them in place to HTML comments (idempotent) so odoc keeps them
-                   for Assemble's render pass. Best-effort: skip a package that
-                   has no installed odoc-pages. *)
+                   them in place to HTML comments (idempotent), in every
+                   directory of the manual tree, so odoc keeps them for
+                   Assemble's render pass. Best-effort: skip a package that has
+                   no installed odoc-pages. *)
                 (let tmp = Filename.temp_file "wodoc-doc" "" in
                  let doc_root =
                    if
@@ -471,18 +472,7 @@ let () =
                             "odoc-pages"
                         in
                         if Sys.file_exists pages
-                        then
-                          Array.iter
-                            (fun e ->
-                               if Filename.check_suffix e ".mld"
-                               then (
-                                 let f = Filename.concat pages e in
-                                 let out =
-                                   Wodoc.Preprocess.string (read_file f)
-                                 in
-                                 let oc = open_out_bin f in
-                                 output_string oc out; close_out oc))
-                            (Sys.readdir pages))
+                        then Wodoc.Preprocess.tree pages)
                      pkgs);
                 (* Interactive examples (toplevel, demos) are a dune alias, not
                    something odoc_driver produces. When the project ships them

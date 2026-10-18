@@ -52,6 +52,11 @@ Config simplifications (breaking):
   odoc's package list and skipped, and the version root redirect that replaced
   it pointed at itself: a redirect loop on the home page.
 
+Navigation:
+
+- The manual pages installed in subdirectories of `odoc-pages/` get their
+  wodoc markers preprocessed too (odoc-driver builds).
+
 Cross-project references:
 
 - `(hosted …)` is now honoured by every project, not only the client/server ones:
