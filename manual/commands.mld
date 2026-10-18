@@ -69,7 +69,8 @@ per-side API nav (see {{!page-"config"}config}).
 
 The {b manual's own navigation is not built here}: it is declared
 declaratively in the project's {{!page-"config"}[doc/wodoc]} config, in the
-[(nav …)] stanza, and rendered by [wodoc build]. (Earlier versions built it from
+[(nav …)] stanza (or taken from the manual's own tree with [(page-tree)]), and
+rendered by [wodoc build]. (Earlier versions built it from
 a wikicréole [menu.wiki]; that is gone.) See {!Wodoc.Nav}.
 
 {1 [wodoc resolve-refs]}
