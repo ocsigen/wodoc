@@ -66,18 +66,24 @@ non-hosted target keeps its span.
 A RESOLVED cross-package reference to a manual PAGE (odoc emitted an absolute
 `…/doc/<name>.html` with no '/') deploys like the page references above, not like
 a module: at the version root for `multilib`/`root`, under `<pkg>/` for `subdir`.
-Module pages (`<Mod>/…/index.html`) keep the module layout.
+Module pages (`<Mod>/…/index.html`) keep odoc's module path verbatim: nested
+under the wrapper for a doc built against a wrapped release (eliom 13,
+ocsigenserver 8), flat for one built against an older release (eliom 12,
+ocsigenserver 7). Such a flat link misses on a current tree, which
+`requalify-xrefs` repairs.
 
   $ cat > res.html <<'HTML'
   > <a href="https://ocaml.org/p/ocsigenserver/7.0/doc/config.html">cfg page</a>
   > <a href="https://ocaml.org/p/ocsigenserver/7.0/doc/Ocsigen_server/index.html">cfg mod</a>
+  > <a href="https://ocaml.org/p/ocsigenserver/8.0.0/doc/Ocsigen/Config/index.html">wrapped cfg mod</a>
   > <a href="https://ocaml.org/p/eliom/12.0/doc/server-services.html">srv page</a>
   > <a href="https://ocaml.org/p/eliom/12.0/doc/Eliom_content/index.html">srv mod</a>
+  > <a href="https://ocaml.org/p/eliom/13.0.0/doc/Eliom/Content/Html/index.html#val-a">wrapped srv mod</a>
   > <a href="https://ocaml.org/p/tyxml/4.6.0/doc/ppx.html">ppx page</a>
   > HTML
 
   $ wodoc resolve-refs --relroot ../../.. --side server --self x \
-  >   --hosted ocsigenserver=ocsigenserver:root: \
+  >   --hosted ocsigenserver=ocsigenserver:root:Ocsigen \
   >   --hosted eliom=eliom:multilib:Eliom \
   >   --hosted tyxml=tyxml:subdir: \
   >   res.html
@@ -85,8 +91,10 @@ Module pages (`<Mod>/…/index.html`) keep the module layout.
   $ cat res.html
   <a href="../../../ocsigenserver/latest/config.html">cfg page</a>
   <a href="../../../ocsigenserver/latest/Ocsigen_server/index.html">cfg mod</a>
+  <a href="../../../ocsigenserver/latest/Ocsigen/Config/index.html">wrapped cfg mod</a>
   <a href="../../../eliom/latest/server-services.html">srv page</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">srv mod</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom/Content/Html/index.html#val-a">wrapped srv mod</a>
   <a href="../../../tyxml/latest/tyxml/ppx.html">ppx page</a>
 
 A page with no side of its own (every page of a project without
@@ -105,7 +113,7 @@ library. Such a link goes to the server one:
   >   sideless.html
 
   $ cat sideless.html
-  <a href="../../../eliom/latest/eliom.server/Eliom_registration/Html/index.html">Html</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom/Registration/Html/index.html">Html</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">mod</a>
   <a href="../../../eliom/latest/server-services.html">page</a>
 
@@ -142,11 +150,11 @@ listing it in the table, deployed under the family's directory:
 
 A component of two characters or more named in all caps is a module type, which
 odoc deploys under `module-type-<NAME>/`, at any depth of the reference. A
-one-letter name is ambiguous and stays a module (`Eliom_content.Html.D`):
+one-letter name is ambiguous and stays a module (`Eliom.Content.Html.D`):
 
   $ cat > modtypes.html <<'HTML'
   > <span class="xref-unresolved" title="Eliom.Registration.APP">app</span>
-  > <span class="xref-unresolved" title="Eliom_form_sigs.LINKS.a">a</span>
+  > <span class="xref-unresolved" title="Eliom.Form_sigs.LINKS.a">a</span>
   > <span class="xref-unresolved" title="Eliom.Content_sigs.LINKS_AND_FORMS.Form">form</span>
   > <span class="xref-unresolved" title="Eliom.Content.Html.D">D</span>
   > HTML
@@ -156,10 +164,28 @@ one-letter name is ambiguous and stays a module (`Eliom_content.Html.D`):
   >   modtypes.html
 
   $ cat modtypes.html
-  <a href="../../../eliom/latest/eliom.server/Eliom_registration/module-type-APP/index.html">app</a>
-  <a href="../../../eliom/latest/eliom.server/Eliom_form_sigs/module-type-LINKS/index.html#val-a">a</a>
-  <a href="../../../eliom/latest/eliom.server/Eliom_content_sigs/module-type-LINKS_AND_FORMS/Form/index.html">form</a>
-  <a href="../../../eliom/latest/eliom.server/Eliom_content/Html/D/index.html">D</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom/Registration/module-type-APP/index.html">app</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom/Form_sigs/module-type-LINKS/index.html#val-a">a</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom/Content_sigs/module-type-LINKS_AND_FORMS/Form/index.html">form</a>
+  <a href="../../../eliom/latest/eliom.server/Eliom/Content/Html/D/index.html">D</a>
+
+A reference keeps its module path in every layout: the wrapper alone names its
+own page, and a module named after a `subdir` project's wrapper keeps its own
+name (tyxml deploys `Tyxml_html`, which its `Tyxml` module only aliases):
+
+  $ cat > wrapped.html <<'HTML'
+  > <span class="xref-unresolved" title="Eliom">Eliom</span>
+  > <span class="xref-unresolved" title="Tyxml_html.a">a</span>
+  > HTML
+
+  $ wodoc resolve-refs --relroot ../../.. --self tuto \
+  >   --hosted eliom=eliom:multilib:Eliom \
+  >   --hosted tyxml=tyxml:subdir:Tyxml \
+  >   wrapped.html
+
+  $ cat wrapped.html
+  <a href="../../../eliom/latest/eliom.server/Eliom/index.html">Eliom</a>
+  <a href="../../../tyxml/latest/tyxml/Tyxml_html/index.html#val-a">a</a>
 
 Links go to the target's `latest` by default; `--version` picks another version
 directory, so a `dev` manual links against the other projects' `dev` docs (every
@@ -175,5 +201,5 @@ hosted project publishes both):
   >   devrefs.html
 
   $ cat devrefs.html
-  <a href="../../../eliom/dev/eliom.server/Eliom_registration/module-type-APP/index.html">app</a>
+  <a href="../../../eliom/dev/eliom.server/Eliom/Registration/module-type-APP/index.html">app</a>
   <a href="../../../eliom/dev/eliom-language.html">language</a>

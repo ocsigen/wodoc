@@ -77,6 +77,11 @@ Cross-project references:
   named in all caps deploys under `module-type-<NAME>/`) and projects declared
   with no wrapper module, whose own root module names the reference
   (`Js_of_ocaml.Js.t`, `Lwt.bind`).
+- Links into a wrapped project keep odoc's nested module path
+  (`Eliom/Content/Html/`) instead of flattening it (`Eliom_content/Html/`).
+  The flat path only matched docs built before the project was wrapped, and
+  led to a missing page on current ones. A reference to the wrapper alone
+  (`Eliom`) now links to its page instead of staying as text.
 - A `dev` manual links into the other projects' `dev` docs (a released one still
   into their `latest`), so a development doc documents against development APIs.
   `wodoc release`, which freezes `dev` without rebuilding it, points those links
@@ -222,9 +227,10 @@ and `.mli` sources. It provides:
   config turns it off.
 - `wodoc requalify-xrefs`: post-pass over a co-located multi-project site that
   fixes flat cross-project links to a wrapped library (`Eliom_content` →
-  `Eliom/Content`): `odoc_driver --remap` names the reference by the flat path
-  while the qualified project deploys it under its wrapper; the non-uniform
-  mapping (renamed vs kept module names) is resolved by probing the target tree.
+  `Eliom/Content`): a doc built against a release from before the library was
+  wrapped names the reference by the flat path, while the current release
+  deploys it under its wrapper; the non-uniform mapping (renamed vs kept module
+  names) is resolved by probing the target tree.
 - `wodoc release`: the stable-version release procedure: freeze the CI-built
   `dev/` as `<version>/`, repoint the `latest` symlink and refresh the
   `versions.json` manifest (the only file a release rewrites; the CI only

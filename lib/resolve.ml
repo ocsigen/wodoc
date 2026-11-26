@@ -208,21 +208,21 @@ let html ~siblings ~base s = outside_pre (process siblings base) s
    [xref-unresolved] span. For projects we host ourselves we rewrite both into
    RELATIVE links to that project's deployed docs. [hosted] maps a package to
    [(dir, layout, wrapper)]: [dir] is its directory under the shared root,
-   [layout] how its modules are laid out under [<dir>/latest/], [wrapper] its
-   wrapping module (used to collapse a wrapped path to the flat layout some
-   deployed docs use).
+   [layout] how its libraries are laid out under [<dir>/latest/], [wrapper] its
+   wrapping module (used to recognise a reference into the project).
 
    Three deployed layouts are supported (one per Ocsigen project family):
-   - [Multilib]: client/server libs in [<dir>.<side>/] (eliom, toolkit, start),
-     module path flattened with [wrapper];
+   - [Multilib]: client/server libs in [<dir>.<side>/] (eliom, toolkit, start);
    - [Root]: a single package whose modules sit directly at the version root
-     (ocsigenserver, reactiveData), module path flattened with [wrapper];
+     (ocsigenserver, reactiveData);
    - [Subdir]: a multi-package project where each opam package keeps its own
-     [<pkg>/] subdirectory and odoc's nested module layout (js_of_ocaml, tyxml,
-     lwt). The module path is kept verbatim (no flattening). One [hosted] entry
-     covers a whole family: a package whose name extends the entry key with a
-     [-]/[_] separator (e.g. [js_of_ocaml-lwt] for key [js_of_ocaml]) matches it
-     and deploys under its own [<pkg>/]. *)
+     [<pkg>/] subdirectory (js_of_ocaml, tyxml, lwt). One [hosted] entry covers
+     a whole family: a package whose name extends the entry key with a [-]/[_]
+     separator (e.g. [js_of_ocaml-lwt] for key [js_of_ocaml]) matches it and
+     deploys under its own [<pkg>/].
+   In every layout, the module path below the library is odoc's, kept verbatim:
+   a wrapped library deploys its modules under the wrapper
+   ([Eliom/Content/Html/]). *)
 
 type layout = Multilib | Root | Subdir
 
@@ -248,23 +248,6 @@ let find_hosted hosted pkg =
            then Some e
            else None)
         hosted
-
-let flat_module wrapper comp =
-  let pre = wrapper ^ "_" in
-  if String.starts_with ~prefix:pre comp
-  then comp
-  else pre ^ String.lowercase_ascii comp
-
-let flat_path wrapper path =
-  let re =
-    Str.regexp (Str.quote wrapper ^ "/\\([A-Z][A-Za-z0-9_']*\\)\\(/.*\\)?$")
-  in
-  if Str.string_match re path 0
-  then
-    let comp = Str.matched_group 1 path in
-    let tail = try Str.matched_group 2 path with Not_found -> "" in
-    flat_module wrapper comp ^ tail
-  else path
 
 (* A [Multilib] project deploys one library per side ([eliom.server],
    [eliom.client]) and no side-less tree, so the side is part of the target
@@ -302,19 +285,13 @@ let fix_resolved hosted relroot version side s =
        let pkg = Str.matched_group 1 whole in
        let path = Str.matched_group 2 whole in
        match find_hosted hosted pkg with
-       | Some (dir, layout, wrapper)
-         when not (String.starts_with ~prefix:"src/" path) ->
+       | Some (dir, layout, _) when not (String.starts_with ~prefix:"src/" path)
+         ->
            (* A module page is [<Mod>/…/index.html] (always nested); a top-level
               manual page is [<name>.html] with no '/'. They deploy differently. *)
            let url =
              if String.contains path '/'
-             then
-               let path' =
-                 match layout with
-                 | Subdir -> path
-                 | _ -> flat_path wrapper path
-               in
-               dep_base relroot version side dir layout pkg ^ "/" ^ path'
+             then dep_base relroot version side dir layout pkg ^ "/" ^ path
              else hosted_page_url relroot version dir layout pkg path
            in
            Printf.sprintf "href=\"%s\"" url
@@ -398,25 +375,23 @@ let module_url hosted relroot version side pkg kind modhead rest =
   ^ "/index.html" ^ anchor
 
 (* Which hosted project a module reference rooted at [head] belongs to: through
-   the project's wrapper module, which it deploys flat ([Eliom.Registration] ->
-   [Eliom_registration]), or through its own root module for a project that
-   declares no wrapper ([Js_of_ocaml.Js], [Lwt.bind]). [None] for a dependency we
-   do not host, whose reference is left as text. *)
+   the project's wrapper module ([Eliom.Registration]) or a module named after it
+   ([Eliom_content], a name from before the project was wrapped: its link is
+   kept flat, and only the separate [requalify-xrefs] pass repairs it on a
+   current tree), or through its own root module for a project that declares no
+   wrapper ([Js_of_ocaml.Js], [Lwt.bind]). [None] for a dependency we do not
+   host, whose reference is left as text. *)
 let hosted_head hosted head =
-  let wrappers = List.map (fun (pkg, (_, _, w)) -> w, pkg) hosted in
   match
     List.find_opt
-      (fun (w, _) ->
+      (fun (_, (_, _, w)) ->
          w <> "" && (head = w || String.starts_with ~prefix:(w ^ "_") head))
-      wrappers
+      hosted
   with
-  | Some (wrapper, pkg) -> Some (pkg, Some wrapper)
-  | None -> (
-    match
-      List.find_opt (fun (pkg, _) -> module_name_of_pkg pkg = head) hosted
-    with
-    | Some (pkg, _) -> Some (pkg, None)
-    | None -> None)
+  | Some (pkg, _) -> Some pkg
+  | None ->
+      Option.map fst
+        (List.find_opt (fun (pkg, _) -> module_name_of_pkg pkg = head) hosted)
 
 let fix_dep_spans hosted relroot version side self s =
   global_sub span_re
@@ -442,32 +417,16 @@ let fix_dep_spans hosted relroot version side self s =
            let toks =
              List.filter (fun t -> t <> "") (String.split_on_char '.' name)
            in
-           let link pkg modhead rest =
-             if pkg = self || modhead = ""
-             then m0 (* self ref, or nothing left to link: keep text *)
-             else
-               Printf.sprintf "<a href=\"%s\">%s</a>"
-                 (module_url hosted relroot version side pkg kind modhead rest)
-                 (html_escape label)
-           in
            match toks with
            | [] -> m0
            | head :: tl -> (
              match hosted_head hosted head with
              | None -> m0 (* dep we do not host: leave as text *)
-             | Some (pkg, Some wrapper) ->
-                 let modhead, rest =
-                   if head = wrapper
-                   then
-                     match tl with
-                     | m :: tl -> flat_module wrapper m, tl
-                     | [] -> "", []
-                   else head, tl
-                 in
-                 link pkg modhead rest
-             | Some (pkg, None) ->
-                 (* the project's own root module: odoc's nested layout is kept *)
-                 link pkg head tl)))
+             | Some pkg when pkg = self -> m0 (* self ref: keep text *)
+             | Some pkg ->
+                 Printf.sprintf "<a href=\"%s\">%s</a>"
+                   (module_url hosted relroot version side pkg kind head tl)
+                   (html_escape label))))
     s
 
 (* Is this unresolved reference a defect of OUR documentation, as opposed to one
@@ -498,7 +457,7 @@ let is_ours ~hosted ~siblings ~self ~in_api ~pages raw =
   | head :: _ when is_lower head.[0] -> (not in_api) || List.mem head pages
   | head :: _ -> (
     match hosted_head hosted head with
-    | Some (pkg, _) -> pkg <> self
+    | Some pkg -> pkg <> self
     | None -> List.mem_assoc head siblings)
 
 let deps ~hosted ~relroot ~version ~side ~self s =
@@ -506,12 +465,14 @@ let deps ~hosted ~relroot ~version ~side ~self s =
     (fix_resolved hosted relroot version side s)
 
 (* --- requalify cross-project links to wrapped libraries (post-pass) ---
-   odoc_driver --remap names a reference to a wrapped library's module by a FLAT
-   path (e.g. [Eliom_content]) while the wrapped project deploys it UNDER its
-   wrapper: [Eliom/Content] for a renamed module, or [Eliom/Eliom_react] for one
-   that kept its name. The mapping is therefore not uniform, so we PROBE: for a
-   flat top segment [<W>_<x>] right after a wrapped project's [<dir>.<lib>/], try
-   [<W>/<Cap x>] then [<W>/<W>_<x>] and keep the one whose target [exists]. *)
+   A link can name a wrapped library's module by a FLAT path (e.g.
+   [Eliom_content]): odoc_driver --remap emits one when the doc was built against
+   a release from before the library was wrapped, and [deps] keeps it. The
+   current release deploys that module UNDER its wrapper: [Eliom/Content] for a
+   renamed module, or [Eliom/Eliom_react] for one that kept its name. The
+   mapping is therefore not uniform, so we PROBE: for a flat top segment
+   [<W>_<x>] right after a wrapped project's [<dir>.<lib>/], try [<W>/<Cap x>]
+   then [<W>/<W>_<x>] and keep the one whose target [exists]. *)
 let cap s =
   if s = ""
   then s
