@@ -64,7 +64,8 @@ non-hosted target keeps its span.
   <span class="xref-unresolved" title="/nothosted/foo">other</span>
 
 A RESOLVED cross-package reference to a manual PAGE (odoc emitted an absolute
-`…/doc/<name>.html` with no '/') deploys like the page references above, not like
+`…/doc/<name>.html`, or `…/doc/<dir>/<name>.html` in a subdirectory of the manual,
+not a capitalised module name) deploys like the page references above, not like
 a module: at the version root for `multilib`/`root`, under `<pkg>/` for `subdir`.
 Module pages (`<Mod>/…/index.html`) keep odoc's module path verbatim: nested
 under the wrapper for a doc built against a wrapped release (eliom 13,
@@ -77,6 +78,7 @@ ocsigenserver 7). Such a flat link misses on a current tree, which
   > <a href="https://ocaml.org/p/ocsigenserver/7.0/doc/Ocsigen_server/index.html">cfg mod</a>
   > <a href="https://ocaml.org/p/ocsigenserver/8.0.0/doc/Ocsigen/Config/index.html">wrapped cfg mod</a>
   > <a href="https://ocaml.org/p/eliom/12.0/doc/server-services.html">srv page</a>
+  > <a href="https://ocaml.org/p/eliom/13.0.0/doc/workflow/mobile.html">sub page</a>
   > <a href="https://ocaml.org/p/eliom/12.0/doc/Eliom_content/index.html">srv mod</a>
   > <a href="https://ocaml.org/p/eliom/13.0.0/doc/Eliom/Content/Html/index.html#val-a">wrapped srv mod</a>
   > <a href="https://ocaml.org/p/tyxml/4.6.0/doc/ppx.html">ppx page</a>
@@ -93,6 +95,7 @@ ocsigenserver 7). Such a flat link misses on a current tree, which
   <a href="../../../ocsigenserver/latest/Ocsigen_server/index.html">cfg mod</a>
   <a href="../../../ocsigenserver/latest/Ocsigen/Config/index.html">wrapped cfg mod</a>
   <a href="../../../eliom/latest/server-services.html">srv page</a>
+  <a href="../../../eliom/latest/workflow/mobile.html">sub page</a>
   <a href="../../../eliom/latest/eliom.server/Eliom_content/index.html">srv mod</a>
   <a href="../../../eliom/latest/eliom.server/Eliom/Content/Html/index.html#val-a">wrapped srv mod</a>
   <a href="../../../tyxml/latest/tyxml/ppx.html">ppx page</a>

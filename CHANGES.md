@@ -82,6 +82,9 @@ Cross-project references:
   The flat path only matched docs built before the project was wrapped, and
   led to a missing page on current ones. A reference to the wrapper alone
   (`Eliom`) now links to its page instead of staying as text.
+- A resolved link to a manual page in a subdirectory of another project's manual
+  (`workflow/mobile.html` in Eliom) goes to that page, not under a library
+  (`eliom.server/workflow/mobile.html`, a missing page).
 - A `dev` manual links into the other projects' `dev` docs (a released one still
   into their `latest`), so a development doc documents against development APIs.
   `wodoc release`, which freezes `dev` without rebuilding it, points those links

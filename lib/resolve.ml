@@ -50,6 +50,7 @@ let strip_parens s =
   if !j < !i then "" else String.sub s !i (!j - !i + 1)
 
 let is_lower c = c >= 'a' && c <= 'z'
+let is_upper c = c >= 'A' && c <= 'Z'
 
 (* Like [Str.global_substitute] but robust to the callback running its OWN [Str]
    matches: the next position is saved BEFORE calling [f], so [f] clobbering the
@@ -267,7 +268,8 @@ let dep_base relroot version side dir layout pkg =
    flat, e.g. [eliom/latest/intro.html], [ocsigenserver/latest/config.html]),
    and under [<pkg>/] for [Subdir] projects whose nested layout is kept
    (e.g. [tyxml/latest/tyxml/index.html]). [page] is the page path relative to
-   that location (e.g. ["config.html"] or ["server-state.html#scopes"]). *)
+   that location (e.g. ["config.html"], ["server-state.html#scopes"] or, in a
+   subdirectory of the manual, ["workflow/mobile.html"]). *)
 let hosted_page_url relroot version dir layout pkg page =
   let prefix =
     match layout with Multilib | Root -> "" | Subdir -> pkg ^ "/"
@@ -287,10 +289,14 @@ let fix_resolved hosted relroot version side s =
        match find_hosted hosted pkg with
        | Some (dir, layout, _) when not (String.starts_with ~prefix:"src/" path)
          ->
-           (* A module page is [<Mod>/…/index.html] (always nested); a top-level
-              manual page is [<name>.html] with no '/'. They deploy differently. *)
+           (* A module page is [<Mod>/…/index.html]: always nested, and
+              capitalised because odoc_driver's remap drops the library
+              directory, so the path starts with the compilation unit. A
+              manual page is [<name>.html], or [<dir>/<name>.html] in a
+              subdirectory of the manual, whose names are taken to start
+              lowercase. They deploy differently. *)
            let url =
-             if String.contains path '/'
+             if String.contains path '/' && is_upper path.[0]
              then dep_base relroot version side dir layout pkg ^ "/" ^ path
              else hosted_page_url relroot version dir layout pkg path
            in
