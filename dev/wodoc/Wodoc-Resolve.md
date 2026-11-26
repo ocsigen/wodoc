@@ -25,11 +25,11 @@ val html :
 
 ```ocaml
 type layout = 
-  | Multilib (* client/server libs under <dir>.<side>/, path flattened *)
-  | Root (* single package at the version root, path flattened *)
-  | Subdir (* multi-package project, each opam package under its own <pkg>/, odoc module layout kept verbatim *)
+  | Multilib (* client/server libs under <dir>.<side>/ *)
+  | Root (* single package at the version root *)
+  | Subdir (* multi-package project, each opam package under its own <pkg>/ *)
 ```
-How a hosted project's modules are laid out under `<dir>/latest/`.
+How a hosted project's libraries are laid out under `<dir>/latest/`. Below a library, the module path is odoc's in every layout.
 
 ```ocaml
 val layout_of_string : string -> layout
@@ -70,4 +70,4 @@ val requalify :
   string ->
   string
 ```
-`requalify ~wrapped ~exists page` rewrites flat cross-project links to a wrapped library's module (e.g. `.../eliom.server/Eliom_content/…`, emitted by `odoc_driver --remap`) into the qualified path the target deploys (`.../eliom.server/Eliom/Content/…`). `wrapped` maps a project deploy-dir to its wrapper module (`("eliom","Eliom")`). The flat→qualified mapping is not uniform (renamed vs kept module names), so each candidate is probed with `exists` (the caller resolves the candidate URL against the page's location and stats the target).
+`requalify ~wrapped ~exists page` rewrites flat cross-project links to a wrapped library's module (e.g. `.../eliom.server/Eliom_content/…`, emitted by `odoc_driver --remap` for a doc built against a release from before the library was wrapped) into the qualified path the target deploys (`.../eliom.server/Eliom/Content/…`). `wrapped` maps a project deploy-dir to its wrapper module (`("eliom","Eliom")`). The flat→qualified mapping is not uniform (renamed vs kept module names), so each candidate is probed with `exists` (the caller resolves the candidate URL against the page's location and stats the target).

@@ -546,7 +546,7 @@ wodoc build --config doc/wodoc --out <site>/<v> --label <v> \
 odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`resolve-refs`](./commands.md) and [`Wodoc.Resolve`](./Wodoc-Resolve.md)).
 
 - `(sibling <Module> <seg/seg/…>) …`: cross-*package* references to a sibling library built in the same tree; maps a top module to its odoc directory path.
-- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)`: cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module, which that project deploys flat (`Eliom.Registration` *\-\>* `Eliom_registration`); pass `""` for a project that has none, and references then start with its own root module (`Js_of_ocaml.Js.t`). A reference to a `multilib` target from a page with no client/server side of its own links to the target's server library. Links go to the target's `latest`, except from a `dev` manual, which links to their `dev`.
+- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)`: cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module, which identifies a reference into that project (`Eliom.Registration`); pass `""` for a project that has none, and references then start with its own root module (`Js_of_ocaml.Js.t`). Module paths keep odoc's layout (`Eliom/Registration/`). A reference to a `multilib` target from a page with no client/server side of its own links to the target's server library. Links go to the target's `latest`, except from a `dev` manual, which links to their `dev`.
 
 ## Build inputs and assets
 
@@ -725,7 +725,7 @@ Markdown generation is **on by default**, and a project that asks for it **fails
 ```text
 wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..
 ```
-`odoc_driver --remap` names a reference to a *wrapped* library's module by a FLAT path (`Eliom_content`), but the qualified project deploys it under its wrapper: `Eliom/Content` for a renamed module, `Eliom/Eliom_react` for one that kept its name. Since that mapping is not uniform, this post-pass over a co-located multi-project `<root>` PROBES each wrapped project's tree: for a flat `<W>_<x>` segment after a `<dir>.<lib>/`, it tries `<W>/<Cap x>` then `<W>/<W>_<x>` and keeps the link whose target exists. `--wrapped <dir>=<Wrapper>` (repeatable) lists the wrapped projects (e.g. `eliom=Eliom`, `ocsigen-toolkit=Ot`).
+A doc built against a release from before a library was *wrapped* names its modules by a FLAT path (`Eliom_content`), but the current release deploys them under its wrapper: `Eliom/Content` for a renamed module, `Eliom/Eliom_react` for one that kept its name. Since that mapping is not uniform, this post-pass over a co-located multi-project `<root>` PROBES each wrapped project's tree: for a flat `<W>_<x>` segment after a `<dir>.<lib>/`, it tries `<W>/<Cap x>` then `<W>/<W>_<x>` and keeps the link whose target exists. `--wrapped <dir>=<Wrapper>` (repeatable) lists the wrapped projects (e.g. `eliom=Eliom`, `ocsigen-toolkit=Ot`).
 
 ### Releasing a stable version
 
@@ -1591,11 +1591,11 @@ val html :
 
 ```ocaml
 type layout = 
-  | Multilib (* client/server libs under <dir>.<side>/, path flattened *)
-  | Root (* single package at the version root, path flattened *)
-  | Subdir (* multi-package project, each opam package under its own <pkg>/, odoc module layout kept verbatim *)
+  | Multilib (* client/server libs under <dir>.<side>/ *)
+  | Root (* single package at the version root *)
+  | Subdir (* multi-package project, each opam package under its own <pkg>/ *)
 ```
-How a hosted project's modules are laid out under `<dir>/latest/`.
+How a hosted project's libraries are laid out under `<dir>/latest/`. Below a library, the module path is odoc's in every layout.
 
 ```ocaml
 val layout_of_string : string -> layout
@@ -1636,7 +1636,7 @@ val requalify :
   string ->
   string
 ```
-`requalify ~wrapped ~exists page` rewrites flat cross-project links to a wrapped library's module (e.g. `.../eliom.server/Eliom_content/…`, emitted by `odoc_driver --remap`) into the qualified path the target deploys (`.../eliom.server/Eliom/Content/…`). `wrapped` maps a project deploy-dir to its wrapper module (`("eliom","Eliom")`). The flat→qualified mapping is not uniform (renamed vs kept module names), so each candidate is probed with `exists` (the caller resolves the candidate URL against the page's location and stats the target).
+`requalify ~wrapped ~exists page` rewrites flat cross-project links to a wrapped library's module (e.g. `.../eliom.server/Eliom_content/…`, emitted by `odoc_driver --remap` for a doc built against a release from before the library was wrapped) into the qualified path the target deploys (`.../eliom.server/Eliom/Content/…`). `wrapped` maps a project deploy-dir to its wrapper module (`("eliom","Eliom")`). The flat→qualified mapping is not uniform (renamed vs kept module names), so each candidate is probed with `exists` (the caller resolves the candidate URL against the page's location and stats the target).
 
 
 ---

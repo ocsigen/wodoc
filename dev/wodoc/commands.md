@@ -88,7 +88,7 @@ Markdown generation is **on by default**, and a project that asks for it **fails
 ```text
 wodoc requalify-xrefs --site <root> [--wrapped <dir>=<Wrapper>]..
 ```
-`odoc_driver --remap` names a reference to a *wrapped* library's module by a FLAT path (`Eliom_content`), but the qualified project deploys it under its wrapper: `Eliom/Content` for a renamed module, `Eliom/Eliom_react` for one that kept its name. Since that mapping is not uniform, this post-pass over a co-located multi-project `<root>` PROBES each wrapped project's tree: for a flat `<W>_<x>` segment after a `<dir>.<lib>/`, it tries `<W>/<Cap x>` then `<W>/<W>_<x>` and keeps the link whose target exists. `--wrapped <dir>=<Wrapper>` (repeatable) lists the wrapped projects (e.g. `eliom=Eliom`, `ocsigen-toolkit=Ot`).
+A doc built against a release from before a library was *wrapped* names its modules by a FLAT path (`Eliom_content`), but the current release deploys them under its wrapper: `Eliom/Content` for a renamed module, `Eliom/Eliom_react` for one that kept its name. Since that mapping is not uniform, this post-pass over a co-located multi-project `<root>` PROBES each wrapped project's tree: for a flat `<W>_<x>` segment after a `<dir>.<lib>/`, it tries `<W>/<Cap x>` then `<W>/<W>_<x>` and keeps the link whose target exists. `--wrapped <dir>=<Wrapper>` (repeatable) lists the wrapped projects (e.g. `eliom=Eliom`, `ocsigen-toolkit=Ot`).
 
 ### Releasing a stable version
 
