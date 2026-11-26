@@ -1,6 +1,6 @@
 `wodoc requalify-xrefs` fixes flat cross-project links to a WRAPPED library:
-odoc_driver --remap names a reference to eliom's `Eliom.Content` by the flat path
-`Eliom_content`, but the qualified eliom deploys it under its wrapper as
+a doc built against an eliom release from before the wrapper names its
+`Eliom_content` module by that flat path, but the current eliom deploys it as
 `Eliom/Content` (renamed) or `Eliom/Eliom_react` (kept name). The mapping is not
 uniform, so the tool probes the co-located target tree and keeps the form that
 exists.

@@ -560,8 +560,9 @@ let () =
       | Wodoc.Build.Missing_markdown m -> markdown_failed m)
   | _ :: "requalify-xrefs" :: args ->
       (* Post-pass over a co-located multi-project site: rewrite flat
-         cross-project links to a wrapped library (Eliom_content) into the
-         qualified path the target deploys (Eliom/Content), probing the tree. *)
+         cross-project links to a wrapped library (Eliom_content, from a doc
+         built against an unwrapped release) into the qualified path the target
+         deploys (Eliom/Content), probing the tree. *)
       let flags, _ = parse_args args in
       let site =
         match List.assoc_opt "site" flags with Some s -> s | None -> usage ()
