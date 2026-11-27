@@ -63,18 +63,21 @@ let is_api rel =
   let b = Filename.basename rel in
   String.length b > 0 && b.[0] >= 'A' && b.[0] <= 'Z'
 
-let write ~out ~title ~landing ~order =
+let write ~out ~title ~summary ~landing ~order =
   let files = md_files out in
   if files = []
   then ()
   else begin
-    let summary =
+    let landing_para =
       match landing with
-      | Some l when Sys.file_exists (Filename.concat out l) -> (
-        match first_para (read_file (Filename.concat out l)) with
-        | Some s -> s
-        | None -> title ^ ", part of the Ocsigen Web framework (OCaml).")
-      | _ -> title ^ ", part of the Ocsigen Web framework (OCaml)."
+      | Some l when Sys.file_exists (Filename.concat out l) ->
+          first_para (read_file (Filename.concat out l))
+      | _ -> None
+    in
+    let summary =
+      match summary, landing_para with
+      | Some s, _ | None, Some s -> s
+      | None, None -> "The documentation of " ^ title ^ "."
     in
     (* preferred order: nav order first, then the rest alphabetically *)
     let rank p =

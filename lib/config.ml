@@ -42,6 +42,17 @@ type 'tree section =
     (** [api-section] -> class "api-nav"; else "api-nav manual-nav" *)
   ; items : 'tree item list }
 
+(* How the [llms.txt] index presents the project to AIs, when the defaults do
+   not fit: [(llms [(title <t>)] [(summary <s>)])]. *)
+type llms =
+  { llms_title : string option
+    (** the index's [# title]; default: the [(title …)] label, which is short
+          because the site shows it by its logo *)
+  ; llms_summary : string option
+    (** the index's [>] summary; default: the first paragraph of the landing
+          page *)
+  }
+
 type blog =
   { dir : string
     (** directory of post sources, named [YYYY-MM-DD-slug.mld] (the date is the
@@ -151,7 +162,7 @@ type t =
           when it names a file next to the config, copied into the output, so a
           project can ship a self-contained theme that works at any deploy path.
           [[]] (the default) ships wodoc's built-in default theme as [wodoc.css]. *)
-  }
+  ; llms : llms  (** the [(llms …)] stanza (see {!type:llms}) *) }
 
 (* A stanza wodoc does not read is an error, not silently ignored: a typo, or a
    stanza left over from an older wodoc, would otherwise drop a setting with no
@@ -353,6 +364,42 @@ let parse_hosted stanzas =
         block
   | [] -> []
 
+(* (llms [(title <t>)] [(summary <s>)]), at most one. A value is one string,
+   quoted when it holds spaces: an unquoted multi-word value would otherwise
+   lose all but its first word, with no warning. Its runs of whitespace (the
+   line breaks of a long summary) become single spaces, since llms.txt gives
+   each value one line. *)
+let parse_llms stanzas =
+  let one_line s =
+    String.split_on_char ' '
+      (String.map (function '\n' | '\r' | '\t' -> ' ' | c -> c) s)
+    |> List.filter (fun w -> w <> "")
+    |> String.concat " "
+  in
+  let value key fields =
+    match Sexp.fields key fields with
+    | [] -> None
+    | [[Sexp.Atom v]] -> Some (one_line v)
+    | _ ->
+        raise
+          (Sexp.Error
+             (Printf.sprintf
+                "(llms (%s ...)) takes one string, given once: quote a value that holds spaces"
+                key))
+  in
+  match Sexp.fields "llms" stanzas with
+  | [] -> {llms_title = None; llms_summary = None}
+  | [fields] ->
+      if
+        List.exists
+          (function Sexp.Atom _ -> true | Sexp.List _ -> false)
+          fields
+      then
+        raise (Sexp.Error "(llms ...) takes (title ...) and (summary ...) only");
+      check_keys ~where:"(llms ...)" ["title"; "summary"] fields;
+      {llms_title = value "title" fields; llms_summary = value "summary" fields}
+  | _ -> raise (Sexp.Error "the config has more than one (llms ...) stanza")
+
 (* (blog (dir <d>) [(out <o>)] [(heading <h>)] [(latest <n>)]) — at most one *)
 let parse_blog stanzas =
   match Sexp.fields "blog" stanzas with
@@ -423,6 +470,7 @@ let stanza_names =
   ; "static-copy"
   ; "blog"
   ; "markdown"
+  ; "llms"
   ; "css" ]
 
 let of_string s =
@@ -484,4 +532,5 @@ let of_string s =
   ; (* Markdown twins + llms.txt are on by default; only (markdown false) disables *)
     markdown = Sexp.field_atom "markdown" stanzas <> Some "false"
   ; (* stylesheet hrefs; [] means "ship the built-in default theme" (see Build) *)
-    css = Sexp.field_atoms "css" stanzas }
+    css = Sexp.field_atoms "css" stanzas
+  ; llms = parse_llms stanzas }

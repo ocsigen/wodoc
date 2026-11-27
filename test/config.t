@@ -12,7 +12,7 @@ An unknown top-level stanza names the file and lists the known ones:
   > (tilte Demo)
   > CFG
   $ build
-  wodoc: doc/wodoc: unknown stanza (tilte ...) in the config: expected one of: project, title, url-prefix, menu-current, packages, landing, highlight, profile, odoc-driver, doc-manual, manual-files, sibling, nav, variants, hosted, manual-root, mld-dir, mld-package, flat, static-copy, blog, markdown, css
+  wodoc: doc/wodoc: unknown stanza (tilte ...) in the config: expected one of: project, title, url-prefix, menu-current, packages, landing, highlight, profile, odoc-driver, doc-manual, manual-files, sibling, nav, variants, hosted, manual-root, mld-dir, mld-package, flat, static-copy, blog, markdown, llms, css
   [1]
 
 A retired stanza says what replaces it:
@@ -149,4 +149,39 @@ The same holds for a standalone --nav file:
   $ echo '(nav (section "Manual" (lnk "Intro" intro.html)))' > nav
   $ wodoc build --config doc/wodoc --nav nav --out out/dev
   wodoc: nav: unknown stanza (lnk ...) in a (nav ...) section: expected one of: link, group, page-tree
+  [1]
+
+The `(llms …)` stanza takes a title and a summary, nothing else:
+
+  $ cat > doc/wodoc <<'CFG'
+  > (project demo)
+  > (llms (title "Demo") (sumary "x"))
+  > CFG
+  $ build
+  wodoc: doc/wodoc: unknown stanza (sumary ...) in (llms ...): expected one of: title, summary
+  [1]
+
+A value with spaces must be quoted, or all but its first word would be lost:
+
+  $ cat > doc/wodoc <<'CFG'
+  > (project demo)
+  > (llms (title The Demo Project))
+  > CFG
+  $ build
+  wodoc: doc/wodoc: (llms (title ...)) takes one string, given once: quote a value that holds spaces
+  [1]
+
+The same goes for a key given twice, a second stanza, or a stray word:
+
+  $ printf '(project demo)\n(llms (title "A") (title "B"))\n' > doc/wodoc
+  $ build
+  wodoc: doc/wodoc: (llms (title ...)) takes one string, given once: quote a value that holds spaces
+  [1]
+  $ printf '(project demo)\n(llms (title "A"))\n(llms (summary "B"))\n' > doc/wodoc
+  $ build
+  wodoc: doc/wodoc: the config has more than one (llms ...) stanza
+  [1]
+  $ printf '(project demo)\n(llms oops (title "A"))\n' > doc/wodoc
+  $ build
+  wodoc: doc/wodoc: (llms ...) takes (title ...) and (summary ...) only
   [1]

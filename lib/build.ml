@@ -1231,7 +1231,9 @@ let run
       if !copied = 0 then raise (Missing_markdown ("no .md page under " ^ root));
       (* the llms.txt / llms-full.txt index over the markdown tree just placed,
          so AIs/LLMs get a structured entry point and a single-file dump *)
-      Llms.write ~out ~title:c.title
+      Llms.write ~out
+        ~title:(Option.value ~default:c.title c.llms.llms_title)
+        ~summary:c.llms.llms_summary
         ~landing:(Some (md_twin c.landing))
         ~order:(nav_md_order sections)
   | None -> ());

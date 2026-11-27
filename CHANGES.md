@@ -69,6 +69,10 @@ Config simplifications (breaking):
   It showed up as a manual page in `llms.txt`, and in a manual-root project it
   replaced the landing's twin, so the index summed the project up with a list
   of packages.
+- An `(llms (title …) (summary …))` stanza sets how `llms.txt` presents the
+  project, for a project whose site label is short or whose landing page does
+  not open with a description. Without a landing paragraph, the summary is
+  now a neutral line instead of one naming Ocsigen.
 - A single-package odoc-driver project can land on its `index.mld`
   (`(landing index.html)`). The root `index.html` of its tree was taken for
   odoc's package list and skipped, and the version root redirect that replaced

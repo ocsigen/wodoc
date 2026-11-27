@@ -183,3 +183,25 @@ with a list of packages:
   [1]
   $ sed -n '3s/^> //p' r/dev/llms.txt
   Welcome to the demo.
+
+An `(llms …)` stanza gives the index its own title and summary, for a project
+whose site label is short (it sits by the logo) or whose landing page opens
+with something else than a description:
+
+  $ printf '(llms (title "The Demo Project")\n (summary "A project\n  to test wodoc."))\n' >> doc/wodoc
+  $ wodoc build --config doc/wodoc --src rsrc --md-src rmd --out r2/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ sed -n '1p;3s/^> //p' r2/dev/llms.txt
+  # The Demo Project
+  A project to test wodoc.
+  $ sed -n '1p;3s/^> //p' r2/dev/llms-full.txt
+  # The Demo Project
+  A project to test wodoc.
+
+With neither a summary nor a landing paragraph, the index says what it is:
+
+  $ printf '(project demo)\n(title Demo)\n(url-prefix /demo)\n(packages demo)\n(landing demo/none.html)\n' > doc/wodoc
+  $ wodoc build --config doc/wodoc --src rsrc --md-src rmd --out r3/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ sed -n '3s/^> //p' r3/dev/llms.txt
+  The documentation of Demo.
