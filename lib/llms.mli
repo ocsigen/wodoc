@@ -7,12 +7,15 @@
 val write :
    out:string
   -> title:string
+  -> summary:string option
   -> landing:string option
   -> order:string list
   -> unit
-(** [write ~out ~title ~landing ~order] writes, at the version root [out]:
-    - [llms.txt]: the index, with [# title], a [>] blockquote summary (the first
-      paragraph of the [landing] Markdown page when given, else a generic line),
+(** [write ~out ~title ~summary ~landing ~order] writes, at the version root
+    [out]:
+    - [llms.txt]: the index, with [# title], a [>] blockquote summary ([summary]
+      when given, else the first paragraph of the [landing] Markdown page when
+      there is one, else a generic line),
       then a [## Manual] and a [## API] section listing every [.md] page found
       under [out] (manual = lowercase-named pages, API = Capitalised modules),
       each as [- \[H1 title\](relative path)];
