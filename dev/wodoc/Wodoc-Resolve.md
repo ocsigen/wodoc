@@ -15,13 +15,18 @@ val link_for : (string * string list) list -> string -> string -> string option
 `link_for siblings base raw` is the relative URL for the qualified name `raw` (possibly carrying a `"val "`/`"type "`/… kind prefix) when it is rooted at a known sibling, else `None`. `siblings` maps a top module to the path segments of its own directory under the version root (e.g. `"Ppx_lwt"` \-\> `["lwt_ppx"; "Lwt_ppx"; "Ppx_lwt"]`); `base` is the relative path from the page to that root.
 
 ```ocaml
+val strip_kind_marks : string -> string
+```
+`strip_kind_marks page` removes the `<!--wodoc-ref:KIND-->` sentinels that [`Render`](./Wodoc-Render.md) leaves before references (see [`Preprocess`](./Wodoc-Preprocess.md)). [`html`](./#val-html) and [`deps`](./#val-deps) consume the sentinel of a reference they link, and keep the others for the next pass: strip what is left once both are done.
+
+```ocaml
 val html : 
   siblings:(string * string list) list ->
   base:string ->
   string ->
   string
 ```
-`html ~siblings ~base page` rewrites every sibling reference in `page` (both `xref-unresolved` spans and bare `<code>` qualified names), outside `<pre>` blocks, and returns the new HTML.
+`html ~siblings ~base page` rewrites every sibling reference in `page` (both `xref-unresolved` spans and bare `<code>` qualified names), outside `<pre>` blocks, and returns the new HTML. A `<!--wodoc-ref:KIND-->` sentinel right before a reference gives its kind, which odoc does not render for an unresolved one.
 
 ```ocaml
 type layout = 
@@ -61,7 +66,7 @@ val deps :
   string ->
   string
 ```
-`deps ~hosted ~relroot ~version ~side ~self page` rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and `xref-unresolved` spans. `hosted` maps a package to `(dir, layout, wrapper)`; a `Subdir` entry also matches any package extending its key with a `-`/`_` separator (whole-family match). `relroot` is the path from the page to the shared root holding every project; `version` is the target's version directory (`"latest"`, or `"dev"` so that a development manual documents against development APIs); `side` is `"server"`/`"client"`/`""` (a sided target with no side falls back to its server library); `self` is the package being documented (its own leftover refs are kept as text). The OCaml port of `resolve-deps.py`.
+`deps ~hosted ~relroot ~version ~side ~self page` rewrites cross-PROJECT references to a hosted Ocsigen project into relative links: both resolved ocaml.org dep links and `xref-unresolved` spans. `hosted` maps a package to `(dir, layout, wrapper)`; a `Subdir` entry also matches any package extending its key with a `-`/`_` separator (whole-family match). `relroot` is the path from the page to the shared root holding every project; `version` is the target's version directory (`"latest"`, or `"dev"` so that a development manual documents against development APIs); `side` is `"server"`/`"client"`/`""` (a sided target with no side falls back to its server library); `self` is the package being documented (its own leftover refs are kept as text). The OCaml port of `resolve-deps.py`. As in [`html`](./#val-html), a `<!--wodoc-ref:KIND-->` sentinel gives the kind of the reference it precedes, hence its anchor (`#type-t` rather than `#val-t`).
 
 ```ocaml
 val requalify : 

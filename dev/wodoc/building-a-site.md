@@ -221,6 +221,8 @@ A site can host several *independent* projects (each its own `wodoc build`, depl
 ```
 The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(client-server …)`; a page that carries no side of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
 
+A reference to another project that odoc cannot resolve reaches wodoc without its kind, so a lowercase name is taken for a value: `{!Myproj.Form.param}` links to `#val-param`. In an `.mld` page, tag the kind of the last component to link to a type or an exception instead: `{!Myproj.Form.type-param}`, `{!Myproj.exception-Error}`. wodoc does not see the source of `.mli` doc comments, where that tag is lost.
+
 ## A blog
 
 Drop dated `.mld` posts (`YYYY-MM-DD-slug.mld`) in a directory, add a `(blog …)` stanza, and `wodoc build` lists them in the navigation, expands a "latest posts" widget on the landing and can emit an Atom feed for syndication. The full recipe is on its own page: [Adding a blog](./blog.md).
