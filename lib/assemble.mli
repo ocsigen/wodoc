@@ -9,9 +9,10 @@
     - marks the current navigation entry ({!mark_current}).
 
     A template is HTML containing holes written [{{name}}]. The standard holes
-    filled by {!page} are [{{base}}], [{{title}}], [{{preamble}}], [{{toc}}] and
-    [{{content}}]. Menu links carry a [data-wodoc-page] attribute; the entry
-    whose value equals the current page id receives the [current] class. *)
+    filled by {!page} are [{{base}}], [{{title}}], [{{banner}}],
+    [{{preamble}}], [{{toc}}] and [{{content}}]. Menu links carry a
+    [data-wodoc-page] attribute; the entry whose value equals the current page
+    id receives the [current] class. *)
 
 module Parts : sig
   type t =
@@ -48,6 +49,7 @@ val page :
   -> ?menu_current:string
   -> ?leftnav:string
   -> ?mdlink:string
+  -> ?banner:string
   -> template:string
   -> current:string
   -> string
@@ -82,4 +84,6 @@ val page :
     - [mdlink] (default [""]): fills [{{mdlink}}] with the page's
       [<link rel="alternate" type="text/markdown">] element pointing at its
       Markdown twin (or [""] when there is no twin), so AIs/LLMs can discover the
-      [.md] version of any page. *)
+      [.md] version of any page.
+    - [banner] (default [""]): fills [{{banner}}], a notice shown above the page
+      title, e.g. the variant an API page documents. *)

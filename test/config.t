@@ -49,7 +49,7 @@ The blocks with named fields are checked too:
   >   (variant server (lib demo.server) (indexdoc doc/server.indexdoc) (wraper Demo)))
   > CFG
   $ build
-  wodoc: doc/wodoc: unknown stanza (wraper ...) in (variants (variant server ...)): expected one of: lib, indexdoc, heading, wrapper, skip
+  wodoc: doc/wodoc: unknown stanza (wraper ...) in (variants (variant server ...)): expected one of: lib, indexdoc, heading, wrapper, skip, note
   [1]
 
 A variant is named by its key, and only variants are expected there:
@@ -67,6 +67,17 @@ A variant is named by its key, and only variants are expected there:
   > CFG
   $ build
   wodoc: doc/wodoc: (variants (variant ...)): expected a key first, e.g. (variant server (lib ...) ...)
+  [1]
+
+The hint for a retired stanza is given at the top level only, where the stanza
+lived; inside a block, the same name is just unknown:
+
+  $ cat > doc/wodoc <<'CFG'
+  > (project demo)
+  > (variants (variant a (lib x) (pub /demo)))
+  > CFG
+  $ build
+  wodoc: doc/wodoc: unknown stanza (pub ...) in (variants (variant a ...)): expected one of: lib, indexdoc, heading, wrapper, skip, note
   [1]
 
 The variants block is checked as a whole: it is declared once, lists at least
