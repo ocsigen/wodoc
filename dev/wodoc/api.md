@@ -21,7 +21,7 @@ wodoc is both a command-line tool and an OCaml library. The library exposes one 
 - [`Wodoc.Preprocess`](./Wodoc-Preprocess.md): rewrite `{%wodoc:…%}` markers to HTML-comment sentinels before odoc runs.
 - [`Wodoc.Render`](./Wodoc-Render.md): turn those sentinels in odoc's HTML into real nested HTML.
 - [`Wodoc.Assemble`](./Wodoc-Assemble.md): wrap the rendered HTML in a project's site template.
-- [`Wodoc.Nav`](./Wodoc-Nav.md): render a client/server project's API module list from a curated odoc index (the manual's own navigation is declared in the [`doc/wodoc` config](./config.md), not here).
+- [`Wodoc.Nav`](./Wodoc-Nav.md): render the API module list of each variant (`(variants …)`) from a curated odoc index (the manual's own navigation is declared in the [`doc/wodoc` config](./config.md), not here).
 - [`Wodoc.Resolve`](./Wodoc-Resolve.md): link cross-package "sibling" references odoc left dead.
 - [`Wodoc.Convert`](./Wodoc-Convert.md): the wikicréole → `.mld` migration aid.
 - [`Wodoc.Config`](./Wodoc-Config.md): parse the declarative [`doc/wodoc`](./config.md) file.

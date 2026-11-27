@@ -30,7 +30,7 @@ val html :
 
 ```ocaml
 type layout = 
-  | Multilib (* client/server libs under <dir>.<side>/ *)
+  | Multilib (* one library per variant under <dir>.<key>/ *)
   | Root (* single package at the version root *)
   | Subdir (* multi-package project, each opam package under its own <pkg>/ *)
 ```

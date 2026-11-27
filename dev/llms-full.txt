@@ -264,7 +264,7 @@ Since odoc 3, a manual can also be a tree of directories (`odoc-pages/<dir>/`, o
  (section "Manual"
   (page-tree)))
 ```
-Without a `(nav …)` stanza, wodoc uses that tree by default, in a section named after the project. The tree is read from the `sidebar.json` that `odoc_driver` writes, so it needs an `odoc_driver` build (`(odoc-driver …)` or `(client-server …)`). See `(page-tree …)` in [Configuration](./config.md).
+Without a `(nav …)` stanza, wodoc uses that tree by default, in a section named after the project. The tree is read from the `sidebar.json` that `odoc_driver` writes, so it needs an `odoc_driver` build (`(odoc-driver …)` or `(variants …)`). See `(page-tree …)` in [Configuration](./config.md).
 
 ## API docs: one package or several
 
@@ -273,7 +273,7 @@ For a single library, `(packages myproj)` assembles its `dune build @doc` output
 ```text
 (packages myproj myproj-lwt myproj-unix)
 ```
-A **client/server** project (libraries that share module names, e.g. an Eliom app) is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(client-server …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its side's API nav, a body colour and a client/server switch. See the `(client-server …)` stanza in [Configuration](./config.md).
+An API published in **variants**, libraries that share module names (a Unix and a browser implementation, or the server and client sides of an Eliom app), is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(variants …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its variant's API nav, a body class and a variant switch. See the `(variants …)` stanza in [Configuration](./config.md).
 
 ## Theming: customising the look
 
@@ -299,7 +299,7 @@ By default wodoc links its built-in theme (`wodoc.css`, shipped per-version). Th
 - `(css /css/style.css …)` or a full URL: **absolute** hrefs, emitted verbatim, which you serve yourself (e.g. a shared site-wide stylesheet at the domain root).
 A custom stylesheet must style both the chrome and the content:
 
-- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.cs-switch` and the blog `.wodoc-blog-*` classes;
+- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.wodoc-variant-switch` and the blog `.wodoc-blog-*` classes;
 - the odoc **content**: `.odoc-preamble`/`.odoc-content`, headings, code blocks (highlight.js `.hljs-*` tokens), tables and declaration specs.
 The [starter stylesheet](https://github.com/ocsigen/wodoc/tree/master/examples/starter/css) covers all of these; copy it and recolour. (If you would rather reuse odoc's stock theme for the content, note that `odoc.css` *is* shipped next to each version, so you can link or `@import` it from your `/css/ocsigen-odoc.css`.)
 
@@ -314,7 +314,7 @@ A site can host several *independent* projects (each its own `wodoc build`, depl
         (otherproj otherproj root "")
         (bigproj bigproj subdir ""))
 ```
-The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(client-server …)`; a page that carries no side of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
+The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(variants …)`; a page that carries no variant of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
 
 A reference to another project that odoc cannot resolve reaches wodoc without its kind, so a lowercase name is taken for a value: `{!Myproj.Form.param}` links to `#val-param`. In an `.mld` page, tag the kind of the last component to link to a type or an exception instead: `{!Myproj.Form.type-param}`, `{!Myproj.exception-Error}`. wodoc does not see the source of `.mli` doc comments, where that tag is lost.
 
@@ -461,7 +461,7 @@ Build it with:
 wodoc build --config doc/wodoc --out <site>/<label> \
             --menu https://ocsigen.org/doc/menu.html --label <label> [--latest] [--local]
 ```
-Every stanza below is checked: a stanza wodoc does not read, at the top level, inside `(client-server …)` or `(blog …)`, or among the sections and entries of a `(nav …)` (in the config or in a `--nav` file), fails the build with the file name and the stanzas expected there. A typo, or a stanza left over from an older wodoc, would otherwise drop a setting silently. A retired stanza names its replacement: `(pub …)` is now `(url-prefix …)`, and `(anchor-menu …)` and `(manual-menu …)` give way to `(nav …)`.
+Every stanza below is checked: a stanza wodoc does not read, at the top level, inside `(variants …)` or `(blog …)`, or among the sections and entries of a `(nav …)` (in the config or in a `--nav` file), fails the build with the file name and the stanzas expected there. A typo, or a stanza left over from an older wodoc, would otherwise drop a setting silently. A retired stanza names its replacement: `(pub …)` is now `(url-prefix …)`, and `(anchor-menu …)` and `(manual-menu …)` give way to `(nav …)`.
 
 ## Core stanzas
 
@@ -487,10 +487,10 @@ The left-column navigation is described declaratively here, or taken from the ma
   (link "Modules"   pkg/index.html  pkg)))
 ```
 - `(section <heading> <item> …)`: a **manual** block, rendered as `<nav class="api-nav manual-nav">`. Several sections stack in order, each with its own `<h3>` heading.
-- `(api-section <heading> <item> …)`: an **API** block (`<nav class="api-nav">`); use it for hand-curated API links. (A client/server project's per-module API nav is generated automatically instead; see below.)
+- `(api-section <heading> <item> …)`: an **API** block (`<nav class="api-nav">`); use it for hand-curated API links. (The per-module API nav of a project with variants is generated automatically instead; see below.)
 - `(link <label> <path> [<current>])`: one entry. `<path>` is taken relative to the version root (the per-page `base` is prefixed automatically), *unless* it is absolute (`/talks/…`) or a URL (`https://…`), in which case it is emitted verbatim. `<current>` is an optional `data-wodoc-page` id: the entry is highlighted on the page whose id matches (an API subtree's top directory, or a manual page's own basename). Omit it for a link that never needs highlighting.
 - `(group <heading> <item> …)`: a **sub-heading** (`<h4>`) and its nested items, indented one level deeper. Groups nest, so a section can reproduce a multi-level menu (section → subsection → page links).
-- `(page-tree [<index>])`: the **manual tree** odoc builds, in place of a hand-written list. Since odoc 3, a manual can be a tree of directories: pages installed under `odoc-pages/<dir>/` form a node, whose `index.mld` gives the title (or `@short_title`) and the order of its children (`@children_order`, where a directory is written `<dir>/`). odoc shows that tree in the sidebar of every page, and ocaml.org displays it as is. `odoc_driver` also writes it as data, in a `sidebar.json` next to each package's pages. wodoc reads it there and expands the tree of the page `<index>` (default `index.html`, relative to the HTML root like a `(link …)` path) into links and groups: first `<index>` itself, then the pages and directories below it. A page is a link, a directory a group, whose heading links to the directory's index page unless that page says `@toc_status hidden`. `<index>` can be the index page of a directory, to show only that part of the tree; when that page is `@toc_status hidden`, the tree starts with the directory's pages. The library and source entries of the sidebar are left out (the API has its own navigation). The left column then follows the same tree as ocaml.org, from a single source. It needs odoc 3 pages built by `odoc_driver` (`(odoc-driver …)` or `(client-server …)`): `dune build @doc` writes no `sidebar.json`, and does not build the pages of subdirectories. A missing or unreadable `sidebar.json`, or one that does not show `<index>`, stops the build.
+- `(page-tree [<index>])`: the **manual tree** odoc builds, in place of a hand-written list. Since odoc 3, a manual can be a tree of directories: pages installed under `odoc-pages/<dir>/` form a node, whose `index.mld` gives the title (or `@short_title`) and the order of its children (`@children_order`, where a directory is written `<dir>/`). odoc shows that tree in the sidebar of every page, and ocaml.org displays it as is. `odoc_driver` also writes it as data, in a `sidebar.json` next to each package's pages. wodoc reads it there and expands the tree of the page `<index>` (default `index.html`, relative to the HTML root like a `(link …)` path) into links and groups: first `<index>` itself, then the pages and directories below it. A page is a link, a directory a group, whose heading links to the directory's index page unless that page says `@toc_status hidden`. `<index>` can be the index page of a directory, to show only that part of the tree; when that page is `@toc_status hidden`, the tree starts with the directory's pages. The library and source entries of the sidebar are left out (the API has its own navigation). The left column then follows the same tree as ocaml.org, from a single source. It needs odoc 3 pages built by `odoc_driver` (`(odoc-driver …)` or `(variants …)`): `dune build @doc` writes no `sidebar.json`, and does not build the pages of subdirectories. A missing or unreadable `sidebar.json`, or one that does not show `<index>`, stops the build.
 To point at an **in-page anchor** (a one-page manual), put the fragment in the path: `(link "Section 2" index.html#sec2 index)`.
 
 A nested example (one `<h3>` section, an `<h4>` subsection, indented links):
@@ -548,13 +548,13 @@ wodoc build --config doc/wodoc --out <site>/<v> --label <v> \
 odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`resolve-refs`](./commands.md) and [`Wodoc.Resolve`](./Wodoc-Resolve.md)).
 
 - `(sibling <Module> <seg/seg/…>) …`: cross-*package* references to a sibling library built in the same tree; maps a top module to its odoc directory path.
-- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)`: cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module, which identifies a reference into that project (`Eliom.Registration`); pass `""` for a project that has none, and references then start with its own root module (`Js_of_ocaml.Js.t`). Module paths keep odoc's layout (`Eliom/Registration/`). A reference to a `multilib` target from a page with no client/server side of its own links to the target's server library. Links go to the target's `latest`, except from a `dev` manual, which links to their `dev`.
+- `(hosted (<pkg> <dir> <layout> <Wrapper>) …)`: cross-*project* references to another hosted Ocsigen project. odoc points these at `ocaml.org`; wodoc rewrites them to relative links into the sibling project's wodoc docs. `<layout>` is how that project is deployed: `multilib` (one `<pkg>.<lib>/` subtree per library, e.g. eliom), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml); `true`/`false` are accepted as legacy aliases for `multilib`/`root`. `<Wrapper>` is its wrapper module, which identifies a reference into that project (`Eliom.Registration`); pass `""` for a project that has none, and references then start with its own root module (`Js_of_ocaml.Js.t`). Module paths keep odoc's layout (`Eliom/Registration/`). A reference to a `multilib` target from a page with no variant of its own links to the target's server library. Links go to the target's `latest`, except from a `dev` manual, which links to their `dev`.
 
 ## Build inputs and assets
 
 | Stanza | Meaning |
 | --- | --- |
-| `(odoc-driver <pkg>)` | build the API with `odoc_driver <pkg> --remap` (the engine ocaml.org uses) instead of `dune build @doc`; needed when `<pkg>.server`/`<pkg>.client` share module names |
+| `(odoc-driver <pkg>)` | build the API with `odoc_driver <pkg> --remap` (the engine ocaml.org uses) instead of `dune build @doc`; needed when several libraries of the package share module names (implied by `(variants …)`) |
 | `(profile <p>)` | dune build profile (e.g. `release`) for the `dune build @doc` |
 | `(doc-manual true)` | also build the `@doc-manual` alias (examples) |
 | `(manual-files <pkg>)` | package dir that receives `manual/files` (examples, images) |
@@ -562,7 +562,7 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`
 | `(markdown false)` | turn off the Markdown twins and `llms.txt` index (on by default; see [Commands](./commands.md)) |
 | `(css <href> …)` | the page stylesheets. A relative href is copied into the build and linked per-version (self-contained, works at any path); an absolute (`/…`) or URL href is emitted verbatim. Omitted → wodoc ships its built-in default theme as `wodoc.css` |
 
-## Layout variants
+## Other layouts
 
 ### Manual at the version root: `(manual-root)`
 
@@ -572,18 +572,18 @@ A single-package `dune build @doc` project puts both its manual and its API unde
 
 A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc `--package`. (When the directory is passed on the CLI with `--mld-dir` (for a per-version manual), set the package with a standalone `(mld-package <pkg>)` instead.) The pages *are* the manual, so the landing `index.html` is a real page (no redirect). Add `(flat)` when the first content straddles odoc's preamble boundary. `(static-copy <src> [<dest>])` (repeatable) copies a tree in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image. `<dest>` (the basename of `<src>` by default) is replaced on every build, so it must be a relative path inside the version directory, with no `.` or `..` segment.
 
-## Client/server projects: `(client-server …)`
+## API variants: `(variants …)`
 
-A client/server project (eliom, ocsigen-toolkit, ocsigen-start) builds its API as two or three libraries of one package that share module names (`<pkg>.server` / `<pkg>.client` / `<pkg>.ppx`). Declaring `(client-server …)` implies `(odoc-driver <project>)` (these shared names would collide under `dune build @doc`), so you need not repeat it. The block lists one side per library:
+Some packages publish their API as several libraries that share module names: one implementation for Unix and one for the browser (`foo.unix` / `foo.js`), or the server and client sides of the same modules in Eliom (`eliom.server` / `eliom.client`). Declaring `(variants …)` implies `(odoc-driver <project>)` (these shared names would collide under `dune build @doc`), so you need not repeat it. The block lists one variant per library, named by a key:
 
 ```text
-(client-server
- (server (lib eliom.server) (indexdoc doc/server.indexdoc)
-         (heading "Server API") (wrapper Eliom) (skip "Index"))
- (client (lib eliom.client) (indexdoc doc/client.indexdoc)
-         (heading "Client API") (wrapper Eliom)))
+(variants
+ (variant server (lib eliom.server) (indexdoc doc/server.indexdoc)
+          (heading "Server API") (wrapper Eliom) (skip "Index"))
+ (variant client (lib eliom.client) (indexdoc doc/client.indexdoc)
+          (heading "Client API") (wrapper Eliom)))
 ```
-Each side gives its `(lib <pkg>.<side>)`, a curated `(indexdoc <file>)` (a section-grouped odoc index (`{N title}` \+ `{!modules: …}`) turned into the side's module nav via [`Wodoc.Nav.api`](./Wodoc-Nav.md#val-api)), a `(heading …)` (the API-nav title and switch-button label), the `(wrapper <Module>)` its modules sit under, and any `(skip <title>)…` section titles to drop. wodoc then gives every page its side's API nav, a body colour (`wodoc-server` / `wodoc-client` / …) and a client/server switch button. The **manual nav is shared** across the sides and comes from this config's `(section …)` blocks, exactly like a normal project. List the sibling Ocsigen projects in `(hosted …)` so their cross-references resolve.
+A key is a lowercase identifier (`a-z`, then `a-z`, digits or `_`), used in class names; the few that would clash with wodoc's own classes (`page`, `doc`, `menu`, `switch`, `notice`…) are refused. Each variant gives its `(lib <pkg>.<key>)` (required), a curated `(indexdoc <file>)` (a section-grouped odoc index (`{N title}` \+ `{!modules: …}`) turned into the variant's module nav via [`Wodoc.Nav.api`](./Wodoc-Nav.md#val-api); without it, the variant has no API nav), a `(heading …)` (the API-nav title and switch label; the key by default), the `(wrapper <Module>)` its modules sit under, and any `(skip <title>)…` section titles to drop. wodoc then gives every page its variant's API nav, a body class (`wodoc-<key>`, e.g. `wodoc-server`, to colour each variant) and a variant switch (`.wodoc-variant-switch`). The **manual nav is shared** across the variants and comes from this config's `(section …)` blocks, exactly like a normal project. List the sibling projects in `(hosted …)` so their cross-references resolve.
 
 ## An ultra-simple blog: `(blog …)`
 
@@ -673,7 +673,7 @@ A site usually shares one menu across every page and project: `--menu <f>` fills
 ```text
 wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>] [--skip-title <t>]..
 ```
-Render an API module navigation `<nav>` fragment from a curated odoc index (`{N title}` section headings \+ `{!modules: …}` lists), writing to stdout. `--lib` / `--wrapper` place the module pages; `--skip-title` drops page-title sections. Used internally by `wodoc build` for a client/server project's per-side API nav (see [config](./config.md)).
+Render an API module navigation `<nav>` fragment from a curated odoc index (`{N title}` section headings \+ `{!modules: …}` lists), writing to stdout. `--lib` / `--wrapper` place the module pages; `--skip-title` drops page-title sections. Used internally by `wodoc build` for the per-variant API nav of a project with `(variants …)` (see [config](./config.md)).
 
 The **manual's own navigation is not built here**: it is declared declaratively in the project's [`doc/wodoc`](./config.md) config, in the `(nav …)` stanza (or taken from the manual's own tree with `(page-tree)`), and rendered by `wodoc build`. (Earlier versions built it from a wikicréole `menu.wiki`; that is gone.) See [`Wodoc.Nav`](./Wodoc-Nav.md).
 
@@ -710,7 +710,7 @@ Only *repairable* references count. A reference into a dependency the site does 
 
 `--local` makes the build viewable offline: the pages reference the site's shared assets by absolute path (`/css/…`, `/img/…`) which 404 on a bare build, so `--local` fetches them from the `--menu` URL's site into the parent of `--out`. Serve that parent with any static server (e.g. `python3 -m http.server`) to see the themed pages locally.
 
-The turn-key command: assemble a whole odoc HTML tree into the themed site from ONE per-project config file (a dune-style S-expression `doc/wodoc`, fully documented in [Configuration](./config.md)), replacing a project's `build.sh` *and* its hand-written navigation (`menu.wiki` / `nav.html` / `leftnav.html` / `template.html`, all gone). It generates the page template and the left navigation (version selector, on-this-page, the config-declared nav), then fills the shared menu, marks the current project/package, resolves sibling references and ships the assets, the version redirect and the `latest` symlink. Without `--src` it builds the odoc HTML itself: `dune build @doc` by default, or (when the config has `(odoc-driver <pkg>)`) `odoc_driver <pkg> --remap` on the *installed* package (the engine ocaml.org uses), needed for a client/server package whose `<pkg>.server`/`<pkg>.client` libraries share module names and would collide under `dune build @doc`.
+The turn-key command: assemble a whole odoc HTML tree into the themed site from ONE per-project config file (a dune-style S-expression `doc/wodoc`, fully documented in [Configuration](./config.md)), replacing a project's `build.sh` *and* its hand-written navigation (`menu.wiki` / `nav.html` / `leftnav.html` / `template.html`, all gone). It generates the page template and the left navigation (version selector, on-this-page, the config-declared nav), then fills the shared menu, marks the current project/package, resolves sibling references and ships the assets, the version redirect and the `latest` symlink. Without `--src` it builds the odoc HTML itself: `dune build @doc` by default, or (when the config has `(odoc-driver <pkg>)`) `odoc_driver <pkg> --remap` on the *installed* package (the engine ocaml.org uses), needed for a package whose libraries share module names (`(variants …)`) and would collide under `dune build @doc`.
 
 ### Markdown twins and the llms.txt index (for AIs)
 
@@ -778,9 +778,9 @@ Choosing a version keeps the current page when it exists in that version, and ot
 
 The two mechanisms are independent. Without the `404.html`, the selector of the pages built by this wodoc still falls back to the version's index; only the pages frozen by an older wodoc and the old external links reach the host's generic 404 page, as before. The next `release` writes the file, so a site gets it without any action; to cover a site already released right away, copy the `404.html` of any release to the root of the `gh-pages` branch. Netlify and Cloudflare Pages serve a root `404.html` the same way; on another host, declare it as the error page of the site, or leave it: it is a harmless file there.
 
-### Client/server projects
+### API variants
 
-A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a `(client-server …)` block: one `(server …)`/`(client …)`/`(ppx …)` side per library, each with its `(lib <pkg>.<side>)`, a curated `(indexdoc <file>)` (turned into a section-grouped module nav), a `(heading …)` and the `(wrapper <Module>)` the modules sit under. wodoc then gives every page its side's API nav, a body colour (`wodoc-server` / `wodoc-client` / …) and a client/server switch button, and shares one manual nav across the sides (from the config's `(section …)` blocks, like any project). The `(hosted …)` block lists the sibling Ocsigen projects whose cross-references odoc points at `ocaml.org`: wodoc rewrites those to relative links into their wodoc docs (other dependencies stay on `ocaml.org`). The whole client/server build is still ONE declarative `doc/wodoc` and a single `wodoc build`, no `build.sh`.
+A package whose API comes in variants (libraries sharing module names, such as the server and client sides of Eliom, Ocsigen Toolkit and Ocsigen Start) adds a `(variants …)` block: one `(variant <key> …)` per library, each with its `(lib <pkg>.<key>)`, a curated `(indexdoc <file>)` (turned into a section-grouped module nav), a `(heading …)` and the `(wrapper <Module>)` the modules sit under. wodoc then gives every page its variant's API nav, a body class (`wodoc-<key>`) and a variant switch, and shares one manual nav across the variants (from the config's `(section …)` blocks, like any project). The `(hosted …)` block lists the sibling projects whose cross-references odoc points at `ocaml.org`: wodoc rewrites those to relative links into their wodoc docs (other dependencies stay on `ocaml.org`). The whole build is still ONE declarative `doc/wodoc` and a single `wodoc build`, no `build.sh`.
 
 ### Manual at the version root
 
@@ -916,7 +916,7 @@ wodoc is both a command-line tool and an OCaml library. The library exposes one 
 - [`Wodoc.Preprocess`](./Wodoc-Preprocess.md): rewrite `{%wodoc:…%}` markers to HTML-comment sentinels before odoc runs.
 - [`Wodoc.Render`](./Wodoc-Render.md): turn those sentinels in odoc's HTML into real nested HTML.
 - [`Wodoc.Assemble`](./Wodoc-Assemble.md): wrap the rendered HTML in a project's site template.
-- [`Wodoc.Nav`](./Wodoc-Nav.md): render a client/server project's API module list from a curated odoc index (the manual's own navigation is declared in the [`doc/wodoc` config](./config.md), not here).
+- [`Wodoc.Nav`](./Wodoc-Nav.md): render the API module list of each variant (`(variants …)`) from a curated odoc index (the manual's own navigation is declared in the [`doc/wodoc` config](./config.md), not here).
 - [`Wodoc.Resolve`](./Wodoc-Resolve.md): link cross-package "sibling" references odoc left dead.
 - [`Wodoc.Convert`](./Wodoc-Convert.md): the wikicréole → `.mld` migration aid.
 - [`Wodoc.Config`](./Wodoc-Config.md): parse the declarative [`doc/wodoc`](./config.md) file.
@@ -1163,13 +1163,13 @@ val asset_re : Str.regexp
 val local_assets : menu:string -> out:string -> unit
 ```
 ```ocaml
-val cs_switch : Config.cs_side list -> string
+val variant_switch : Config.variant list -> string
 ```
 ```ocaml
-val cs_switch_script : Config.t -> Config.cs_side list -> string
+val variant_switch_script : Config.t -> Config.variant list -> string
 ```
 ```ocaml
-val cs_leftnav : 
+val variant_leftnav : 
   latest:string option ->
   versions:string list ->
   switch:string ->
@@ -1181,16 +1181,16 @@ val cs_leftnav :
 val topdir : string -> string option
 ```
 ```ocaml
-val side_for : Config.cs_side list -> string -> Config.cs_side option
+val variant_for : Config.variant list -> string -> Config.variant option
 ```
 ```ocaml
-val side_of : Config.cs_side list -> string -> string
+val variant_of : Config.variant list -> string -> string
 ```
 ```ocaml
 val drop_prefix : string -> string -> string
 ```
 ```ocaml
-val cs_current : Config.cs_side list -> string -> string
+val variant_current : Config.variant list -> string -> string
 ```
 ```ocaml
 val nav_paths : Config.expanded Config.section list -> string list
@@ -1290,16 +1290,16 @@ type blog = {
 an ultra-simple blog: a directory of dated `.mld` posts that wodoc builds like any other page, auto-listing them in a generated left-nav section and exposing the most recent ones to the landing via the `{%wodoc:blog-latest%}` marker. Generic (no project hardcoding); `None` when the project declares no `(blog …)`.
 
 ```ocaml
-type cs_side = {
-  side : string; (* key, e.g. "server": body class wodoc-server, switch id *)
+type variant = {
+  key : string; (* e.g. "server": body class wodoc-server, switch class wodoc-variant-server *)
   lib : string; (* odoc subtree dir / Nav.api ~lib, e.g. "eliom.server" *)
   indexdoc : string; (* curated index path (relative to the build cwd) *)
-  heading : string; (* API-nav heading + switch-button label, e.g. "Server API" *)
+  heading : string; (* API-nav heading + switch label, e.g. "Server API" *)
   wrapper : string; (* Nav.api ~wrapper / page wrapper module, e.g. "Eliom" *)
   skip : string list; (* section titles to omit (Nav.api ~skip) *)
 }
 ```
-one API "side" of a client/server project (eliom/toolkit/start): the `<pkg>.server` / `<pkg>.client` / `<pkg>.ppx` library, whose curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)). The side also drives a body colour class (`wodoc-<side>`) and a switch button.
+one variant of the API of a package whose libraries share module names: the `eliom.server` and `eliom.client` libraries of Eliom, say, or `foo.unix` and `foo.js`. Its curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)); it also drives a body class (`wodoc-<key>`) and a link of the variant switch.
 
 ```ocaml
 type t = {
@@ -1311,12 +1311,12 @@ type t = {
   landing : string; (* index.html redirect target, e.g. "ocsipersist/index.html" *)
   highlight : string option; (* project highlight.js to ship, if any *)
   profile : string option; (* dune build profile (e.g. "release") *)
-  odoc_driver : string option; (* when set, build the API with odoc_driver <pkg> --remap (the engine ocaml.org uses) instead of dune build @doc: needed for a client/server package whose <pkg>.server/<pkg>.client libraries share module names and would collide under dune build @doc (eliom, ocsigen-toolkit, ocsigen-start). *)
+  odoc_driver : string option; (* when set, build the API with odoc_driver <pkg> --remap (the engine ocaml.org uses) instead of dune build @doc: needed for a package whose libraries share module names ((variants …), e.g. eliom.server/eliom.client), which would collide under dune build @doc. *)
   doc_manual : bool; (* also build the @doc-manual alias (examples) *)
   manual_files : string option; (* package dir to receive manual/files (examples, images) *)
   siblings : (string * string list) list; (* resolve-refs sibling table *)
   nav : string section list option; (* the (nav …) stanza; None when the config has none: the left column then shows the manual tree odoc builds, as (nav (section <title> (page-tree))) would, if odoc_driver wrote its sidebar.json *)
-  client_server : cs_side list; (* when non-empty, the project is client/server: instead of one nav from nav, wodoc builds a per-side API nav from each side's curated index, shows a client/server switch, and colours the body by side. The manual nav is shared, taken from nav's manual ((section …)) blocks. *)
+  variants : variant list; (* when non-empty, the API comes in variants: instead of one nav from nav, wodoc builds a per-variant API nav from each variant's curated index, shows a variant switch, and colours the body by variant. The manual nav is shared, taken from nav's manual ((section …)) blocks. *)
   hosted : (string * (string * Resolve.layout * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. See Resolve.layout for the layout token (multilib/root/subdir). *)
   manual_root : bool; (* deploy the package's pages at the version ROOT instead of under a <package>/ subdirectory: strip the leading <package>/ segment from output paths, the landing and the nav links. Makes a single-package dune build @doc project (ocsigenserver, i18n) match the layout of odoc-driver projects (eliom: manual at the version root, e.g. /ocsigenserver/latest/config.html) so cross-project links resolve. The package's internal relative links are preserved (the same prefix is stripped from every page). *)
   mld_dir : string option; (* direct-mld build (a manual-only / archived project with no dune build @doc): compile every .mld in this dir straight with odoc (preprocess -> compile -> link -> html-generate). The pages are the manual; the landing index.html is a real page (no redirect). *)
@@ -1356,7 +1356,13 @@ val nav_of_string : string -> string section list option
 val parse_siblings : Sexp.t list -> (string * string list) list
 ```
 ```ocaml
-val parse_client_server : Sexp.t list -> cs_side list
+val reserved_variant_keys : string list
+```
+```ocaml
+val is_variant_key : string -> bool
+```
+```ocaml
+val parse_variants : Sexp.t list -> variant list
 ```
 ```ocaml
 val parse_hosted : 
@@ -1601,7 +1607,7 @@ val html :
 
 ```ocaml
 type layout = 
-  | Multilib (* client/server libs under <dir>.<side>/ *)
+  | Multilib (* one library per variant under <dir>.<key>/ *)
   | Root (* single package at the version root *)
   | Subdir (* multi-package project, each opam package under its own <pkg>/ *)
 ```

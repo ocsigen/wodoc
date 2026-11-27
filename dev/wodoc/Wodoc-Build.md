@@ -90,13 +90,13 @@ val asset_re : Str.regexp
 val local_assets : menu:string -> out:string -> unit
 ```
 ```ocaml
-val cs_switch : Config.cs_side list -> string
+val variant_switch : Config.variant list -> string
 ```
 ```ocaml
-val cs_switch_script : Config.t -> Config.cs_side list -> string
+val variant_switch_script : Config.t -> Config.variant list -> string
 ```
 ```ocaml
-val cs_leftnav : 
+val variant_leftnav : 
   latest:string option ->
   versions:string list ->
   switch:string ->
@@ -108,16 +108,16 @@ val cs_leftnav :
 val topdir : string -> string option
 ```
 ```ocaml
-val side_for : Config.cs_side list -> string -> Config.cs_side option
+val variant_for : Config.variant list -> string -> Config.variant option
 ```
 ```ocaml
-val side_of : Config.cs_side list -> string -> string
+val variant_of : Config.variant list -> string -> string
 ```
 ```ocaml
 val drop_prefix : string -> string -> string
 ```
 ```ocaml
-val cs_current : Config.cs_side list -> string -> string
+val variant_current : Config.variant list -> string -> string
 ```
 ```ocaml
 val nav_paths : Config.expanded Config.section list -> string list

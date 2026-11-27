@@ -43,16 +43,16 @@ type blog = {
 an ultra-simple blog: a directory of dated `.mld` posts that wodoc builds like any other page, auto-listing them in a generated left-nav section and exposing the most recent ones to the landing via the `{%wodoc:blog-latest%}` marker. Generic (no project hardcoding); `None` when the project declares no `(blog …)`.
 
 ```ocaml
-type cs_side = {
-  side : string; (* key, e.g. "server": body class wodoc-server, switch id *)
+type variant = {
+  key : string; (* e.g. "server": body class wodoc-server, switch class wodoc-variant-server *)
   lib : string; (* odoc subtree dir / Nav.api ~lib, e.g. "eliom.server" *)
   indexdoc : string; (* curated index path (relative to the build cwd) *)
-  heading : string; (* API-nav heading + switch-button label, e.g. "Server API" *)
+  heading : string; (* API-nav heading + switch label, e.g. "Server API" *)
   wrapper : string; (* Nav.api ~wrapper / page wrapper module, e.g. "Eliom" *)
   skip : string list; (* section titles to omit (Nav.api ~skip) *)
 }
 ```
-one API "side" of a client/server project (eliom/toolkit/start): the `<pkg>.server` / `<pkg>.client` / `<pkg>.ppx` library, whose curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)). The side also drives a body colour class (`wodoc-<side>`) and a switch button.
+one variant of the API of a package whose libraries share module names: the `eliom.server` and `eliom.client` libraries of Eliom, say, or `foo.unix` and `foo.js`. Its curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)); it also drives a body class (`wodoc-<key>`) and a link of the variant switch.
 
 ```ocaml
 type t = {
@@ -64,12 +64,12 @@ type t = {
   landing : string; (* index.html redirect target, e.g. "ocsipersist/index.html" *)
   highlight : string option; (* project highlight.js to ship, if any *)
   profile : string option; (* dune build profile (e.g. "release") *)
-  odoc_driver : string option; (* when set, build the API with odoc_driver <pkg> --remap (the engine ocaml.org uses) instead of dune build @doc: needed for a client/server package whose <pkg>.server/<pkg>.client libraries share module names and would collide under dune build @doc (eliom, ocsigen-toolkit, ocsigen-start). *)
+  odoc_driver : string option; (* when set, build the API with odoc_driver <pkg> --remap (the engine ocaml.org uses) instead of dune build @doc: needed for a package whose libraries share module names ((variants …), e.g. eliom.server/eliom.client), which would collide under dune build @doc. *)
   doc_manual : bool; (* also build the @doc-manual alias (examples) *)
   manual_files : string option; (* package dir to receive manual/files (examples, images) *)
   siblings : (string * string list) list; (* resolve-refs sibling table *)
   nav : string section list option; (* the (nav …) stanza; None when the config has none: the left column then shows the manual tree odoc builds, as (nav (section <title> (page-tree))) would, if odoc_driver wrote its sidebar.json *)
-  client_server : cs_side list; (* when non-empty, the project is client/server: instead of one nav from nav, wodoc builds a per-side API nav from each side's curated index, shows a client/server switch, and colours the body by side. The manual nav is shared, taken from nav's manual ((section …)) blocks. *)
+  variants : variant list; (* when non-empty, the API comes in variants: instead of one nav from nav, wodoc builds a per-variant API nav from each variant's curated index, shows a variant switch, and colours the body by variant. The manual nav is shared, taken from nav's manual ((section …)) blocks. *)
   hosted : (string * (string * Resolve.layout * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. See Resolve.layout for the layout token (multilib/root/subdir). *)
   manual_root : bool; (* deploy the package's pages at the version ROOT instead of under a <package>/ subdirectory: strip the leading <package>/ segment from output paths, the landing and the nav links. Makes a single-package dune build @doc project (ocsigenserver, i18n) match the layout of odoc-driver projects (eliom: manual at the version root, e.g. /ocsigenserver/latest/config.html) so cross-project links resolve. The package's internal relative links are preserved (the same prefix is stripped from every page). *)
   mld_dir : string option; (* direct-mld build (a manual-only / archived project with no dune build @doc): compile every .mld in this dir straight with odoc (preprocess -> compile -> link -> html-generate). The pages are the manual; the landing index.html is a real page (no redirect). *)
@@ -109,7 +109,13 @@ val nav_of_string : string -> string section list option
 val parse_siblings : Sexp.t list -> (string * string list) list
 ```
 ```ocaml
-val parse_client_server : Sexp.t list -> cs_side list
+val reserved_variant_keys : string list
+```
+```ocaml
+val is_variant_key : string -> bool
+```
+```ocaml
+val parse_variants : Sexp.t list -> variant list
 ```
 ```ocaml
 val parse_hosted : 

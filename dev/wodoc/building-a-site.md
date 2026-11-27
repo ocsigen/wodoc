@@ -169,7 +169,7 @@ Since odoc 3, a manual can also be a tree of directories (`odoc-pages/<dir>/`, o
  (section "Manual"
   (page-tree)))
 ```
-Without a `(nav …)` stanza, wodoc uses that tree by default, in a section named after the project. The tree is read from the `sidebar.json` that `odoc_driver` writes, so it needs an `odoc_driver` build (`(odoc-driver …)` or `(client-server …)`). See `(page-tree …)` in [Configuration](./config.md).
+Without a `(nav …)` stanza, wodoc uses that tree by default, in a section named after the project. The tree is read from the `sidebar.json` that `odoc_driver` writes, so it needs an `odoc_driver` build (`(odoc-driver …)` or `(variants …)`). See `(page-tree …)` in [Configuration](./config.md).
 
 ## API docs: one package or several
 
@@ -178,7 +178,7 @@ For a single library, `(packages myproj)` assembles its `dune build @doc` output
 ```text
 (packages myproj myproj-lwt myproj-unix)
 ```
-A **client/server** project (libraries that share module names, e.g. an Eliom app) is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(client-server …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its side's API nav, a body colour and a client/server switch. See the `(client-server …)` stanza in [Configuration](./config.md).
+An API published in **variants**, libraries that share module names (a Unix and a browser implementation, or the server and client sides of an Eliom app), is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(variants …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its variant's API nav, a body class and a variant switch. See the `(variants …)` stanza in [Configuration](./config.md).
 
 ## Theming: customising the look
 
@@ -204,7 +204,7 @@ By default wodoc links its built-in theme (`wodoc.css`, shipped per-version). Th
 - `(css /css/style.css …)` or a full URL: **absolute** hrefs, emitted verbatim, which you serve yourself (e.g. a shared site-wide stylesheet at the domain root).
 A custom stylesheet must style both the chrome and the content:
 
-- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.cs-switch` and the blog `.wodoc-blog-*` classes;
+- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.wodoc-variant-switch` and the blog `.wodoc-blog-*` classes;
 - the odoc **content**: `.odoc-preamble`/`.odoc-content`, headings, code blocks (highlight.js `.hljs-*` tokens), tables and declaration specs.
 The [starter stylesheet](https://github.com/ocsigen/wodoc/tree/master/examples/starter/css) covers all of these; copy it and recolour. (If you would rather reuse odoc's stock theme for the content, note that `odoc.css` *is* shipped next to each version, so you can link or `@import` it from your `/css/ocsigen-odoc.css`.)
 
@@ -219,7 +219,7 @@ A site can host several *independent* projects (each its own `wodoc build`, depl
         (otherproj otherproj root "")
         (bigproj bigproj subdir ""))
 ```
-The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(client-server …)`; a page that carries no side of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
+The layout token is `multilib` (one `<pkg>.<lib>/` subtree per library), `root` (a single package at the version root) or `subdir` (a `<pkg>/` subtree per package, e.g. js\_of\_ocaml, tyxml). Any project can host others this way, with or without `(variants …)`; a page that carries no variant of its own links to the server library of a `multilib` target. See `(hosted …)` in [Configuration](./config.md) and [`wodoc requalify-xrefs`](./commands.md).
 
 A reference to another project that odoc cannot resolve reaches wodoc without its kind, so a lowercase name is taken for a value: `{!Myproj.Form.param}` links to `#val-param`. In an `.mld` page, tag the kind of the last component to link to a type or an exception instead: `{!Myproj.Form.type-param}`, `{!Myproj.exception-Error}`. wodoc does not see the source of `.mli` doc comments, where that tag is lost.
 
