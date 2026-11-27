@@ -81,6 +81,8 @@ Two index files are written at the version root: `llms.txt` (the project name, a
 
 The twins are **free of wodoc markers**: odoc's Markdown backend passes raw markup through verbatim, so the `{%wodoc:%}` directives would otherwise land in them as HTML comments. Markdown has neither containers nor classes, so the presentational ones are dropped; the two that carry content are kept, `img` as a Markdown image and the target of `a` (a link around a whole block) carried over to the block's first heading, or around a one-line block. `wodoc render --markdown <page.md>` applies that pass on its own, for a site that builds its twins by hand.
 
+The links of the twins **lead to the same pages as the HTML**. odoc's Markdown backend has no `--remap`: a reference into another package is a link relative to odoc's own output tree, where each package is a directory, and leads nowhere once the site is deployed. wodoc re-aims it the way it does the HTML: at the twin of a project the site hosts (the `(hosted …)` table, in its `dev` or `latest` docs like the HTML), else at the package's documentation on ocaml.org, at the version the HTML links to. A link between two packages of the project follows the pages the manual-root layout moves.
+
 Markdown generation is **on by default**, and a project that asks for it **fails the build** when it cannot produce it: the twins and the indexes are published files, and a version directory is deployed wholesale (the doc CI replaces it), so a build that skipped them quietly would delete the twins already online. Disable them per project with `(markdown false)` in the config (see [Configuration](./config.md)), for example for a project whose Markdown output is not yet useful.
 
 ### Requalifying cross-project links
@@ -112,7 +114,7 @@ cd eliom-gh && git add -A && git commit -m "doc: release 12.0" && git push
 ```
 A release's docs are therefore **exactly the `dev` docs at that point**, with no rebuild. This is the procedure for *odoc-driver* projects (eliom, ocsigen-toolkit, ocsigen-start), whose `build` documents the *installed* package: you cannot cheaply rebuild an old version from source, so you freeze the current `dev` instead.
 
-The one change is to the links into other projects: a `dev` build links against their `dev` docs (a development doc documents against development APIs), and a frozen version must not follow them as they move on. `release` rewrites exactly the links wodoc emitted for them (relative, climbing from the page to the root of the co-located projects, then into `<project>/dev/`) to `<project>/latest/`. To repair a version frozen before `release` did it:
+The one change is to the links into other projects: a `dev` build links against their `dev` docs (a development doc documents against development APIs), and a frozen version must not follow them as they move on. `release` rewrites exactly the links wodoc emitted for them (relative, climbing from the page to the root of the co-located projects, then into `<project>/dev/`) to `<project>/latest/`, in the HTML pages, in their Markdown twins and in `llms-full.txt`. To repair a version frozen before `release` did it:
 
 ```text
 wodoc pin-deps --site <gh-pages-dir> --version <v>

@@ -185,6 +185,7 @@ val run :
   Config.t ->
   src:string ->
   md_src:string option ->
+  md_package:string option ->
   out:string ->
   label:string ->
   menu:string ->
