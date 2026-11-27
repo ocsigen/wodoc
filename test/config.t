@@ -185,3 +185,23 @@ The same goes for a key given twice, a second stanza, or a stray word:
   $ build
   wodoc: doc/wodoc: (llms ...) takes (title ...) and (summary ...) only
   [1]
+
+`(odoc-driver …)` lists the packages to document, once; a nested list is an
+error rather than a setting dropped in silence:
+
+  $ printf '(project demo)\n(odoc-driver a (b))\n' > doc/wodoc
+  $ build
+  wodoc: doc/wodoc: (odoc-driver ...) takes the packages to document, once: (odoc-driver <pkg> ...)
+  [1]
+  $ printf '(project demo)\n(odoc-driver a)\n(odoc-driver b)\n' > doc/wodoc
+  $ build
+  wodoc: doc/wodoc: (odoc-driver ...) takes the packages to document, once: (odoc-driver <pkg> ...)
+  [1]
+  $ printf '(project demo)\n(odoc-driver)\n' > doc/wodoc
+  $ build
+  wodoc: doc/wodoc: (odoc-driver ...) takes the packages to document, once: (odoc-driver <pkg> ...)
+  [1]
+  $ printf '(project demo)\n(odoc-driver " ")\n' > doc/wodoc
+  $ build
+  wodoc: doc/wodoc: (odoc-driver ...) takes the packages to document, once: (odoc-driver <pkg> ...)
+  [1]
