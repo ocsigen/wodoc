@@ -64,8 +64,8 @@ wodoc nav --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--heading <h>] 
 Render an API module navigation [<nav>] fragment from a curated odoc index
 ([{N title}] section headings + [{!modules: …}] lists), writing to stdout.
 [--lib] / [--wrapper] place the module pages; [--skip-title] drops page-title
-sections. Used internally by [wodoc build] for a client/server project's
-per-side API nav (see {{!page-"config"}config}).
+sections. Used internally by [wodoc build] for the per-variant
+API nav of a project with [(variants …)] (see {{!page-"config"}config}).
 
 The {b manual's own navigation is not built here}: it is declared
 declaratively in the project's {{!page-"config"}[doc/wodoc]} config, in the
@@ -156,9 +156,8 @@ current project/package, resolves sibling references and ships the assets, the
 version redirect and the [latest] symlink. Without [--src] it builds the odoc
 HTML itself: [dune build @doc] by default, or (when the config has
 [(odoc-driver <pkg>)]) [odoc_driver <pkg> --remap] on the {e installed} package
-(the engine ocaml.org uses), needed for a client/server package whose
-[<pkg>.server]/[<pkg>.client] libraries share module names and would collide
-under [dune build @doc].
+(the engine ocaml.org uses), needed for a package whose libraries share module names
+([(variants …)]) and would collide under [dune build @doc].
 
 {2 Markdown twins and the llms.txt index (for AIs)}
 
@@ -315,19 +314,19 @@ it without any action; to cover a site already released right away, copy the
 Cloudflare Pages serve a root [404.html] the same way; on another host, declare
 it as the error page of the site, or leave it: it is a harmless file there.
 
-{2 Client/server projects}
+{2 API variants}
 
-A client/server project (eliom, ocsigen-toolkit, ocsigen-start) adds a
-[(client-server …)] block: one [(server …)]/[(client …)]/[(ppx …)] side per
-library, each with its [(lib <pkg>.<side>)], a curated [(indexdoc <file>)] (turned
-into a section-grouped module nav), a [(heading …)] and the [(wrapper <Module>)]
-the modules sit under. wodoc then gives every page its side's API nav, a body
-colour ([wodoc-server] / [wodoc-client] / …) and a client/server switch button,
-and shares one manual nav across the sides (from the config's [(section …)]
-blocks, like any project). The
-[(hosted …)] block lists the sibling Ocsigen projects whose cross-references odoc
+A package whose API comes in variants (libraries sharing module names, such as
+the server and client sides of Eliom, Ocsigen Toolkit and Ocsigen Start) adds a
+[(variants …)] block: one [(variant <key> …)] per library, each with its
+[(lib <pkg>.<key>)], a curated [(indexdoc <file>)] (turned into a
+section-grouped module nav), a [(heading …)] and the [(wrapper <Module>)] the
+modules sit under. wodoc then gives every page its variant's API nav, a body
+class ([wodoc-<key>]) and a variant switch, and shares one manual nav across
+the variants (from the config's [(section …)] blocks, like any project). The
+[(hosted …)] block lists the sibling projects whose cross-references odoc
 points at [ocaml.org]: wodoc rewrites those to relative links into their wodoc
-docs (other dependencies stay on [ocaml.org]). The whole client/server build is
+docs (other dependencies stay on [ocaml.org]). The whole build is
 still ONE declarative [doc/wodoc] and a single [wodoc build], no [build.sh].
 
 {2 Manual at the version root}

@@ -245,7 +245,8 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
 |}
     (esc c.title) css_links hl c.project body_extra extra_script c.url_prefix
 
-(* the version <select> block (shared by the normal and per-side left columns).
+(* the version <select> block (shared by the normal and per-variant left
+   columns).
    The entry that the [latest] symlink targets is rendered with value "latest"
    (so it keeps the canonical /<project>/latest/ URL) and labelled "<v> (latest)".
    This is only the static fallback baked into the page: the script rebuilds the
@@ -332,7 +333,7 @@ let rec render_items b ml (items : Config.expanded Config.item list) =
 (* the manual left-nav block from the [(section …)] stanzas (the non-[api]
    sections of [(nav …)]): a [<nav class="api-nav manual-nav">]. Empty when the
    project declares no manual sections. Shared by the normal left column and the
-   client/server one (which used to take this from a wiki menu.wiki). *)
+   per-variant one (which used to take this from a wiki menu.wiki). *)
 let manual_nav nav =
   let manual =
     List.filter (fun (s : Config.expanded Config.section) -> not s.api) nav
@@ -569,72 +570,74 @@ let local_assets ~menu ~out =
         (Hashtbl.length paths) root (Filename.quote root)
         (Filename.basename out)
 
-(* ---- client/server projects (eliom, ocsigen-toolkit, ocsigen-start) ----
-   The API is two (or three) libraries of the same package sharing module names
-   ([<pkg>.server]/[<pkg>.client]/[<pkg>.ppx]); built with odoc_driver --remap.
-   Each side gets its own API nav (from a curated index), a body colour class and
-   a switch button; the manual nav is shared. *)
+(* ---- API variants ----
+   A package can publish its API as several libraries sharing module names: the
+   server and client sides of an Eliom app ([eliom.server]/[eliom.client]), a
+   Unix and a browser implementation ([foo.unix]/[foo.js]), and so on. Built
+   with odoc_driver --remap. Each variant gets its own API nav (from a curated
+   index), a body class and a switch link; the manual nav is shared. *)
 
-(* the client/server switch buttons (one per side), shown above the api nav *)
-let cs_switch (sides : Config.cs_side list) =
+(* the variant switch (one button per variant), shown above the api nav *)
+let variant_switch (variants : Config.variant list) =
   let b = Buffer.create 256 in
   let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
-  add "<div class=\"cs-switch\">";
+  add "<div class=\"wodoc-variant-switch\">";
   List.iter
-    (fun (s : Config.cs_side) ->
+    (fun (v : Config.variant) ->
        add
          (Printf.sprintf
-            "  <button type=\"button\" class=\"cs-%s\" onclick=\"wodocSwitch('%s')\">%s</button>"
-            s.side s.side (esc s.heading)))
-    sides;
+            "  <button type=\"button\" class=\"wodoc-variant-%s\" onclick=\"wodocSwitch('%s')\">%s</button>"
+            v.key v.key (esc v.heading)))
+    variants;
   add "</div>";
   Buffer.contents b
 
 (* the wodocSwitch() helper, injected into the page script: jump to the same
-   module's page on another side by swapping the [<pkg>.<side>] path segment;
-   fall back to that side's wrapper-module index. *)
-let cs_switch_script (c : Config.t) (sides : Config.cs_side list) =
-  let alt =
-    String.concat "|" (List.map (fun (s : Config.cs_side) -> s.side) sides)
-  in
+   module's page in another variant by swapping the [<pkg>.<key>] path segment;
+   fall back to that variant's wrapper-module index. *)
+let variant_switch_script (c : Config.t) (variants : Config.variant list) =
+  let keys = List.map (fun (v : Config.variant) -> v.key) variants in
   let wmap =
     String.concat ", "
       (List.map
-         (fun (s : Config.cs_side) ->
-            Printf.sprintf "%s: '%s'" s.side
-              (if s.wrapper = "" then "" else s.wrapper ^ "/"))
-         sides)
+         (fun (v : Config.variant) ->
+            Printf.sprintf "%s: '%s'" v.key
+              (if v.wrapper = "" then "" else v.wrapper ^ "/"))
+         variants)
   in
   Printf.sprintf
-    "    // Toggle between the %s API of the same module.\n\    function wodocSwitch(side) {\n\      var w = { %s };\n\      var p = location.pathname;\n\      var np = p.replace(/\\/%s\\.(%s)\\//, '/%s.' + side + '/');\n\      location.href = np !== p ? np\n\        : '{{base}}/%s.' + side + '/' + (w[side] || '') + 'index.html';\n\    }\n"
-    (String.concat " / " (List.map (fun (s : Config.cs_side) -> s.side) sides))
-    wmap c.project alt c.project c.project
+    "    // Toggle between the %s API of the same module.\n\    function wodocSwitch(v) {\n\      var w = { %s };\n\      var p = location.pathname;\n\      var np = p.replace(/\\/%s\\.(%s)\\//, '/%s.' + v + '/');\n\      location.href = np !== p ? np\n\        : '{{base}}/%s.' + v + '/' + (w[v] || '') + 'index.html';\n\    }\n"
+    (String.concat " / " keys) wmap c.project (String.concat "|" keys) c.project
+    c.project
 
-(* the per-side left column: version selector + switch + on-this-page + the
-   shared manual nav + this side's API nav ({{base}}/{{toc}} filled per page). *)
-let cs_leftnav ~latest ~versions ~switch ~manual_nav ~api_nav =
+(* the per-variant left column: version selector + switch + on-this-page + the
+   shared manual nav + this variant's API nav ({{base}}/{{toc}} filled per
+   page). *)
+let variant_leftnav ~latest ~versions ~switch ~manual_nav ~api_nav =
   String.concat ""
     [docversion ~latest versions; switch; page_toc; manual_nav; "\n"; api_nav]
 
-(* a page's top directory ([<pkg>.<side>…/…]); None for a root manual page *)
+(* a page's top directory ([<pkg>.<key>…/…]); None for a root manual page *)
 let topdir rel =
   match String.index_opt rel '/' with
   | Some i -> Some (String.sub rel 0 i)
   | None -> None
 
-(* the side a top dir belongs to: the side whose lib it is, or a sub-library of
-   ([eliom.server] but also [eliom.server.monitor] → server). *)
-let side_for (sides : Config.cs_side list) td =
+(* the variant a top dir belongs to: the variant whose lib it is, or a
+   sub-library of ([eliom.server] but also [eliom.server.monitor] → server). *)
+let variant_for (variants : Config.variant list) td =
   List.find_opt
-    (fun (s : Config.cs_side) ->
-       td = s.lib || String.starts_with ~prefix:(s.lib ^ ".") td)
-    sides
+    (fun (v : Config.variant) ->
+       td = v.lib || String.starts_with ~prefix:(v.lib ^ ".") td)
+    variants
 
-(* the side a page belongs to (by its top dir), "" for the manual / other libs *)
-let side_of sides rel =
+(* the key of the variant a page belongs to (by its top dir), "" for the manual
+   / other libs *)
+let variant_of variants rel =
   match topdir rel with
   | None -> ""
-  | Some td -> ( match side_for sides td with Some s -> s.side | None -> "")
+  | Some td -> (
+    match variant_for variants td with Some v -> v.key | None -> "")
 
 let drop_prefix p str =
   if String.starts_with ~prefix:p str
@@ -643,13 +646,13 @@ let drop_prefix p str =
 
 (* the nav id to highlight: an API page's module path (under <topdir>/<wrapper>/,
    dotted), or a root manual page's own name (matching the config nav / Nav.api). *)
-let cs_current sides rel =
+let variant_current variants rel =
   match topdir rel with
   | None ->
       rel (* root manual page: matches manual_nav's data-wodoc-page = path *)
   | Some td ->
       let wrapper =
-        match side_for sides td with Some s -> s.wrapper | None -> ""
+        match variant_for variants td with Some v -> v.wrapper | None -> ""
       in
       let rest = drop_prefix (td ^ "/") rel in
       let rest =
@@ -915,11 +918,12 @@ let run
   let dep_version = if label = "dev" then "dev" else "latest" in
   (* The cross-reference post-pass, the same for every project shape: sibling
      packages of this doc first, then the cross-project [(hosted ..)] table.
-     [side] is "" for a page that carries no client/server colour -- every page
-     of a project without [(client-server)], and the manual pages of one with
-     it; {!Resolve.dep_base} then picks the server library of a sided target. Both
-     passes read the kind sentinels {!Render} leaves; they go once both are done. *)
-  let resolve_refs ~base ~side page =
+     [variant] is the key of the page's variant, "" for a page that has none --
+     every page of a project without [(variants)], and the manual pages of one
+     with it; {!Resolve.dep_base} then picks the server library of a multilib
+     target. Both passes read the kind sentinels {!Render} leaves; they go once
+     both are done. *)
+  let resolve_refs ~base ~variant page =
     let page =
       if c.siblings = []
       then page
@@ -930,12 +934,12 @@ let run
        then page
        else
          Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..")
-           ~version:dep_version ~side ~self:c.project page)
+           ~version:dep_version ~side:variant ~self:c.project page)
   in
-  (* the per-page assembler: one shared nav (normal projects), or a per-side
-     template + nav for client/server projects (eliom/toolkit/start). *)
+  (* the per-page assembler: one shared nav (normal projects), or a
+     per-variant template + nav for a project with variants. *)
   let assemble_page =
-    match c.client_server with
+    match c.variants with
     | [] ->
         let tmpl = replace_hole (template c) "pub" c.url_prefix in
         (* left nav: version selector + on-this-page + the config-declared
@@ -958,75 +962,80 @@ let run
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in
-          resolve_refs ~base ~side:"" page
-    | sides ->
-        let script = cs_switch_script c sides in
-        let switch = cs_switch sides in
+          resolve_refs ~base ~variant:"" page
+    | variants ->
+        let script = variant_switch_script c variants in
+        let switch = variant_switch variants in
         (* the shared manual nav comes from the config [(section …)] stanzas *)
         let manual_nav = manual_nav sections in
         (* a page the manual nav lists (also in a directory of a page tree, which
-           [cs_current] would take for a library) is highlighted by its path *)
+           [variant_current] would take for a library) is highlighted by its path *)
         let manual_paths = nav_paths sections in
         let current rel =
-          if List.mem rel manual_paths then rel else cs_current sides rel
+          if List.mem rel manual_paths
+          then rel
+          else variant_current variants rel
         in
-        let default_side = match sides with s :: _ -> s.side | [] -> "" in
+        let default_variant =
+          match variants with v :: _ -> v.key | [] -> ""
+        in
         let api_nav =
           List.map
-            (fun (s : Config.cs_side) ->
-               ( s.side
-               , if Sys.file_exists s.indexdoc
+            (fun (v : Config.variant) ->
+               ( v.key
+               , if Sys.file_exists v.indexdoc
                  then
-                   Nav.api ~wrapper:s.wrapper ~heading:s.heading ~skip:s.skip
-                     ~base:"{{base}}" ~lib:s.lib (read_file s.indexdoc)
+                   Nav.api ~wrapper:v.wrapper ~heading:v.heading ~skip:v.skip
+                     ~base:"{{base}}" ~lib:v.lib (read_file v.indexdoc)
                  else "" ))
-            sides
+            variants
         in
-        let api_of side =
-          match List.assoc_opt side api_nav with
+        let api_of key =
+          match List.assoc_opt key api_nav with
           | Some n -> n
           | None ->
-              Option.value ~default:"" (List.assoc_opt default_side api_nav)
+              Option.value ~default:"" (List.assoc_opt default_variant api_nav)
         in
-        (* template (by body side class) and left column (by api side) cached:
-           there are at most a handful of distinct sides *)
+        (* template (by body class) and left column (by api variant) cached:
+           there are at most a handful of distinct variants *)
         let tcache = Hashtbl.create 4 and ncache = Hashtbl.create 4 in
-        let tmpl_of side =
-          match Hashtbl.find_opt tcache side with
+        let tmpl_of key =
+          match Hashtbl.find_opt tcache key with
           | Some t -> t
           | None ->
-              let body_extra = if side = "" then "" else " wodoc-" ^ side in
+              let body_extra = if key = "" then "" else " wodoc-" ^ key in
               let t =
                 replace_hole
                   (template ~body_extra ~extra_script:script c)
                   "pub" c.url_prefix
               in
-              Hashtbl.add tcache side t; t
+              Hashtbl.add tcache key t; t
         in
-        let leftnav_of side =
-          match Hashtbl.find_opt ncache side with
+        let leftnav_of key =
+          match Hashtbl.find_opt ncache key with
           | Some n -> n
           | None ->
               let n =
-                cs_leftnav ~latest ~versions:vs ~switch ~manual_nav
-                  ~api_nav:(api_of side)
+                variant_leftnav ~latest ~versions:vs ~switch ~manual_nav
+                  ~api_nav:(api_of key)
               in
-              Hashtbl.add ncache side n; n
+              Hashtbl.add ncache key n; n
         in
         fun rel ->
           let base = base_of rel in
-          let side = side_of sides rel in
-          (* manual/other pages have no side colour but show the default api nav *)
-          let nav_side = if side = "" then default_side else side in
+          let variant = variant_of variants rel in
+          (* manual/other pages have no variant colour but show the default api
+             nav *)
+          let nav_variant = if variant = "" then default_variant else variant in
           let mdlink = md_alternate ~md_src ~base ~rel ~orel:rel in
           let page =
             Assemble.page ~base ~menu:menu_html ~subproject
-              ~menu_current:c.menu_current ~leftnav:(leftnav_of nav_side)
-              ~template:(tmpl_of side) ~current:(current rel) ~mdlink
+              ~menu_current:c.menu_current ~leftnav:(leftnav_of nav_variant)
+              ~template:(tmpl_of variant) ~current:(current rel) ~mdlink
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in
-          resolve_refs ~base ~side page
+          resolve_refs ~base ~variant page
   in
   (* markup that was meant to become a link or an image and did not: reported on
      every build, fatal with --strict-refs. References into dependencies the site
@@ -1128,7 +1137,7 @@ let run
   (* blog posts: each post .mld is compiled straight with odoc (preprocess ->
      compile -> link -> html-generate, the direct-mld pipeline), then assembled
      with the same site chrome and the (blog-augmented) left nav, and written to
-     <out>/<blog.out>/<slug>.html. Assembled as a normal (non-side) page, so a
+     <out>/<blog.out>/<slug>.html. Assembled as a normal (variant-less) page, so a
      blog works for any project type. *)
   (match c.blog with
   | Some _ when blog_posts <> [] ->

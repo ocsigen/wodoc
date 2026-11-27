@@ -1,7 +1,7 @@
 # Build wodoc and run its test suite on every push and pull request.
 # `opam install . --deps-only` honours the pin-depends in wodoc.opam, so the
-# forked odoc family (needed by the odoc_driver client/server path) is pinned and
-# built automatically — no manual setup.
+# forked odoc family (needed by the odoc_driver path of API variants) is pinned
+# and built automatically, with no manual setup.
 name: CI
 
 on:

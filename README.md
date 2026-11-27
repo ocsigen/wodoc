@@ -214,7 +214,7 @@ wodoc assemble --template <tmpl.html> [--current <id>] [--base <b>] [--menu <f>]
 
 wodoc nav  --api <indexdoc> --base <b> --lib <l> [--wrapper <W>] [--skip-title <t>]..
     render an API module navigation fragment from a curated odoc index (used by
-    `wodoc build` for client/server projects); the manual's navigation is
+    `wodoc build` for API variants); the manual's navigation is
     declared in the `doc/wodoc` config's `(nav ...)` stanza, not here
 
 wodoc resolve-refs --base <b> --sibling <Mod=seg/..> [..] <file>..

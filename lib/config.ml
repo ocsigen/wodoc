@@ -61,20 +61,21 @@ type blog =
     the most recent ones to the landing via the [{%wodoc:blog-latest%}] marker.
     Generic (no project hardcoding); [None] when the project declares no [(blog …)]. *)
 
-type cs_side =
-  { side : string
-    (** key, e.g. "server": body class [wodoc-server], switch id *)
+type variant =
+  { key : string
+    (** e.g. "server": body class [wodoc-server], switch class
+          [wodoc-variant-server] *)
   ; lib : string  (** odoc subtree dir / [Nav.api ~lib], e.g. "eliom.server" *)
   ; indexdoc : string  (** curated index path (relative to the build cwd) *)
-  ; heading : string
-    (** API-nav heading + switch-button label, e.g. "Server API" *)
+  ; heading : string  (** API-nav heading + switch label, e.g. "Server API" *)
   ; wrapper : string
     (** [Nav.api ~wrapper] / page wrapper module, e.g. "Eliom" *)
   ; skip : string list  (** section titles to omit (Nav.api ~skip) *) }
-(** one API "side" of a client/server project (eliom/toolkit/start): the
-    [<pkg>.server] / [<pkg>.client] / [<pkg>.ppx] library, whose curated index
-    becomes a section-grouped module nav (via {!Nav.api}). The side also drives a
-    body colour class ([wodoc-<side>]) and a switch button. *)
+(** one variant of the API of a package whose libraries share module names:
+    the [eliom.server] and [eliom.client] libraries of Eliom, say, or
+    [foo.unix] and [foo.js]. Its curated index becomes a section-grouped module
+    nav (via {!Nav.api}); it also drives a body class ([wodoc-<key>]) and a link
+    of the variant switch. *)
 
 type t =
   { project : string  (** package / project id, e.g. "ocsipersist" *)
@@ -90,10 +91,10 @@ type t =
   ; profile : string option  (** dune build profile (e.g. "release") *)
   ; odoc_driver : string option
     (** when set, build the API with [odoc_driver <pkg> --remap] (the engine
-          ocaml.org uses) instead of [dune build @doc]: needed for a client/server
-          package whose [<pkg>.server]/[<pkg>.client] libraries share module names
-          and would collide under [dune build @doc] (eliom, ocsigen-toolkit,
-          ocsigen-start). *)
+          ocaml.org uses) instead of [dune build @doc]: needed for a package
+          whose libraries share module names ([(variants …)], e.g.
+          [eliom.server]/[eliom.client]), which would collide under
+          [dune build @doc]. *)
   ; doc_manual : bool  (** also build the [@doc-manual] alias (examples) *)
   ; manual_files : string option
     (** package dir to receive manual/files (examples, images) *)
@@ -103,11 +104,12 @@ type t =
           column then shows the manual tree odoc builds, as
           [(nav (section <title> (page-tree)))] would, if odoc_driver wrote its
           [sidebar.json] *)
-  ; client_server : cs_side list
-    (** when non-empty, the project is client/server: instead of one nav from
-          [nav], wodoc builds a per-side API nav from each side's curated index,
-          shows a client/server switch, and colours the body by side. The manual
-          nav is shared, taken from [nav]'s manual ([(section …)]) blocks. *)
+  ; variants : variant list
+    (** when non-empty, the API comes in variants: instead of one nav from
+          [nav], wodoc builds a per-variant API nav from each variant's curated
+          index, shows a variant switch, and colours the body by variant. The
+          manual nav is shared, taken from [nav]'s manual ([(section …)])
+          blocks. *)
   ; hosted : (string * (string * Resolve.layout * string)) list
     (** cross-project resolve-refs table (resolve-refs --hosted): package ->
           (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen
@@ -154,7 +156,8 @@ type t =
 let retired =
   [ "pub", "it is now (url-prefix ...)"
   ; "anchor-menu", "declare the left navigation with (nav ...)"
-  ; "manual-menu", "declare the left navigation with (nav ...)" ]
+  ; "manual-menu", "declare the left navigation with (nav ...)"
+  ; "client-server", "it is now (variants (variant <key> ...) ...)" ]
 
 (* [check_keys ~where known items] raises [Sexp.Error] on the first [(key …)] of
    [items] whose key is not in [known]. Bare atoms are left alone. *)
@@ -235,28 +238,92 @@ let parse_siblings stanzas =
       | _ -> None)
     (Sexp.fields "sibling" stanzas)
 
-(* (client-server (server (lib ..) (indexdoc ..) (heading ..) (wrapper ..) [(skip ..)..])
-                   (client ..) [(ppx ..)]) *)
-let parse_client_server stanzas =
-  match Sexp.fields "client-server" stanzas with
-  | block :: _ ->
-      List.filter_map
-        (function
-          | Sexp.List (Atom side :: fields) ->
-              check_keys
-                ~where:(Printf.sprintf "(client-server (%s ...))" side)
-                ["lib"; "indexdoc"; "heading"; "wrapper"; "skip"]
-                fields;
-              Some
-                { side
-                ; lib = Sexp.field_atom_default "lib" "" fields
-                ; indexdoc = Sexp.field_atom_default "indexdoc" "" fields
-                ; heading = Sexp.field_atom_default "heading" side fields
-                ; wrapper = Sexp.field_atom_default "wrapper" "" fields
-                ; skip = Sexp.field_atoms "skip" fields }
-          | _ -> None)
-        block
+(* The keys a variant cannot take: its classes, [wodoc-<key>] on the body and
+   [wodoc-variant-<key>] on its switch link, would clash with wodoc's own. *)
+let reserved_variant_keys =
+  [ "attr"
+  ; "blog"
+  ; "doc"
+  ; "header"
+  ; "highlight"
+  ; "html"
+  ; "md"
+  ; "menu"
+  ; "notice"
+  ; "page"
+  ; "sf"
+  ; "switch"
+  ; "version" ]
+
+(* A variant key names CSS classes and a JS value: a lowercase identifier. *)
+let is_variant_key k =
+  k <> ""
+  && (match k.[0] with 'a' .. 'z' -> true | _ -> false)
+  && String.for_all
+       (function 'a' .. 'z' | '0' .. '9' | '_' -> true | _ -> false)
+       k
+
+(* (variants (variant server (lib ..) [(indexdoc ..)] [(heading ..)]
+                          [(wrapper ..)] [(skip ..)..])
+             (variant client ..) ..) *)
+let parse_variants stanzas =
+  let fail fmt = Printf.ksprintf (fun s -> raise (Sexp.Error s)) fmt in
+  let no_atom ~where items =
+    List.iter
+      (function
+        | Sexp.Atom a -> fail "%s: unexpected %s" where a | Sexp.List _ -> ())
+      items
+  in
+  (* the atom of [(name a)], if [fields] has it *)
+  let atom_field ~where name fields =
+    match Sexp.fields name fields with
+    | [] -> None
+    | [[Sexp.Atom a]] -> Some a
+    | _ -> fail "%s: (%s ...) takes one atom, once" where name
+  in
+  let variant = function
+    | Sexp.Atom key :: fields ->
+        let where = Printf.sprintf "(variants (variant %s ...))" key in
+        if not (is_variant_key key)
+        then fail "%s: a key is a lowercase identifier, such as server" where;
+        if List.mem key reserved_variant_keys
+        then fail "%s: %s is reserved for wodoc's own classes" where key;
+        check_keys ~where
+          ["lib"; "indexdoc"; "heading"; "wrapper"; "skip"]
+          fields;
+        no_atom ~where fields;
+        let opt name default =
+          Option.value ~default (atom_field ~where name fields)
+        in
+        { key
+        ; lib =
+            (match atom_field ~where "lib" fields with
+            | Some l -> l
+            | None -> fail "%s: missing (lib ...)" where)
+        ; indexdoc = opt "indexdoc" ""
+        ; heading = opt "heading" key
+        ; wrapper = opt "wrapper" ""
+        ; skip = Sexp.field_atoms "skip" fields }
+    | _ ->
+        fail
+          "(variants (variant ...)): expected a key first, e.g. (variant server (lib ...) ...)"
+  in
+  match Sexp.fields "variants" stanzas with
   | [] -> []
+  | _ :: _ :: _ -> fail "(variants ...) appears more than once"
+  | [block] ->
+      check_keys ~where:"(variants ...)" ["variant"] block;
+      no_atom ~where:"(variants ...)" block;
+      let variants = List.map variant (Sexp.fields "variant" block) in
+      if variants = [] then fail "(variants ...) lists no (variant ...)";
+      let rec check_unique : variant list -> unit = function
+        | [] -> ()
+        | v :: rest ->
+            if List.exists (fun (w : variant) -> w.key = v.key) rest
+            then fail "(variants ...): %s is declared twice" v.key;
+            check_unique rest
+      in
+      check_unique variants; variants
 
 (* (hosted (eliom eliom multilib Eliom) (ocsigenserver ocsigenserver root "")
           (js_of_ocaml js_of_ocaml subdir "") ..)
@@ -341,7 +408,7 @@ let stanza_names =
   ; "manual-files"
   ; "sibling"
   ; "nav"
-  ; "client-server"
+  ; "variants"
   ; "hosted"
   ; "manual-root"
   ; "mld-dir"
@@ -360,14 +427,14 @@ let of_string s =
     | Some p -> p
     | None -> raise (Sexp.Error "missing (project ...)")
   in
-  let client_server = parse_client_server stanzas in
-  (* a client/server project is built with odoc_driver (its sides share module
+  let variants = parse_variants stanzas in
+  (* a project with variants is built with odoc_driver (they share module
      names, so [dune build @doc] would collide): imply [(odoc-driver <project>)]
-     when it is omitted, so the project only declares [(client-server …)]. *)
+     when it is omitted, so the project only declares [(variants …)]. *)
   let odoc_driver =
     match Sexp.field_atom "odoc-driver" stanzas with
     | Some _ as d -> d
-    | None -> if client_server = [] then None else Some project
+    | None -> if variants = [] then None else Some project
   in
   (* (mld-dir <dir> [<package>]): direct-mld build of a directory of [.mld] pages;
      the optional second atom is the odoc [--package]. When the dir is supplied on
@@ -396,7 +463,7 @@ let of_string s =
   ; manual_files = Sexp.field_atom "manual-files" stanzas
   ; siblings = parse_siblings stanzas
   ; nav = parse_nav stanzas
-  ; client_server
+  ; variants
   ; hosted = parse_hosted stanzas
   ; manual_root =
       Sexp.field_atom "manual-root" stanzas = Some "true"

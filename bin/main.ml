@@ -332,7 +332,7 @@ let () =
       let label = Option.value ~default:"dev" (List.assoc_opt "label" flags) in
       (* --src points at a prebuilt odoc _html tree; without it, build it here.
          The build method comes from the config: odoc_driver on the installed
-         package for a client/server project (server/client share module names,
+         package for a project with variants (they share module names,
          so `dune build @doc` collides), else plain `dune build @doc`. *)
       (* [src] is the odoc _html tree to assemble; [md_src] (when [Some]) is the
          parallel odoc markdown tree, copied verbatim next to the HTML by Build.run

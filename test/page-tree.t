@@ -108,7 +108,7 @@ An empty --nav file is an empty nav, not the default one:
   0
   [1]
 
-In a client/server project, a page in a directory of the tree is highlighted
+In a project with variants, a page in a directory of the tree is highlighted
 too: its directory is not taken for one of the API libraries.
 
   $ cat > doc/wodoc <<'CFG'
@@ -117,9 +117,9 @@ too: its directory is not taken for one of the API libraries.
   > (url-prefix /demo)
   > (markdown false)
   > (landing index.html)
-  > (client-server
-  >   (server (lib demo.server) (indexdoc none) (heading "Server API") (wrapper Demo))
-  >   (client (lib demo.client) (indexdoc none) (heading "Client API") (wrapper Demo)))
+  > (variants
+  >   (variant server (lib demo.server) (indexdoc none) (heading "Server API") (wrapper Demo))
+  >   (variant client (lib demo.client) (indexdoc none) (heading "Client API") (wrapper Demo)))
   > CFG
   $ wodoc build --config doc/wodoc --src html/demo --out out5/dev \
   >   --menu menu.html --label dev 2>/dev/null

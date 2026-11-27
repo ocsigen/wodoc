@@ -8,7 +8,7 @@
 
    This file styles the chrome wodoc emits: the top menu (from your menu.html),
    the two-column layout, the left navigation, the version selector, the
-   "on this page" panel, the client/server switch and the blog listing.
+   "on this page" panel, the variant switch and the blog listing.
    The odoc *content* (headings, code, tables) is themed in ocsigen-odoc.css.
 
    It is a neutral starting point — restyle freely.
@@ -152,10 +152,10 @@ a:hover { text-decoration: underline; }
 .ml4 { padding-left: 1.2rem; }
 .ml5 { padding-left: 2rem; }
 
-/* --- client/server switch (multi-side projects) -------------------------- */
-.cs-switch { display: flex; gap: 0.4rem; margin: 0 0 1.2rem; }
-.cs-switch button,
-.cs-switch a {
+/* --- variant switch (API variants) --------------------------------------- */
+.wodoc-variant-switch { display: flex; gap: 0.4rem; margin: 0 0 1.2rem; }
+.wodoc-variant-switch button,
+.wodoc-variant-switch a {
   flex: 1;
   padding: 0.3rem 0.5rem;
   border: 1px solid var(--border);
@@ -166,7 +166,7 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   text-align: center;
 }
-.cs-switch .current { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wodoc-variant-switch .current { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* --- blog ("latest posts" list + post meta) ------------------------------ */
 .wodoc-blog-list { list-style: none; margin: 1.5rem 0; padding: 0; display: grid; gap: 1rem; }

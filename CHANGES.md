@@ -14,14 +14,20 @@ no theme configuration:
 
 Config simplifications (breaking):
 
-- `(client-server …)` now implies `(odoc-driver <project>)`, so declare only the
-  client/server block, not both.
+- `(client-server …)` is renamed `(variants …)`, with one `(variant <key> …)`
+  per library instead of `(server …)`, `(client …)`: the same mechanism serves
+  any package whose libraries share module names. The switch is now
+  `.wodoc-variant-switch`, with a `.wodoc-variant-<key>` button per variant,
+  instead of `.cs-switch` and `.cs-<key>`; the body class `wodoc-<key>` is
+  unchanged. A key is a lowercase identifier, and a variant needs its
+  `(lib …)`. `(variants …)` implies `(odoc-driver <project>)`, so declare only
+  the variants block, not both.
 - `(mld-dir <dir> [<package>])` can carry the odoc package inline; `mld-package`
   still sets it when the directory is passed on the CLI (`--mld-dir`).
 - The `pub` stanza is renamed `url-prefix`.
 - A stanza wodoc does not read is an error, with the file name and the stanzas
   expected there, where it used to be ignored: at the top level of the config,
-  inside `(client-server …)` and `(blog …)`, and among the sections and entries
+  inside `(variants …)` and `(blog …)`, and among the sections and entries
   of a `(nav …)`, in the config or a `--nav` file. A `(pub …)` left in place of
   `(url-prefix …)` kept building with the default prefix, and a mistyped nav
   entry vanished from the menu, with no warning. The retired stanzas name their
@@ -69,10 +75,10 @@ Navigation:
 
 Cross-project references:
 
-- `(hosted …)` is now honoured by every project, not only the client/server ones:
-  a project without `(client-server)` (a tutorial, tyxml…) had its cross-project
+- `(hosted …)` is now honoured by every project, not only the ones with
+  variants: a project without them (a tutorial, tyxml…) had its cross-project
   references left as plain text. A reference to a `multilib` target from a page
-  with no side of its own now goes to the target's server library.
+  with no variant of its own now goes to the target's server library.
 - Module references odoc could not resolve now reach module types (a component
   named in all caps deploys under `module-type-<NAME>/`) and projects declared
   with no wrapper module, whose own root module names the reference
