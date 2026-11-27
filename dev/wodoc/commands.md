@@ -155,16 +155,22 @@ A project with no buildable library API (an archived project such as ocsimore, o
 
 The syntax-highlight starter is always shipped as `wodoc-highlight.js` and loaded version-relatively. Its built-in default is *Ocsigen-oriented*: on top of plain OCaml it teaches odoc's bundled `highlight.js` the eliom (`let%client` / `%server` / `%shared` / `%rpc`, `~%x` injection), lwt (`let*` / `and*` / `let+`) and js\_of\_ocaml (`##`) syntax, so any Ocsigen project colours correctly with no per-project file. A project whose code blocks use yet another syntax overrides the shipped file with `(highlight …)` in the config. See [`Wodoc.Build`](./Wodoc-Build.md).
 
-## `wodoc blog-nav` and `wodoc blog-feed`
+## `wodoc blog-nav`, `wodoc blog-feed` and `wodoc blog-llms`
 
 ```text
 wodoc blog-nav  --config <doc/wodoc> [--base <b>]
 wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]
                 [--feed-path /feed.xml] [--title <t>] [--author <a>]
+wodoc blog-llms --config <doc/wodoc> --md-dir <odoc md dir> --out <blog root>
+                [--title <t>] [--summary <s>]
 ```
 Helpers for a blog (the `(blog …)` stanza, see [config](./config.md)) built through the low-level path rather than `wodoc build`. `blog-nav` prints the blog's left-nav block (one entry per post, newest first) to feed `assemble --leftnav`; `--base` is the page's relative path to the blog root.
 
-`blog-feed` prints an **Atom feed** of the posts, for syndication (e.g. OCaml Planet). A post's URL is `base-url ^ blog-path ^ "/" ^ <post path>` (so `--base-url https://ocsigen.org --blog-path /blog` yields `https://ocsigen.org/blog/…`); the feed advertises itself at `base-url ^ feed-path` (default `/feed.xml`). Entry bodies are the post excerpt; the feed `updated` is the newest post's date (stable across rebuilds). Both read post metadata via [`Wodoc.Blog`](./Wodoc-Blog.md).
+`blog-feed` prints an **Atom feed** of the posts, for syndication (e.g. OCaml Planet). A post's URL is `base-url ^ blog-path ^ "/" ^ <post path>` (so `--base-url https://ocsigen.org --blog-path /blog` yields `https://ocsigen.org/blog/…`); the feed advertises itself at `base-url ^ feed-path` (default `/feed.xml`). Entry bodies are the post excerpt; the feed `updated` is the newest post's date (stable across rebuilds).
+
+`blog-llms` publishes the blog for AIs and LLMs. It reads odoc's Markdown rendering of each post from `--md-dir` (`<slug>.md`, as `odoc markdown-generate` writes it) and writes, under the blog root `--out`: the post's Markdown twin next to its HTML page (`posts/<slug>.md` for `(out posts)`), with the wodoc markers dropped and a `"Published on <date> by <author>."` line under the title; then `llms.txt`, which lists the posts newest first with their date, author and excerpt, and `llms-full.txt`, every twin in one file. `--title` (default `Blog`) and `--summary` fill the index header. A post with no rendering fails the command before anything is written.
+
+All three read post metadata via [`Wodoc.Blog`](./Wodoc-Blog.md).
 
 ## Putting it together
 

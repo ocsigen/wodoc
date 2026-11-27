@@ -10,9 +10,6 @@ val origin_of : string -> string option
 val read_menu : string -> string
 ```
 ```ocaml
-val mkdir_p : string -> unit
-```
-```ocaml
 val html_files : string -> string -> string list
 ```
 ```ocaml

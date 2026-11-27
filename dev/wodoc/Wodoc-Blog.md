@@ -7,7 +7,7 @@ type post = {
   src : string; (* path to the post's .mld source *)
   path : string; (* deployed page path, relative to the version root, e.g. "blog/first-post.html" *)
   title : string; (* the post's {1 …} / {0 …} heading, as plain text *)
-  author : string; (* odoc @author …, plain text ("" when absent) *)
+  author : string; (* the odoc @author … tags, plain text, joined with ", " ("" when absent) *)
   excerpt : string; (* first paragraph of the body, plain text (may be "") *)
 }
 ```
@@ -37,6 +37,31 @@ val feed :
   string
 ```
 `feed ~base_url ~blog_path ~feed_path ~title ~author posts`: an Atom feed of the posts (newest first), for syndication (e.g. OCaml Planet). `base_url` is the site origin; a post's URL is `base_url ^ blog_path ^ "/" ^ post.path`; the feed advertises itself at `base_url ^ feed_path`. Entry bodies are the post excerpt as an HTML summary; the feed `updated` is the newest post's date.
+
+```ocaml
+val md_path : post -> string
+```
+`md_path post`: the deployed path of the post's Markdown twin, relative to the blog root: `post.path` with an `.md` extension.
+
+```ocaml
+val markdown_twin : post -> string -> string
+```
+`markdown_twin post md`: the Markdown twin of `post`, from odoc's Markdown rendering `md` of its page. The wodoc markers are dropped ([`Render.markdown`](./Wodoc-Render.md#val-markdown)) and a `"Published on <date> by <author>."` line replaces the `author` lines odoc renders under the title: it is the Markdown counterpart of the HTML byline. A page that does not start with a title gets the line first.
+
+```ocaml
+val write_llms : 
+  md_dir:string ->
+  out:string ->
+  title:string ->
+  summary:string ->
+  post list ->
+  (unit, string) Stdlib.result
+```
+`write_llms ~md_dir ~out ~title ~summary posts` writes, under the blog root `out`, the [`markdown_twin`](./#val-markdown_twin) of each post at its [`md_path`](./#val-md_path), then the LLM-friendly index files, following the llms.txt convention (llmstxt.org):
+
+- `llms.txt`: `# title`, a `>` blockquote `summary`, then a `## Posts` section listing the posts newest first, each as `- [title](md path): Published on <date> by <author>. <excerpt>`;
+- `llms-full.txt`: every twin concatenated, for single-shot ingestion.
+The rendering of a post is read from `md_dir/<slug>.md`, where `odoc markdown-generate` writes it. Every rendering is read first: if one cannot be read, the result is `Error msg` and nothing is written. A file that cannot be written also gives `Error msg`.
 
 ```ocaml
 val latest_fragment : base:string -> Config.blog -> post list -> string

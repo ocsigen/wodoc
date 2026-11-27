@@ -16,3 +16,8 @@ val write_file : string -> string -> unit
 val is_url : string -> bool
 ```
 `is_url p` is `true` if `p` is an `http://` or `https://` URL.
+
+```ocaml
+val mkdir_p : string -> unit
+```
+`mkdir_p dir` creates `dir` and its missing parents, like `mkdir -p`.

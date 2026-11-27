@@ -63,6 +63,17 @@ wodoc blog-feed --config doc/wodoc --base-url https://example.org \
 ```
 A post's link is `base-url ^ blog-path ^ "/" ^ <post path>`; the feed advertises itself at `base-url ^ feed-path`.
 
+## 6\. For AIs: Markdown twins and llms.txt
+
+[`wodoc blog-llms`](./commands.md) gives each post a Markdown twin and the blog an `llms.txt` index (llmstxt.org) and an `llms-full.txt` dump, the same entry points `wodoc build` gives a project's documentation. It starts from odoc's Markdown rendering of the posts:
+
+```text
+odoc markdown-generate page-<slug>.odocl -o _md    # once per post
+wodoc blog-llms --config doc/wodoc --md-dir _md --out _site/blog \
+                --title "My Blog" --summary "News about my project."
+```
+Advertise each twin on its HTML page with `wodoc assemble --mdlink`. This step is for a flat site; `wodoc build` does not make the twins of the posts yet.
+
 ## Turn-key build vs. a flat site
 
 If your project is built with the turn-key [`wodoc build`](./commands.md), the `(blog …)` stanza is all you need: `wodoc build` compiles every post, splices the navigation section and expands `{%wodoc:blog-latest%}` on the landing, with no script.
@@ -72,7 +83,8 @@ If instead your blog is part of a **flat site** built with the lower-level [`wod
 - pass `--leftnav` the output of [`wodoc blog-nav`](./commands.md) (the post list);
 - pass `--blog-config`/`--blog-base` to expand a `{%wodoc:blog-latest%}` marker on a page (e.g. the site home);
 - pass `--byline "<date>, <author>"` to show the post's date and author under its title;
-- run [`wodoc blog-feed`](./commands.md) once for the feed.
+- run [`wodoc blog-feed`](./commands.md) once for the feed;
+- run [`wodoc blog-llms`](./commands.md) once for the Markdown twins and `llms.txt`.
 
 ## Styling
 
