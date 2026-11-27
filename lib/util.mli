@@ -11,3 +11,10 @@ val is_url : string -> bool
 
 val mkdir_p : string -> unit
 (** [mkdir_p dir] creates [dir] and its missing parents, like [mkdir -p]. *)
+
+val files : string -> string list
+(** [files dir] is the regular files below the directory [dir], at any depth,
+    as paths relative to [dir], sorted within each directory. Symbolic links
+    are followed, each directory once; an entry that cannot be read (a dangling
+    link) is skipped with a warning on [stderr]. [files dir] is empty when
+    [dir] is not a directory. *)
