@@ -99,3 +99,36 @@ val requalify :
     uniform (renamed vs kept module names), so each candidate is probed with
     [exists] (the caller resolves the candidate URL against the page's location
     and stats the target). *)
+
+val ocaml_org_versions : string -> (string * string) list
+(** [ocaml_org_versions page]: the [(package, version)] pairs of the ocaml.org
+    documentation links in [page] ([https://ocaml.org/p/<pkg>/<version>/doc/…]),
+    the first version seen for each package. *)
+
+val markdown :
+   hosted:(string * (string * layout * string)) list
+  -> versions:(string * string) list
+  -> version:string
+  -> own:string list
+  -> deployed:(string -> string)
+  -> base:string
+  -> src:string
+  -> out:string
+  -> string
+  -> string
+(** [markdown ~hosted ~versions ~version ~own ~deployed ~base ~src ~out page]
+    rewrites the links of the Markdown twin [page] that cross a package
+    boundary. odoc's Markdown backend has no remap: such a link is relative to
+    odoc's output tree, where each package is a directory, and leads nowhere
+    once deployed. [src] is the page's path in that tree ([<pkg>/…]), [out] its
+    deployed path under the version root, and [base] the relative path from it
+    to that root.
+
+    A link into one of the [own] packages (those this build documents) is
+    re-aimed at where [deployed] (a path in odoc's tree to its deployed path)
+    puts the target, when it does not reach it already. A link into another
+    package goes, as {!deps} does in the HTML, to the deployed page of a
+    [hosted] project, in its [version] directory (here its Markdown twin),
+    else to the package's documentation on ocaml.org, at the version given by
+    [versions] (["latest"] when absent). Links in fenced code blocks, absolute
+    links and anchors are left alone. *)

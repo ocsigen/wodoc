@@ -184,6 +184,15 @@ and the target of [a] (a link around a whole block) carried over to the block's
 first heading, or around a one-line block. [wodoc render --markdown <page.md>]
 applies that pass on its own, for a site that builds its twins by hand.
 
+The links of the twins {b lead to the same pages as the HTML}. odoc's Markdown
+backend has no [--remap]: a reference into another package is a link relative
+to odoc's own output tree, where each package is a directory, and leads nowhere
+once the site is deployed. wodoc re-aims it the way it does the HTML: at the
+twin of a project the site hosts (the [(hosted …)] table, in its [dev] or
+[latest] docs like the HTML), else at the package's documentation on ocaml.org,
+at the version the HTML links to. A link between two packages of the project
+follows the pages the manual-root layout moves.
+
 Markdown generation is {b on by default}, and a project that asks for it {b fails
 the build} when it cannot produce it: the twins and the indexes are published
 files, and a version directory is deployed wholesale (the doc CI replaces it), so

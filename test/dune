@@ -1,6 +1,6 @@
 (cram
  (deps %{bin:wodoc}))
 
-(test
- (name preprocess_tree)
+(tests
+ (names preprocess_tree md_xrefs)
  (libraries wodoc unix))

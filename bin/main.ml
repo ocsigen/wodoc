@@ -99,6 +99,19 @@ let read_config parse f =
 
 let config_of cfg = resolve_blog cfg (read_config Wodoc.Config.of_string cfg)
 
+(* The opam packages of an [(odoc-driver …)] build, a space-separated list. The
+   first one is the main one: its subtree holds the manual, and a project with
+   no [(packages …)] is assembled from that subtree alone. *)
+let driver_packages pkg =
+  List.filter (fun s -> s <> "") (String.split_on_char ' ' pkg)
+
+(* the package whose subtree is the whole site, for such a project *)
+let single_package (c : Wodoc.Config.t) =
+  match c.odoc_driver with
+  | Some pkg when c.packages = [] -> (
+    match driver_packages pkg with p :: _ -> Some p | [] -> None)
+  | _ -> None
+
 let () =
   match Array.to_list Sys.argv with
   | _ :: "convert" :: args -> (
@@ -336,11 +349,20 @@ let () =
          so `dune build @doc` collides), else plain `dune build @doc`. *)
       (* [src] is the odoc _html tree to assemble; [md_src] (when [Some]) is the
          parallel odoc markdown tree, copied verbatim next to the HTML by Build.run
-         so AIs/LLMs get a clean .md twin of every page (see [Build.run ~md_src]). *)
-      let src, md_src =
+         so AIs/LLMs get a clean .md twin of every page (see [Build.run ~md_src]).
+         [md_package] names the package when [md_src] is the subtree of a single
+         package in odoc's tree, rather than the tree itself. *)
+      let src, md_src, md_package =
         match List.assoc_opt "src" flags with
         | Some s ->
-            s, if c.markdown then List.assoc_opt "md-src" flags else None
+            ( s
+            , (if c.markdown
+               then List.assoc_opt "md-src" flags
+               else
+                 None
+                 (* trees made beforehand have the shape the config's own route
+                 gives them *))
+            , single_package c )
         | None -> (
           match c.mld_dir with
           | Some dir ->
@@ -429,10 +451,11 @@ let () =
                 mlds;
               let md_src = if c.markdown then Some md else None in
               if c.mld_package = ""
-              then html, md_src
+              then html, md_src, None
               else
                 ( Filename.concat html c.mld_package
-                , Option.map (fun m -> Filename.concat m c.mld_package) md_src )
+                , Option.map (fun m -> Filename.concat m c.mld_package) md_src
+                , Some c.mld_package )
           | None -> (
             match c.odoc_driver with
             | Some pkg ->
@@ -442,9 +465,7 @@ let () =
                    documents them all (+ their deps) and --remaps the rest to
                    ocaml.org. The FIRST package is the main one: its subtree
                    holds the manual and is what the site is assembled around. *)
-                let pkgs =
-                  List.filter (fun s -> s <> "") (String.split_on_char ' ' pkg)
-                in
+                let pkgs = driver_packages pkg in
                 let main_pkg = match pkgs with p :: _ -> p | [] -> pkg in
                 (* The installed manual .mld carry {%wodoc:%} markers; rewrite
                    them in place to HTML comments (idempotent), in every
@@ -525,7 +546,8 @@ let () =
                 ( (if c.packages <> []
                    then work
                    else Filename.concat work main_pkg)
-                , md_src )
+                , md_src
+                , single_package c )
             | None ->
                 let profile =
                   match c.profile with
@@ -547,12 +569,12 @@ let () =
                   then Some "_build/default/_doc/_markdown"
                   else markdown_failed "dune build @doc-markdown failed"
                 in
-                "_build/default/_doc/_html", md_src))
+                "_build/default/_doc/_html", md_src, None))
       in
       (* --menu is optional: without it, Build uses the built-in default header *)
       let menu = Option.value ~default:"" (List.assoc_opt "menu" flags) in
       try
-        Wodoc.Build.run c ~src ~md_src ~out:(req "out") ~label ~menu
+        Wodoc.Build.run c ~src ~md_src ~md_package ~out:(req "out") ~label ~menu
           ~assets_dir:(Filename.dirname cfg) ~local ~set_latest ~strict_refs
       with
       | Wodoc.Lint.Dead_markup m | Wodoc.Page_tree.Missing m ->
