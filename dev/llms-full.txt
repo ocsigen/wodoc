@@ -571,7 +571,7 @@ A single-package `dune build @doc` project puts both its manual and its API unde
 
 ### Manual-only / archived projects: `(mld-dir …)`
 
-A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc `--package`. (When the directory is passed on the CLI with `--mld-dir` (for a per-version manual), set the package with a standalone `(mld-package <pkg>)` instead.) The pages *are* the manual, so the landing `index.html` is a real page (no redirect). Add `(flat)` when the first content straddles odoc's preamble boundary. `(static-copy <src> [<dest>])` (repeatable) copies a tree in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image. `<dest>` (the basename of `<src>` by default) is replaced on every build, so it must be a relative path inside the version directory, with no `.` or `..` segment.
+A project with no buildable library API (an archived project, or a tool whose libraries are internal) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc compiles them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the parent id of the pages in odoc's tree (the project by default). The files under `<dir>/files` are odoc assets of the pages: show an image with `{{image!files/x.png}label}`, which renders the same way on ocaml.org when the files are installed with the pages. The `files` directory is copied into the version directory as is. (When the directory is passed on the CLI with `--mld-dir` (for a per-version manual), set the package with a standalone `(mld-package <pkg>)` instead.) The pages *are* the manual, so the landing `index.html` is a real page (no redirect). Add `(flat)` when the first content straddles odoc's preamble boundary. `(static-copy <src> [<dest>])` (repeatable) copies a tree in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image. `<dest>` (the basename of `<src>` by default) is replaced on every build, so it must be a relative path inside the version directory, with no `.` or `..` segment.
 
 ## API variants: `(variants …)`
 
@@ -792,7 +792,7 @@ A single-package `dune build @doc` project puts BOTH its manual and its API unde
 
 ### Manual-only / archived projects (no `dune build @doc`)
 
-A project with no buildable library API (an archived project such as ocsimore, or a tool whose libraries are internal such as html\_of\_wiki) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc builds them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the odoc package. The pages *are* the manual: the landing `index.html` is a real page (no redirect). The left nav is the config's `(nav …)` sections like any project (in-page anchors are just links with a `#fragment`); a project that builds *several* version directories with different manuals passes each version's nav with `--nav <file>` (same `(nav …)` syntax) instead. Add `(flat)` if the first content straddles odoc's preamble boundary. `(static-copy <src> <dest>)…` copies trees in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
+A project with no buildable library API (an archived project such as ocsimore, or a tool whose libraries are internal such as html\_of\_wiki) has nothing for `dune build @doc` to render. Point `(mld-dir <dir> [<package>])` at a directory of `.mld` pages and wodoc builds them straight with odoc (preprocess → compile → link → html-generate, no dune); the optional second atom is the parent id of the pages (the project by default), and the files under `<dir>/files` are assets of the pages (`{image!files/x.png}`). The pages *are* the manual: the landing `index.html` is a real page (no redirect). The left nav is the config's `(nav …)` sections like any project (in-page anchors are just links with a `#fragment`); a project that builds *several* version directories with different manuals passes each version's nav with `--nav <file>` (same `(nav …)` syntax) instead. Add `(flat)` if the first content straddles odoc's preamble boundary. `(static-copy <src> <dest>)…` copies trees in verbatim, e.g. a frozen API snapshot that can no longer be recompiled, or a manual image.
 
 The syntax-highlight starter is always shipped as `wodoc-highlight.js` and loaded version-relatively. Its built-in default is *Ocsigen-oriented*: on top of plain OCaml it teaches odoc's bundled `highlight.js` the eliom (`let%client` / `%server` / `%shared` / `%rpc`, `~%x` injection), lwt (`let*` / `and*` / `let+`) and js\_of\_ocaml (`##`) syntax, so any Ocsigen project colours correctly with no per-project file. A project whose code blocks use yet another syntax overrides the shipped file with `(highlight …)` in the config. See [`Wodoc.Build`](./Wodoc-Build.md).
 
@@ -1402,7 +1402,7 @@ type t = {
   hosted : (string * (string * Resolve.layout * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. See Resolve.layout for the layout token (multilib/root/subdir). *)
   manual_root : bool; (* deploy the package's pages at the version ROOT instead of under a <package>/ subdirectory: strip the leading <package>/ segment from output paths, the landing and the nav links. Makes a single-package dune build @doc project (ocsigenserver, i18n) match the layout of odoc-driver projects (eliom: manual at the version root, e.g. /ocsigenserver/latest/config.html) so cross-project links resolve. The package's internal relative links are preserved (the same prefix is stripped from every page). *)
   mld_dir : string option; (* direct-mld build (a manual-only / archived project with no dune build @doc): compile every .mld in this dir straight with odoc (preprocess -> compile -> link -> html-generate). The pages are the manual; the landing index.html is a real page (no redirect). *)
-  mld_package : string; (* odoc --package for the direct-mld compile (the src subtree) *)
+  mld_package : string; (* odoc parent id of the pages in the direct-mld build, and the root of the ids of the assets under <mld-dir>/files (the src subtree). The project when empty. *)
   flat : bool; (* assemble --flat (content straddling odoc's preamble boundary) *)
   static_copy : (string * string) list; (* verbatim copies into the output: (source path, dest under <out>), e.g. a frozen API snapshot, or a manual image *)
   blog : blog option; (* an optional (blog …) section (see blog) *)
@@ -1846,6 +1846,11 @@ val is_url : string -> bool
 val mkdir_p : string -> unit
 ```
 `mkdir_p dir` creates `dir` and its missing parents, like `mkdir -p`.
+
+```ocaml
+val files : string -> string list
+```
+`files dir` is the regular files below the directory `dir`, at any depth, as paths relative to `dir`, sorted within each directory. Symbolic links are followed, each directory once; an entry that cannot be read (a dangling link) is skipped with a warning on `stderr`. `files dir` is empty when `dir` is not a directory.
 
 
 ---

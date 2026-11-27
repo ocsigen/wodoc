@@ -80,7 +80,7 @@ type t = {
   hosted : (string * (string * Resolve.layout * string)) list; (* cross-project resolve-refs table (resolve-refs --hosted): package -> (deploy dir, layout, wrapper module). Rewrites sibling Ocsigen projects' ocaml.org xrefs to relative links into their wodoc docs. See Resolve.layout for the layout token (multilib/root/subdir). *)
   manual_root : bool; (* deploy the package's pages at the version ROOT instead of under a <package>/ subdirectory: strip the leading <package>/ segment from output paths, the landing and the nav links. Makes a single-package dune build @doc project (ocsigenserver, i18n) match the layout of odoc-driver projects (eliom: manual at the version root, e.g. /ocsigenserver/latest/config.html) so cross-project links resolve. The package's internal relative links are preserved (the same prefix is stripped from every page). *)
   mld_dir : string option; (* direct-mld build (a manual-only / archived project with no dune build @doc): compile every .mld in this dir straight with odoc (preprocess -> compile -> link -> html-generate). The pages are the manual; the landing index.html is a real page (no redirect). *)
-  mld_package : string; (* odoc --package for the direct-mld compile (the src subtree) *)
+  mld_package : string; (* odoc parent id of the pages in the direct-mld build, and the root of the ids of the assets under <mld-dir>/files (the src subtree). The project when empty. *)
   flat : bool; (* assemble --flat (content straddling odoc's preamble boundary) *)
   static_copy : (string * string) list; (* verbatim copies into the output: (source path, dest under <out>), e.g. a frozen API snapshot, or a manual image *)
   blog : blog option; (* an optional (blog …) section (see blog) *)
