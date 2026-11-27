@@ -375,12 +375,14 @@ js_of_ocaml ([##]) syntax, so any Ocsigen project colours correctly with no
 per-project file. A project whose code blocks use yet another syntax overrides the
 shipped file with [(highlight …)] in the config. See {!Wodoc.Build}.
 
-{1 [wodoc blog-nav] and [wodoc blog-feed]}
+{1 [wodoc blog-nav], [wodoc blog-feed] and [wodoc blog-llms]}
 
 {@text[
 wodoc blog-nav  --config <doc/wodoc> [--base <b>]
 wodoc blog-feed --config <doc/wodoc> --base-url <origin> [--blog-path <p>]
                 [--feed-path /feed.xml] [--title <t>] [--author <a>]
+wodoc blog-llms --config <doc/wodoc> --md-dir <odoc md dir> --out <blog root>
+                [--title <t>] [--summary <s>]
 ]}
 
 Helpers for a blog (the [(blog …)] stanza, see {{!page-"config"}config}) built
@@ -393,8 +395,20 @@ Planet). A post's URL is [base-url ^ blog-path ^ "/" ^ <post path>] (so
 [--base-url https://ocsigen.org --blog-path /blog] yields
 [https://ocsigen.org/blog/…]); the feed advertises itself at
 [base-url ^ feed-path] (default [/feed.xml]). Entry bodies are the post excerpt;
-the feed [updated] is the newest post's date (stable across rebuilds). Both read
-post metadata via {!Wodoc.Blog}.
+the feed [updated] is the newest post's date (stable across rebuilds).
+
+[blog-llms] publishes the blog for AIs and LLMs. It reads odoc's Markdown
+rendering of each post from [--md-dir] ([<slug>.md], as
+[odoc markdown-generate] writes it) and writes, under the blog root [--out]:
+the post's Markdown twin next to its HTML page ([posts/<slug>.md] for
+[(out posts)]), with the wodoc markers dropped and a
+["Published on <date> by <author>."] line under the title; then [llms.txt],
+which lists the posts newest first with their date, author and excerpt, and
+[llms-full.txt], every twin in one file. [--title] (default [Blog]) and
+[--summary] fill the index header. A post with no rendering fails the command
+before anything is written.
+
+All three read post metadata via {!Wodoc.Blog}.
 
 {1 Putting it together}
 

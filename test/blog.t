@@ -98,3 +98,131 @@ self link at the chosen feed path, and one entry per post with an absolute URL
   <link href="https://ocsigen.org/blog/blog/second.html"
   <title>Hello world</title>
   <link href="https://ocsigen.org/blog/blog/hello.html"
+
+`wodoc blog-llms` publishes the blog for AIs and LLMs: the Markdown twin of each
+post, and the blog's `llms.txt` index and `llms-full.txt` dump. It reads odoc's
+Markdown rendering of each post (`odoc markdown-generate` writes
+`<slug>.md`); here two hand-written renderings stand in for it, in odoc's
+shape: the `@author` tag comes out as an `author …` line glued to the first
+paragraph, and a wodoc marker passes through verbatim.
+
+  $ mkdir md
+  $ cat > md/hello.md <<'MEOF'
+  > 
+  > # Hello world
+  > 
+  > author Alice
+  > The first post's opening paragraph, which becomes the excerpt.
+  > 
+  > <!--wodoc:d:note-->
+  > A note.
+  > MEOF
+  $ cat > md/second.md <<'MEOF'
+  > 
+  > # The second post
+  > 
+  > author Bob
+  > A later post, so it sorts above the first one.
+  > MEOF
+  $ wodoc blog-llms --config doc/wodoc --md-dir md --out _blog --title "Demo Blog" \
+  >   --summary "News from the demo project."
+
+The index lists the posts newest first, each with its date, author and excerpt,
+and links them by their twin's path relative to the blog root:
+
+  $ cat _blog/llms.txt
+  # Demo Blog
+  
+  > News from the demo project.
+  
+  ## Posts
+  - [The second post](blog/second.md): Published on 2026-06-14 by Bob. A later post, so it sorts above the first one.
+  - [Hello world](blog/hello.md): Published on 2026-06-10 by Alice. The first post's opening paragraph, which becomes the excerpt.
+
+A twin carries the publication line under its title, in place of odoc's
+`author` line, and the wodoc markers are gone:
+
+  $ cat _blog/blog/hello.md
+  # Hello world
+  
+  Published on 2026-06-10 by Alice.
+  
+  The first post's opening paragraph, which becomes the excerpt.
+  
+  A note.
+
+`llms-full.txt` is the same header followed by every twin, newest first:
+
+  $ grep -e '^#' -e '^Published' -e '^---' _blog/llms-full.txt
+  # Demo Blog
+  ---
+  # The second post
+  Published on 2026-06-14 by Bob.
+  ---
+  # Hello world
+  Published on 2026-06-10 by Alice.
+
+A post with no rendering fails the command, and nothing is written, so that the
+twins already online are not replaced by half a set:
+
+  $ rm md/hello.md
+  $ wodoc blog-llms --config doc/wodoc --md-dir md --out _blog2
+  wodoc blog-llms: cannot read the Markdown rendering of a post: md/hello.md: No such file or directory
+  [1]
+  $ test -e _blog2 || echo "nothing written"
+  nothing written
+
+A config with no `(blog …)` stanza is an error too:
+
+  $ echo '(project demo)' > noblog
+  $ wodoc blog-llms --config noblog --md-dir md --out _blog2
+  wodoc blog-llms: noblog declares no (blog …)
+  [1]
+
+The real odoc rendering, on posts in the less common shapes: a title at level
+one, two authors and a code block whose first line looks like a heading; and a
+post with no author. The publication line lists both authors in place of
+odoc's `author` lines, and stays out of the code block:
+
+  $ mkdir -p edge/posts edge/md
+  $ cat > edge/posts/2026-02-01-shapes.mld <<'MEOF'
+  > {1 A title at level one}
+  > 
+  > @author Alice
+  > @author Bob
+  > 
+  > Install it:
+  > 
+  > {@sh[
+  > # from opam
+  > opam install foo
+  > ]}
+  > MEOF
+  $ cat > edge/posts/2026-02-02-anonymous.mld <<'MEOF'
+  > {0 Nobody signs this one}
+  > 
+  > An anonymous post.
+  > MEOF
+  $ printf '(project edge)\n(blog (dir posts) (out posts))\n' > edge/wodoc
+  $ for s in shapes anonymous; do
+  >   wodoc preprocess edge/posts/2026-02-0?-$s.mld > edge/$s.mld
+  >   odoc compile edge/$s.mld -o edge/page-$s.odoc 2>/dev/null
+  >   odoc link edge/page-$s.odoc -o edge/page-$s.odocl
+  >   odoc markdown-generate edge/page-$s.odocl -o edge/md
+  > done
+  $ wodoc blog-llms --config edge/wodoc --md-dir edge/md --out edge/out
+  $ cat edge/out/posts/shapes.md
+  ## A title at level one
+  
+  Published on 2026-02-01 by Alice, Bob.
+  
+  Install it:
+  
+  ```sh
+  # from opam
+  opam install foo
+  ```
+  $ head -3 edge/out/posts/anonymous.md
+  # Nobody signs this one
+  
+  Published on 2026-02-02.

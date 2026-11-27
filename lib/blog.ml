@@ -114,18 +114,23 @@ let title_and_body s =
       let content, stop = braced s idx in
       plain content, stop
 
-(* the [@author …] of a post (rest of the line), plain text; "" when absent *)
+(* the [@author …] tags of a post (rest of each line), plain text, joined with
+   ", "; "" when absent *)
 let author s =
-  match Str.search_forward (Str.regexp "@author[ \t]+") s 0 with
-  | exception Not_found -> ""
-  | _ ->
-      let e = Str.match_end () in
-      let stop =
-        match String.index_from_opt s e '\n' with
-        | Some j -> j
-        | None -> String.length s
-      in
-      plain (String.sub s e (stop - e))
+  let re = Str.regexp "@author[ \t]+" in
+  let rec tags from acc =
+    match Str.search_forward re s from with
+    | exception Not_found -> List.rev acc
+    | _ ->
+        let e = Str.match_end () in
+        let stop =
+          match String.index_from_opt s e '\n' with
+          | Some j -> j
+          | None -> String.length s
+        in
+        tags stop (plain (String.sub s e (stop - e)) :: acc)
+  in
+  String.concat ", " (tags 0 [])
 
 let excerpt_len = 240
 
@@ -280,6 +285,89 @@ let feed ~base_url ~blog_path ~feed_path ~title ~author (posts : post list) =
     posts;
   add "</feed>";
   Buffer.contents buf
+
+let md_path p = Filename.remove_extension p.path ^ ".md"
+
+let published p =
+  if p.author = ""
+  then Printf.sprintf "Published on %s." p.date
+  else Printf.sprintf "Published on %s by %s." p.date p.author
+
+(* an ATX heading line, of any level: one or more '#' then a space *)
+let is_heading l =
+  let n = String.length l in
+  let rec hashes i = if i < n && l.[i] = '#' then hashes (i + 1) else i in
+  let k = hashes 0 in
+  k > 0 && k < n && l.[k] = ' '
+
+(* odoc renders the post's title ([{0 …}] or [{1 …}]) as the first line of the
+   page, and each [@author] tag as an "author <name>" line right after it, glued
+   to the first paragraph. The publication line takes the place of those tag
+   lines (the HTML page hides the tags too, and shows the byline instead), and
+   goes first in a page that does not start with a title. *)
+let markdown_twin p md =
+  let rec drop_authors = function
+    | "" :: rest -> drop_authors rest
+    | l :: rest when p.author <> "" && String.starts_with ~prefix:"author " l ->
+        drop_authors rest
+    | rest -> rest
+  in
+  let rec place = function
+    | "" :: rest -> place rest
+    | l :: rest when is_heading l ->
+        l :: "" :: published p :: "" :: drop_authors rest
+    | lines -> published p :: "" :: drop_authors lines
+  in
+  String.concat "\n" (place (String.split_on_char '\n' (Render.markdown md)))
+
+(* Every rendering is read before anything is written, so that a missing or
+   unreadable one leaves the previous twins and indexes in place rather than
+   half a set. *)
+let write_llms ~md_dir ~out ~title ~summary (posts : post list) =
+  let read p =
+    let f = Filename.concat md_dir (p.slug ^ ".md") in
+    match read_file f with
+    | s -> Either.Left (p, s)
+    | exception Sys_error m -> Either.Right m
+  in
+  match List.partition_map read posts with
+  | _, (_ :: _ as errors) ->
+      Error
+        ("cannot read the Markdown rendering of a post: "
+       ^ String.concat "; " errors)
+  | renderings, [] -> (
+    try
+      mkdir_p out;
+      let twins = List.map (fun (p, md) -> p, markdown_twin p md) renderings in
+      List.iter
+        (fun (p, twin) ->
+           let dst = Filename.concat out (md_path p) in
+           mkdir_p (Filename.dirname dst);
+           write_file dst twin)
+        twins;
+      let header = Printf.sprintf "# %s\n\n> %s\n" title summary in
+      let entry p =
+        let notes =
+          if p.excerpt = "" then published p else published p ^ " " ^ p.excerpt
+        in
+        Printf.sprintf "- [%s](%s): %s\n" p.title (md_path p) notes
+      in
+      let index =
+        if posts = []
+        then header
+        else header ^ "\n## Posts\n" ^ String.concat "" (List.map entry posts)
+      in
+      write_file (Filename.concat out "llms.txt") index;
+      let full =
+        header
+        ^ String.concat ""
+            (List.map
+               (fun (_, twin) -> "\n\n---\n\n" ^ String.trim twin ^ "\n")
+               twins)
+      in
+      write_file (Filename.concat out "llms-full.txt") full;
+      Ok ()
+    with Sys_error m -> Error ("cannot write the Markdown twins: " ^ m))
 
 let latest_fragment ~base (b : Config.blog) (posts : post list) =
   let recent = List.filteri (fun i _ -> i < b.latest) posts in

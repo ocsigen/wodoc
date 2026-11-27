@@ -59,6 +59,10 @@ Config simplifications (breaking):
   standard library…). They now lead to the twin of the page in a hosted
   project, else to the package's documentation on ocaml.org. `release` and
   `pin-deps` also pin the twins' links to the latest docs.
+- `wodoc blog-llms` gives a flat-site blog what `wodoc build` gives a project's
+  documentation: a Markdown twin of each post, with its publication date and
+  authors under the title, and the blog's `llms.txt` and `llms-full.txt`.
+  A post's author is now every `@author` tag, not only the first one.
 - A single-package odoc-driver project can land on its `index.mld`
   (`(landing index.html)`). The root `index.html` of its tree was taken for
   odoc's package list and skipped, and the version root redirect that replaced
