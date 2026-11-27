@@ -121,3 +121,29 @@ A page of a project without variants has no notice either:
   $ grep -c 'wodoc-variant-notice\|{{banner}}' out2/dev/demo.client/Demo/Both/index.html
   0
   [1]
+
+A variant whose library is a prefix of another's does not take the other's
+pages: with [foo] and [foo.js], the pages under [foo.js/] are the second
+variant's.
+
+  $ for p in foo/Foo/A/index foo.js/Foo/A/index; do
+  >   mkdir -p "html/demo/$(dirname $p)"
+  >   printf '<html><body><header class="odoc-preamble"><h1>A</h1></header><div class="odoc-content"><p>A</p></div></body></html>' \
+  >     > "html/demo/$p.html"; done
+  $ cat > doc/wodoc <<'CFG'
+  > (project demo)
+  > (title Demo)
+  > (url-prefix /demo)
+  > (markdown false)
+  > (landing index.html)
+  > (variants
+  >   (variant native (lib foo) (indexdoc none) (heading "Native") (wrapper Foo))
+  >   (variant js (lib foo.js) (indexdoc none) (heading "Browser") (wrapper Foo)))
+  > CFG
+  $ wodoc build --config doc/wodoc --src html/demo --out out3/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ grep -o '<body class="[^"]*"\|reading the <strong>[^<]*\|See this page in the [^<]*' \
+  >   out3/dev/foo.js/Foo/A/index.html
+  <body class="wodoc-page wodoc-doc wodoc-project-demo wodoc-js"
+  reading the <strong>Browser
+  See this page in the Native

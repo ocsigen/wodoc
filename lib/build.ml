@@ -586,12 +586,22 @@ let topdir rel =
   | None -> None
 
 (* the variant a top dir belongs to: the variant whose lib it is, or a
-   sub-library of ([eliom.server] but also [eliom.server.monitor] → server). *)
+   sub-library of ([eliom.server] but also [eliom.server.monitor] → server).
+   The longest such lib wins: with variants [foo] and [foo.js], [foo.js/] is
+   the second one, not a sub-library of the first. *)
 let variant_for (variants : Config.variant list) td =
-  List.find_opt
-    (fun (v : Config.variant) ->
-       td = v.lib || String.starts_with ~prefix:(v.lib ^ ".") td)
-    variants
+  List.fold_left
+    (fun best (v : Config.variant) ->
+       let longer =
+         match best with
+         | Some (b : Config.variant) ->
+             String.length v.lib > String.length b.lib
+         | None -> true
+       in
+       if longer && (td = v.lib || String.starts_with ~prefix:(v.lib ^ ".") td)
+       then Some v
+       else best)
+    None variants
 
 (* the key of the variant a page belongs to (by its top dir), "" for the manual
    / other libs *)
