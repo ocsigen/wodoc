@@ -128,3 +128,19 @@ package's documentation on ocaml.org, at the version the HTML links to.
   (../../../tyxml/dev/tyxml/ppx.md)
   (https://ocaml.org/p/react/1.2.2/doc/react/React/index.html#val-s)
   (./Mod.md)
+
+A release freezes the dev docs; the twins then link to the latest docs of the
+hosted projects too:
+
+  $ wodoc release --site x --version 1.0 2>/dev/null
+  $ grep -o '([^)]*tyxml[^)]*)' x/1.0/demo/index.md
+  (../../../tyxml/latest/tyxml/ppx.md)
+
+`llms-full.txt` concatenates the twins of pages of every depth (and starts
+with the landing page's summary); their links are pinned too:
+
+  $ grep -c 'tyxml/dev/' x/dev/llms-full.txt
+  2
+  $ grep -o '([^)]*tyxml[^)]*)' x/1.0/llms-full.txt
+  (../../../tyxml/latest/tyxml/ppx.md)
+  (../../../tyxml/latest/tyxml/ppx.md)

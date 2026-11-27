@@ -51,7 +51,8 @@ Config simplifications (breaking):
   backend has no remap, so they were relative to odoc's build tree and led
   nowhere once deployed: hundreds of them in Eliom's twins (TyXML, Lwt, the
   standard library…). They now lead to the twin of the page in a hosted
-  project, else to the package's documentation on ocaml.org.
+  project, else to the package's documentation on ocaml.org. `release` and
+  `pin-deps` also pin the twins' links to the latest docs.
 - A single-package odoc-driver project can land on its `index.mld`
   (`(landing index.html)`). The root `index.html` of its tree was taken for
   odoc's package list and skipped, and the version root redirect that replaced

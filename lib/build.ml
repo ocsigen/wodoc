@@ -1368,10 +1368,13 @@ let run
    pages rewritten. A [dev] build links against the dev docs of the projects it
    depends on (see [dep_version] in {!run}), and a release freezes [dev] without
    rebuilding it: the released pages would otherwise follow the development docs
-   of their dependencies. Such a link is the one {!Resolve.deps} emits: relative,
-   climbing from the page to the root of the co-located projects (the page's
-   base, then [../..]), then into [<project>/dev/]. Only that exact climb is
-   rewritten, so links within the version are left alone. *)
+   of their dependencies. Such a link is the one {!Resolve.deps} emits in an
+   HTML page and {!Resolve.markdown} in a Markdown twin: relative, climbing from
+   the page to the root of the co-located projects (the page's base, then
+   [../..]), then into [<project>/dev/]. Only that exact climb is rewritten, so
+   links within the version are left alone. [llms-full.txt] holds the twins of
+   pages of every depth, so there any climb that ends in [../../<project>/dev/]
+   is rewritten. *)
 let pin_deps ~dir =
   let count = ref 0 in
   let rec walk rel =
@@ -1381,20 +1384,33 @@ let pin_deps ~dir =
       Array.iter
         (fun e -> walk (if rel = "" then e else Filename.concat rel e))
         (Sys.readdir abs)
-    else if Filename.check_suffix rel ".html"
-    then begin
-      let depth = List.length (String.split_on_char '/' rel) - 1 in
-      let base =
-        if depth = 0
-        then "."
-        else String.concat "/" (List.init depth (fun _ -> ".."))
+    else
+      (* the text before [<project>/dev/] in such a link, as a regexp: the
+         start of an HTML attribute or a Markdown link, then the climb *)
+      let climb opening = Str.quote (opening ^ base_of rel ^ "/../../") in
+      let before =
+        if Filename.check_suffix rel ".html"
+        then Some (climb "href=\"")
+        else if rel = "llms-full.txt"
+        then Some "](\\(\\./\\)?\\(\\.\\./\\)*\\.\\./\\.\\./"
+        else if Filename.check_suffix rel ".md"
+        then Some (climb "](")
+        else None
       in
-      let root = "href=\"" ^ base ^ "/../../" in
-      let re = Str.regexp (Str.quote root ^ "\\([A-Za-z0-9_.-]+\\)/dev/") in
-      let page = read_file abs in
-      let pinned = Str.global_replace re (root ^ "\\1/latest/") page in
-      if pinned <> page then (write_file abs pinned; incr count)
-    end
+      match before with
+      | None -> ()
+      | Some before ->
+          let re = Str.regexp (before ^ "[A-Za-z0-9_.-]+/dev/") in
+          let page = read_file abs in
+          let pinned =
+            Str.global_substitute re
+              (fun s ->
+                 let m = Str.matched_string s in
+                 (* the match ends with "/dev/" *)
+                 String.sub m 0 (String.length m - 4) ^ "latest/")
+              page
+          in
+          if pinned <> page then (write_file abs pinned; incr count)
   in
   walk ""; !count
 

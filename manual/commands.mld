@@ -259,8 +259,9 @@ The one change is to the links into other projects: a [dev] build links against
 their [dev] docs (a development doc documents against development APIs), and a
 frozen version must not follow them as they move on. [release] rewrites exactly
 the links wodoc emitted for them (relative, climbing from the page to the root of
-the co-located projects, then into [<project>/dev/]) to [<project>/latest/]. To
-repair a version frozen before [release] did it:
+the co-located projects, then into [<project>/dev/]) to [<project>/latest/], in
+the HTML pages, in their Markdown twins and in [llms-full.txt]. To repair a
+version frozen before [release] did it:
 
 {@text[
 wodoc pin-deps --site <gh-pages-dir> --version <v>
