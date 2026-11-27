@@ -917,18 +917,20 @@ let run
      packages of this doc first, then the cross-project [(hosted ..)] table.
      [side] is "" for a page that carries no client/server colour -- every page
      of a project without [(client-server)], and the manual pages of one with
-     it; {!Resolve.dep_base} then picks the server library of a sided target. *)
+     it; {!Resolve.dep_base} then picks the server library of a sided target. Both
+     passes read the kind sentinels {!Render} leaves; they go once both are done. *)
   let resolve_refs ~base ~side page =
     let page =
       if c.siblings = []
       then page
       else Resolve.html ~siblings:c.siblings ~base page
     in
-    if c.hosted = []
-    then page
-    else
-      Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..")
-        ~version:dep_version ~side ~self:c.project page
+    Resolve.strip_kind_marks
+      (if c.hosted = []
+       then page
+       else
+         Resolve.deps ~hosted:c.hosted ~relroot:(base ^ "/../..")
+           ~version:dep_version ~side ~self:c.project page)
   in
   (* the per-page assembler: one shared nav (normal projects), or a per-side
      template + nav for client/server projects (eliom/toolkit/start). *)
@@ -1181,9 +1183,10 @@ let run
                  in
                  let page = expand_blog ~base page in
                  let page =
-                   if c.siblings = []
-                   then page
-                   else Resolve.html ~siblings:c.siblings ~base page
+                   Resolve.strip_kind_marks
+                     (if c.siblings = []
+                      then page
+                      else Resolve.html ~siblings:c.siblings ~base page)
                  in
                  let dst = Filename.concat out orel in
                  mkdir_p (Filename.dirname dst);

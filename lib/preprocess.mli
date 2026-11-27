@@ -10,13 +10,26 @@
     [{%wodoc:DIRECTIVE%}] into [{%html:<!--wodoc:DIRECTIVE-->%}], which stock
     odoc preserves (as an HTML comment) in its HTML output.
 
+    The same channel carries the kind of a reference. odoc renders a reference
+    it cannot resolve (one into another project) with its path but without its
+    kind, so [{!M.type-t}] and [{!M.val-t}] come out alike, and the anchor
+    that {!Resolve} builds for them ([#type-t] or [#val-t]) would be a guess.
+    A reference whose last component carries such a kind therefore gets a
+    [{%html:<!--wodoc:ref KIND-->%}] marker right before it.
+
     This only applies to source text odoc reads directly (i.e. [.mld] files).
     Markers embedded in [.mli] doc-comments are compiled into [.cmti] before
     odoc sees them and cannot be pre-processed this way. *)
 
 val string : string -> string
 (** [string s] rewrites every [{%wodoc:d%}] occurrence in [s] into
-    [{%html:<!--wodoc:d-->%}]. Other content is left untouched. *)
+    [{%html:<!--wodoc:d-->%}], and puts [{%html:<!--wodoc:ref KIND-->%}]
+    before every reference ([{!r}] or [{{!r}text}]) whose last component is
+    tagged [val-] (or [value-]), [type-] or [exception-], or whose target has
+    the old-style prefix [val:], [type:]...; [KIND] is [val], [type] or
+    [exception]. References in code, verbatim, math, raw markup and inline code
+    are left alone, as is the rest of [s]. [string] is idempotent: a marker
+    already in place is not doubled. *)
 
 val tree : string -> unit
 (** [tree dir] applies {!string} in place to every [.mld] file below the
