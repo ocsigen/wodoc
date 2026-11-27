@@ -368,10 +368,15 @@ let () =
           | Some dir ->
               (* Direct-mld build (manual-only / archived project, no dune @doc):
                    compile every .mld with odoc straight (preprocess -> compile ->
-                   link -> html-generate -> markdown-generate). Output goes under
-                   <pkg>/ if a package is set, else at the html / md root. *)
+                   link -> html-generate -> markdown-generate), the way
+                   odoc_driver does for the pages of an installed package. The
+                   pages get the package as parent id ([mld-package], else the
+                   project), so the files under [<mld-dir>/files] can be
+                   compiled as assets of the same tree: [{image!files/x.png}]
+                   then resolves as it does on ocaml.org. *)
               let work = "_wodoc-html" in
               reset_work_dirs [work];
+              let pp = Filename.concat work "pp" in
               let odoc = Filename.concat work "odoc" in
               let html = Filename.concat work "html" in
               let md = Filename.concat work "md" in
@@ -380,11 +385,9 @@ let () =
                    ignore
                      (Sys.command
                         (Printf.sprintf "mkdir -p %s" (Filename.quote d))))
-                [odoc; html; md];
-              let pkg_flag =
-                if c.mld_package = ""
-                then ""
-                else " --package " ^ Filename.quote c.mld_package
+                [pp; odoc; html; md];
+              let pkg =
+                if c.mld_package = "" then c.project else c.mld_package
               in
               let mlds =
                 Sys.readdir dir |> Array.to_list
@@ -395,42 +398,61 @@ let () =
               then (
                 prerr_endline ("wodoc build: no .mld in " ^ dir);
                 exit 1);
-              (* Three passes, not one per page: [odoc link] only resolves a
-                 reference to a page whose .odoc already sits in -I, so
-                 compiling and linking a page at a time leaves every reference
-                 to a not-yet-compiled page dead (alphabetically forward ones,
-                 which is most of them in a fresh build). *)
+              (* Everything is compiled before anything is linked: [odoc link]
+                 only resolves a reference to a page or asset whose .odoc is
+                 already in the -P directory, so compiling and linking a page at
+                 a time leaves every reference to a not-yet-compiled page dead
+                 (alphabetically forward ones, which is most of them in a fresh
+                 build). *)
               let run e cmd =
                 if Sys.command cmd <> 0
                 then (
                   prerr_endline ("wodoc build: odoc failed on " ^ e);
                   exit 1)
               in
+              (* odoc names a page after its file: the preprocessed copies keep
+                 the names of the sources, in a directory of their own *)
               let odoc_of e =
-                Filename.concat odoc
+                Filename.concat (Filename.concat odoc pkg)
                   ("page-" ^ Filename.remove_extension e ^ ".odoc")
               in
               let odocl_of e = odoc_of e ^ "l" in
               List.iter
                 (fun e ->
-                   let pp = Filename.concat odoc ("pp-" ^ e) in
-                   (let oc = open_out_bin pp in
-                    output_string oc
-                      (Wodoc.Preprocess.string
-                         (read_file (Filename.concat dir e)));
-                    close_out oc);
+                   let src = Filename.concat pp e in
+                   write_file src
+                     (Wodoc.Preprocess.string
+                        (read_file (Filename.concat dir e)));
                    run e
-                     (Printf.sprintf "odoc compile %s%s -I %s -o %s"
-                        (Filename.quote pp) pkg_flag (Filename.quote odoc)
-                        (Filename.quote (odoc_of e))))
+                     (Printf.sprintf
+                        "odoc compile %s --output-dir %s --parent-id %s"
+                        (Filename.quote src) (Filename.quote odoc)
+                        (Filename.quote pkg)))
                 mlds;
+              (* The assets: every file under [<mld-dir>/files], with the
+                 directory as parent id. Compiling them is enough for the image
+                 references to resolve; the files themselves reach the site with
+                 the verbatim copy of [files] (see [Build.run]). The [=] form
+                 of the options keeps a name starting with a dash a value. *)
+              List.iter
+                (fun rel ->
+                   let rel = Filename.concat "files" rel in
+                   run rel
+                     (Printf.sprintf
+                        "odoc compile-asset --name=%s --output-dir=%s --parent-id=%s"
+                        (Filename.quote (Filename.basename rel))
+                        (Filename.quote odoc)
+                        (Filename.quote (pkg ^ "/" ^ Filename.dirname rel))))
+                (Wodoc.Util.files (Filename.concat dir "files"));
               List.iter
                 (fun e ->
                    run e
-                     (Printf.sprintf "odoc link %s -I %s -o %s"
+                     (Printf.sprintf
+                        "odoc link %s -o %s -P %s --current-package %s"
                         (Filename.quote (odoc_of e))
-                        (Filename.quote odoc)
-                        (Filename.quote (odocl_of e))))
+                        (Filename.quote (odocl_of e))
+                        (Filename.quote (pkg ^ ":" ^ Filename.concat odoc pkg))
+                        (Filename.quote pkg)))
                 mlds;
               List.iter
                 (fun e ->
@@ -450,12 +472,9 @@ let () =
                         (Filename.quote html) md_step))
                 mlds;
               let md_src = if c.markdown then Some md else None in
-              if c.mld_package = ""
-              then html, md_src, None
-              else
-                ( Filename.concat html c.mld_package
-                , Option.map (fun m -> Filename.concat m c.mld_package) md_src
-                , Some c.mld_package )
+              ( Filename.concat html pkg
+              , Option.map (fun m -> Filename.concat m pkg) md_src
+              , Some pkg )
           | None -> (
             match c.odoc_driver with
             | Some pkg ->

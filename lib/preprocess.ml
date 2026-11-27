@@ -152,32 +152,12 @@ let directives s =
 let string s = directives (mark_ref_kinds s)
 
 let tree root =
-  (* the directories already walked, by device and inode: a symbolic link back
-     up the tree is not followed twice *)
-  let seen = Hashtbl.create 16 in
-  let skip f e =
-    Printf.eprintf "wodoc: skipping %s: %s\n" f (Unix.error_message e)
-  in
-  let rec walk dir =
-    let entries = Sys.readdir dir in
-    Array.sort compare entries;
-    Array.iter
-      (fun e ->
-         let f = Filename.concat dir e in
-         match Unix.stat f with
-         | {Unix.st_kind = Unix.S_DIR; st_dev; st_ino; _} ->
-             if not (Hashtbl.mem seen (st_dev, st_ino))
-             then (
-               Hashtbl.add seen (st_dev, st_ino) ();
-               walk f)
-         | {Unix.st_kind = Unix.S_REG; _} when Filename.check_suffix e ".mld" ->
-             let s = Util.read_file f in
-             let out = string s in
-             if out <> s then Util.write_file f out
-         | _ -> ()
-         | exception Unix.Unix_error (e, _, _) -> skip f e)
-      entries
-  in
-  let {Unix.st_dev; st_ino; _} = Unix.stat root in
-  Hashtbl.add seen (st_dev, st_ino) ();
-  walk root
+  List.iter
+    (fun rel ->
+       if Filename.check_suffix rel ".mld"
+       then
+         let f = Filename.concat root rel in
+         let s = Util.read_file f in
+         let out = string s in
+         if out <> s then Util.write_file f out)
+    (Util.files root)
