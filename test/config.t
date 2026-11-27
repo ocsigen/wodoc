@@ -69,6 +69,17 @@ A variant is named by its key, and only variants are expected there:
   wodoc: doc/wodoc: (variants (variant ...)): expected a key first, e.g. (variant server (lib ...) ...)
   [1]
 
+The hint for a retired stanza is given at the top level only, where the stanza
+lived; inside a block, the same name is just unknown:
+
+  $ cat > doc/wodoc <<'CFG'
+  > (project demo)
+  > (variants (variant a (lib x) (pub /demo)))
+  > CFG
+  $ build
+  wodoc: doc/wodoc: unknown stanza (pub ...) in (variants (variant a ...)): expected one of: lib, indexdoc, heading, wrapper, skip, note
+  [1]
+
 The variants block is checked as a whole: it is declared once, lists at least
 one variant, and names each variant once; a variant needs a library, takes one
 atom per field, and has a lowercase key that does not clash with wodoc's own

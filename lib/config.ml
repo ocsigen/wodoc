@@ -157,15 +157,16 @@ type t =
    stanza left over from an older wodoc, would otherwise drop a setting with no
    warning (a (pub …) left in place of (url-prefix …), for one, kept building
    with the default prefix). The retired stanzas carry a hint. *)
-let retired =
+let retired_stanzas =
   [ "pub", "it is now (url-prefix ...)"
   ; "anchor-menu", "declare the left navigation with (nav ...)"
   ; "manual-menu", "declare the left navigation with (nav ...)"
   ; "client-server", "it is now (variants (variant <key> ...) ...)" ]
 
 (* [check_keys ~where known items] raises [Sexp.Error] on the first [(key …)] of
-   [items] whose key is not in [known]. Bare atoms are left alone. *)
-let check_keys ~where known items =
+   [items] whose key is not in [known], with the hint [retired] gives for it,
+   if any. Bare atoms are left alone. *)
+let check_keys ?(retired = []) ~where known items =
   List.iter
     (function
       | Sexp.List (Atom k :: _) when List.mem k known -> ()
@@ -426,7 +427,7 @@ let stanza_names =
 
 let of_string s =
   let stanzas = Sexp.parse s in
-  check_keys ~where:"the config" stanza_names stanzas;
+  check_keys ~retired:retired_stanzas ~where:"the config" stanza_names stanzas;
   let project =
     match Sexp.field_atom "project" stanzas with
     | Some p -> p
