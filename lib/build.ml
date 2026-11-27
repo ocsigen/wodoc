@@ -38,12 +38,6 @@ let read_menu m =
     let s = read_file tmp in
     Sys.remove tmp; s
 
-let rec mkdir_p dir =
-  if dir <> "" && dir <> "." && dir <> "/" && not (Sys.file_exists dir)
-  then (
-    mkdir_p (Filename.dirname dir);
-    try Sys.mkdir dir 0o755 with Sys_error _ -> ())
-
 (* relative .html files under [root]/[sub], as "sub/...": odoc's page tree *)
 let html_files root sub =
   let acc = ref [] in
