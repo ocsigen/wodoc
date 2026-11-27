@@ -86,6 +86,22 @@ wodoc blog-feed --config doc/wodoc --base-url https://example.org \
 A post's link is [base-url ^ blog-path ^ "/" ^ <post path>]; the feed advertises
 itself at [base-url ^ feed-path].
 
+{1 6. For AIs: Markdown twins and llms.txt}
+
+{{!page-"commands"}[wodoc blog-llms]} gives each post a Markdown twin and the
+blog an [llms.txt] index (llmstxt.org) and an [llms-full.txt] dump, the same
+entry points [wodoc build] gives a project's documentation. It starts from odoc's
+Markdown rendering of the posts:
+
+{@text[
+odoc markdown-generate page-<slug>.odocl -o _md    # once per post
+wodoc blog-llms --config doc/wodoc --md-dir _md --out _site/blog \
+                --title "My Blog" --summary "News about my project."
+]}
+
+Advertise each twin on its HTML page with [wodoc assemble --mdlink]. This step
+is for a flat site; [wodoc build] does not make the twins of the posts yet.
+
 {1 Turn-key build vs. a flat site}
 
 If your project is built with the turn-key {{!page-"commands"}[wodoc build]}, the
@@ -101,7 +117,9 @@ post page and:
   a page (e.g. the site home);
 - pass [--byline "<date>, <author>"] to show the post's date and author under its
   title;
-- run {{!page-"commands"}[wodoc blog-feed]} once for the feed.
+- run {{!page-"commands"}[wodoc blog-feed]} once for the feed;
+- run {{!page-"commands"}[wodoc blog-llms]} once for the Markdown twins and
+  [llms.txt].
 
 {1:styling Styling}
 
