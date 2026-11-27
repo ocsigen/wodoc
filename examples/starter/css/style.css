@@ -168,6 +168,18 @@ a:hover { text-decoration: underline; }
 }
 .wodoc-variant-switch .current { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+/* the notice above the title of an API variant page: which variant it is */
+.wodoc-variant-notice {
+  margin: 0 0 1.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent-weak);
+  font-size: 0.95rem;
+}
+.wodoc-variant-notice p { margin: 0.2rem 0; }
+
 /* --- blog ("latest posts" list + post meta) ------------------------------ */
 .wodoc-blog-list { list-style: none; margin: 1.5rem 0; padding: 0; display: grid; gap: 1rem; }
 .wodoc-blog-card {

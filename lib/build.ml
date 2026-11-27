@@ -145,7 +145,8 @@ let default_highlight =
 |hl}
 
 (* the per-page template (chrome around the odoc content); {{menu}}, {{leftnav}},
-   {{base}}, {{title}}, {{preamble}}, {{content}} are filled by Assemble. *)
+   {{base}}, {{mdlink}}, {{title}}, {{banner}}, {{preamble}}, {{content}} are
+   filled by Assemble. *)
 let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
   (* The highlight starter is always shipped per build (Build.run writes
      wodoc-highlight.js next to each version) and linked version-relatively, so a
@@ -182,7 +183,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
         {{leftnav}}
       </nav>
       <article class="rightcol">
-        {{preamble}}
+        {{banner}}{{preamble}}
         {{content}}
       </article>
     </div>
@@ -644,6 +645,69 @@ let drop_prefix p str =
   then String.sub str (String.length p) (String.length str - String.length p)
   else str
 
+(* where a page leads in variant [o] *)
+type variant_target =
+  | Same_page of string  (** the same page in that variant *)
+  | Variant_index of string  (** the page has no counterpart there: its index *)
+
+(* the index page of variant [o]: its wrapper module's page if that page was
+   built ([exists]), else its library's *)
+let variant_index ~exists (o : Config.variant) =
+  let wrapper_index = o.lib ^ "/" ^ o.wrapper ^ "/index.html" in
+  if o.wrapper <> "" && exists wrapper_index
+  then wrapper_index
+  else o.lib ^ "/index.html"
+
+(* the top dir and variant of an API page; None for a manual page *)
+let page_variant variants rel =
+  Option.bind (topdir rel) (fun td ->
+    Option.map (fun v -> td, v) (variant_for variants td))
+
+(* the page [rel] of variant [v], under top dir [td], in variant [o]: the same
+   path under [o]'s library (a sub-library [<v.lib>.x] maps to [<o.lib>.x]) if
+   that page was built ([exists]), else [o]'s index *)
+let variant_target ~exists ~td (v : Config.variant) rel (o : Config.variant) =
+  let twin = o.lib ^ drop_prefix v.lib td ^ "/" ^ drop_prefix (td ^ "/") rel in
+  if exists twin
+  then Same_page twin
+  else Variant_index (variant_index ~exists o)
+
+(* the notice above the title of an API page: the variant it documents, the
+   variant's note, and a link to each counterpart variant, those sharing its
+   wrapper module (to the same page when it exists there). "" for a manual
+   page. *)
+let variant_notice (variants : Config.variant list) ~exists ~base rel =
+  match page_variant variants rel with
+  | None -> ""
+  | Some (td, v) ->
+      let link (o : Config.variant) =
+        match variant_target ~exists ~td v rel o with
+        | Same_page p ->
+            Printf.sprintf "<a href=\"%s/%s\">See this page in the %s</a>." base
+              p (esc o.heading)
+        | Variant_index p ->
+            Printf.sprintf
+              "This page has no equivalent in the <a href=\"%s/%s\">%s</a>."
+              base p (esc o.heading)
+      in
+      (* a variant under another wrapper (a ppx, say) has no counterpart
+         modules *)
+      let others =
+        List.filter
+          (fun (o : Config.variant) -> o.key <> v.key && o.wrapper = v.wrapper)
+          variants
+      in
+      String.concat ""
+        ([ Printf.sprintf
+             "<div class=\"wodoc-variant-notice wodoc-variant-notice-%s\" role=\"note\">\n"
+             v.key
+         ; Printf.sprintf
+             "<p>You are reading the <strong>%s</strong> documentation.%s</p>\n"
+             (esc v.heading)
+             (if v.note = "" then "" else " " ^ esc v.note) ]
+        @ List.map (fun o -> "<p>" ^ link o ^ "</p>\n") others
+        @ ["</div>\n"])
+
 (* the nav id to highlight: an API page's module path (under <topdir>/<wrapper>/,
    dotted), or a root manual page's own name (matching the config nav / Nav.api). *)
 let variant_current variants rel =
@@ -979,6 +1043,13 @@ let run
         let default_variant =
           match variants with v :: _ -> v.key | [] -> ""
         in
+        (* the pages this build assembles: a page's counterpart in another
+           variant is linked only if it is one of them *)
+        let built =
+          let t = Hashtbl.create (List.length rels) in
+          List.iter (fun r -> Hashtbl.replace t r ()) rels;
+          Hashtbl.mem t
+        in
         let api_nav =
           List.map
             (fun (v : Config.variant) ->
@@ -1028,10 +1099,11 @@ let run
              nav *)
           let nav_variant = if variant = "" then default_variant else variant in
           let mdlink = md_alternate ~md_src ~base ~rel ~orel:rel in
+          let banner = variant_notice variants ~exists:built ~base rel in
           let page =
             Assemble.page ~base ~menu:menu_html ~subproject
               ~menu_current:c.menu_current ~leftnav:(leftnav_of nav_variant)
-              ~template:(tmpl_of variant) ~current:(current rel) ~mdlink
+              ~template:(tmpl_of variant) ~current:(current rel) ~mdlink ~banner
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in

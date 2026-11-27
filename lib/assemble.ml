@@ -240,6 +240,7 @@ let page
       ?(menu_current = "")
       ?(leftnav = "")
       ?(mdlink = "")
+      ?(banner = "")
       ~template
       ~current
       odoc_html
@@ -272,6 +273,8 @@ let page
       ; "base", base
       ; (* the per-page markdown-twin <link rel="alternate"> (or "" if none) *)
         "mdlink", mdlink
+      ; (* the notice above the page title (or "" if none) *)
+        "banner", banner
       ; "title", p.title
       ; ( "preamble"
         , if flat || not preamble

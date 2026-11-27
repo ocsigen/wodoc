@@ -64,18 +64,22 @@ type blog =
 type variant =
   { key : string
     (** e.g. "server": body class [wodoc-server], switch class
-          [wodoc-variant-server] *)
+          [wodoc-variant-server], notice class [wodoc-variant-notice-server] *)
   ; lib : string  (** odoc subtree dir / [Nav.api ~lib], e.g. "eliom.server" *)
   ; indexdoc : string  (** curated index path (relative to the build cwd) *)
   ; heading : string  (** API-nav heading + switch label, e.g. "Server API" *)
   ; wrapper : string
     (** [Nav.api ~wrapper] / page wrapper module, e.g. "Eliom" *)
-  ; skip : string list  (** section titles to omit (Nav.api ~skip) *) }
+  ; skip : string list  (** section titles to omit (Nav.api ~skip) *)
+  ; note : string
+    (** plain text added to the variant notice of its pages, e.g. "This code
+          runs in the browser."; "" for none *)
+  }
 (** one variant of the API of a package whose libraries share module names:
     the [eliom.server] and [eliom.client] libraries of Eliom, say, or
     [foo.unix] and [foo.js]. Its curated index becomes a section-grouped module
-    nav (via {!Nav.api}); it also drives a body class ([wodoc-<key>]) and a link
-    of the variant switch. *)
+    nav (via {!Nav.api}); it also drives a body class ([wodoc-<key>]), a link
+    of the variant switch and a notice at the top of each of its pages. *)
 
 type t =
   { project : string  (** package / project id, e.g. "ocsipersist" *)
@@ -264,7 +268,7 @@ let is_variant_key k =
        k
 
 (* (variants (variant server (lib ..) [(indexdoc ..)] [(heading ..)]
-                          [(wrapper ..)] [(skip ..)..])
+                          [(wrapper ..)] [(skip ..)..] [(note ..)])
              (variant client ..) ..) *)
 let parse_variants stanzas =
   let fail fmt = Printf.ksprintf (fun s -> raise (Sexp.Error s)) fmt in
@@ -289,7 +293,7 @@ let parse_variants stanzas =
         if List.mem key reserved_variant_keys
         then fail "%s: %s is reserved for wodoc's own classes" where key;
         check_keys ~where
-          ["lib"; "indexdoc"; "heading"; "wrapper"; "skip"]
+          ["lib"; "indexdoc"; "heading"; "wrapper"; "skip"; "note"]
           fields;
         no_atom ~where fields;
         let opt name default =
@@ -303,7 +307,8 @@ let parse_variants stanzas =
         ; indexdoc = opt "indexdoc" ""
         ; heading = opt "heading" key
         ; wrapper = opt "wrapper" ""
-        ; skip = Sexp.field_atoms "skip" fields }
+        ; skip = Sexp.field_atoms "skip" fields
+        ; note = opt "note" "" }
     | _ ->
         fail
           "(variants (variant ...)): expected a key first, e.g. (variant server (lib ...) ...)"

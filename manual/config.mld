@@ -255,7 +255,8 @@ library, named by a key:
  (variant server (lib eliom.server) (indexdoc doc/server.indexdoc)
           (heading "Server API") (wrapper Eliom) (skip "Index"))
  (variant client (lib eliom.client) (indexdoc doc/client.indexdoc)
-          (heading "Client API") (wrapper Eliom)))
+          (heading "Client API") (wrapper Eliom)
+          (note "This code runs in the browser.")))
 ]}
 
 A key is a lowercase identifier ([a-z], then [a-z], digits or [_]), used in
@@ -265,13 +266,18 @@ class names; the few that would clash with wodoc's own classes ([page], [doc],
 section-grouped odoc index ([{N title}] + [{!modules: …}]) turned into the
 variant's module nav via {!Wodoc.Nav.api}; without it, the variant has no API
 nav), a [(heading …)] (the API-nav title and switch label; the key by
-default), the [(wrapper <Module>)] its modules sit under, and any
-[(skip <title>)…] section titles to drop. wodoc then gives every page its
-variant's API nav, a body class ([wodoc-<key>], e.g. [wodoc-server], to colour
-each variant) and a variant switch ([.wodoc-variant-switch]). The
-{b manual nav is shared} across the variants and comes from this config's
-[(section …)] blocks, exactly like a normal project. List the sibling projects
-in [(hosted …)] so their cross-references resolve.
+default), the [(wrapper <Module>)] its modules sit under, any
+[(skip <title>)…] section titles to drop, and an optional [(note …)]. wodoc
+then gives every page its variant's API nav, a body class ([wodoc-<key>], e.g.
+[wodoc-server], to colour each variant) and a variant switch
+([.wodoc-variant-switch]). Each API page also starts with a notice
+([.wodoc-variant-notice]): "You are reading the Client API documentation",
+followed by the variant's note (plain text), and a link to the same page in
+each other variant with the same wrapper module, or to that variant's index
+when the page has no counterpart there (a variant with another wrapper, such as
+a ppx, gets no link). The {b manual nav is shared} across the variants and
+comes from this config's [(section …)] blocks, exactly like a normal project.
+List the sibling projects in [(hosted …)] so their cross-references resolve.
 
 {1 An ultra-simple blog: [(blog …)]}
 

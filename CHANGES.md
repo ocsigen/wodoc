@@ -111,6 +111,14 @@ Cross-project references:
   each module's synopsis, and odoc resolves the references in the module's own page,
   not in those copies.
 
+API variants:
+
+- Each API page starts with a notice naming its variant
+  (`.wodoc-variant-notice`), with a link to the same page in each other variant
+  that shares its wrapper module, or to that variant's index when the page has
+  no counterpart there. A variant's `(note …)` adds a sentence to it, such as
+  where its code runs.
+
 Version selector:
 
 - Choosing a version whose tree lacks the current page (a renamed module, a

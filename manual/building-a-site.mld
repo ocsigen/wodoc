@@ -246,7 +246,8 @@ An API published in {b variants}, libraries that share module names (a Unix and
 a browser implementation, or the server and client sides of an Eliom app), is
 built through [odoc_driver] instead of [dune build @doc]. Just declare a
 [(variants …)] block (it implies [(odoc-driver <project>)]); wodoc then gives
-every page its variant's API nav, a body class and a variant switch. See the
+every page its variant's API nav, a body class, a variant switch, and a notice
+above the title that names the variant and links to the others. See the
 [(variants …)] stanza in {{!page-"config"}Configuration}.
 
 {1:theming Theming: customising the look}
@@ -286,8 +287,9 @@ A custom stylesheet must style both the chrome and the content:
 
 - the chrome wodoc emits: [.wodoc-page], [.project-page]/[.twocols]/[.leftcol]/
   [.rightcol], the navigation ([.api-nav], [.api-section], [.ml2]/[.ml3]/…,
-  [li.current]), [.docversion]/[.wodoc-version], [.page-toc], [.wodoc-variant-switch] and
-  the blog [.wodoc-blog-*] classes;
+  [li.current]), [.docversion]/[.wodoc-version], [.page-toc],
+  [.wodoc-variant-switch], [.wodoc-variant-notice] (with
+  [.wodoc-variant-notice-<key>]) and the blog [.wodoc-blog-*] classes;
 - the odoc {b content}: [.odoc-preamble]/[.odoc-content], headings, code blocks
   (highlight.js [.hljs-*] tokens), tables and declaration specs.
 

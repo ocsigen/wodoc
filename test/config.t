@@ -49,7 +49,7 @@ The blocks with named fields are checked too:
   >   (variant server (lib demo.server) (indexdoc doc/server.indexdoc) (wraper Demo)))
   > CFG
   $ build
-  wodoc: doc/wodoc: unknown stanza (wraper ...) in (variants (variant server ...)): expected one of: lib, indexdoc, heading, wrapper, skip
+  wodoc: doc/wodoc: unknown stanza (wraper ...) in (variants (variant server ...)): expected one of: lib, indexdoc, heading, wrapper, skip, note
   [1]
 
 A variant is named by its key, and only variants are expected there:
