@@ -11,7 +11,7 @@ let menu = {menu|<header class="wodoc-header">{{subproject}}</header>
 (* The default stylesheet, shipped as [wodoc.css] and linked per-version when the
    config sets no [(css …)]. It themes both the chrome wodoc emits (top bar,
    two-column layout, left navigation, version selector, "on this page", the
-   client/server switch and the blog listing) and the odoc content (typography,
+   variant switch and the blog listing) and the odoc content (typography,
    code, tables, declaration specs). A neutral starting point; override with
    [(css …)]. *)
 let css =
@@ -128,9 +128,9 @@ a:hover { text-decoration: underline; }
 .ml4 { padding-left: 1.2rem; }
 .ml5 { padding-left: 2rem; }
 
-/* --- client/server switch ------------------------------------------------ */
-.cs-switch { display: flex; gap: 0.4rem; margin: 0 0 1.2rem; }
-.cs-switch button, .cs-switch a {
+/* --- variant switch ----------------------------------------------------- */
+.wodoc-variant-switch { display: flex; gap: 0.4rem; margin: 0 0 1.2rem; }
+.wodoc-variant-switch button, .wodoc-variant-switch a {
   flex: 1;
   padding: 0.3rem 0.5rem;
   border: 1px solid var(--border);
@@ -141,7 +141,7 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   text-align: center;
 }
-.cs-switch .current { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wodoc-variant-switch .current { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 /* --- blog ---------------------------------------------------------------- */
 .wodoc-blog-list { list-style: none; margin: 1.5rem 0; padding: 0; display: grid; gap: 1rem; }

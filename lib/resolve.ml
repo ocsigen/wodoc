@@ -237,7 +237,8 @@ let html ~siblings ~base s = outside_pre (process siblings base) s
    wrapping module (used to recognise a reference into the project).
 
    Three deployed layouts are supported (one per Ocsigen project family):
-   - [Multilib]: client/server libs in [<dir>.<side>/] (eliom, toolkit, start);
+   - [Multilib]: one library per variant in [<dir>.<key>/] (eliom, toolkit,
+     start);
    - [Root]: a single package whose modules sit directly at the version root
      (ocsigenserver, reactiveData);
    - [Subdir]: a multi-package project where each opam package keeps its own
@@ -274,11 +275,11 @@ let find_hosted hosted pkg =
            else None)
         hosted
 
-(* A [Multilib] project deploys one library per side ([eliom.server],
-   [eliom.client]) and no side-less tree, so the side is part of the target
-   page's real address. A page with no side of its own -- a manual page, or any
-   page of a project without [(client-server)] -- links to the server library:
-   that is the side manuals describe. *)
+(* A [Multilib] project deploys one library per variant ([eliom.server],
+   [eliom.client]) and no variant-less tree, so the variant is part of the
+   target page's real address. A page with no variant of its own -- a manual
+   page, or any page of a project without [(variants)] -- links to the server
+   library: that is the variant the Ocsigen manuals describe. *)
 let dep_base relroot version side dir layout pkg =
   let b = relroot ^ "/" ^ dir ^ "/" ^ version in
   let side = if side = "" then "server" else side in

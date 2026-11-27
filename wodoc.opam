@@ -39,7 +39,7 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/ocsigen/wodoc.git"
-# wodoc drives odoc's `odoc_driver` for client/server projects (eliom, …). It
+# wodoc drives odoc's `odoc_driver` for packages with API variants. It
 # needs a fix that makes the driver link each unit only against its actual
 # library dependencies (so sibling cross-references resolve). That fix is not yet
 # upstream, so we pin the odoc family to the fork. The fork is version-locked

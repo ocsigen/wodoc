@@ -39,7 +39,7 @@ val html :
 (** How a hosted project's libraries are laid out under [<dir>/latest/]. Below
     a library, the module path is odoc's in every layout. *)
 type layout =
-  | Multilib  (** client/server libs under [<dir>.<side>/] *)
+  | Multilib  (** one library per variant under [<dir>.<key>/] *)
   | Root  (** single package at the version root *)
   | Subdir
   (** multi-package project, each opam package under its own [<pkg>/] *)

@@ -26,8 +26,8 @@ Wodoc.Theme
   before odoc runs.
 - {!Wodoc.Render}: turn those sentinels in odoc's HTML into real nested HTML.
 - {!Wodoc.Assemble}: wrap the rendered HTML in a project's site template.
-- {!Wodoc.Nav}: render a client/server project's API module list from a curated
-  odoc index (the manual's own navigation is declared in the
+- {!Wodoc.Nav}: render the API module list of each variant ([(variants …)])
+  from a curated odoc index (the manual's own navigation is declared in the
   {{!page-"config"}[doc/wodoc] config}, not here).
 - {!Wodoc.Resolve}: link cross-package "sibling" references odoc left dead.
 - {!Wodoc.Convert}: the wikicréole → [.mld] migration aid.

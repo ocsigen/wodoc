@@ -100,9 +100,9 @@ ocsigenserver 7). Such a flat link misses on a current tree, which
   <a href="../../../eliom/latest/eliom.server/Eliom/Content/Html/index.html#val-a">wrapped srv mod</a>
   <a href="../../../tyxml/latest/tyxml/ppx.html">ppx page</a>
 
-A page with no side of its own (every page of a project without
-`(client-server)`: the tutorial, tyxml, and the manual pages of one with it)
-still links to a `multilib` target, whose modules only exist under a sided
+A page with no variant of its own (every page of a project without
+`(variants)`: the tutorial, tyxml, and the manual pages of one with it)
+still links to a `multilib` target, whose modules only exist under a variant
 library. Such a link goes to the server one:
 
   $ cat > sideless.html <<'HTML'
