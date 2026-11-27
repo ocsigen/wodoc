@@ -12,7 +12,6 @@
 - [Commands](wodoc/commands.md)
 - [Adding a blog](wodoc/blog.md)
 - [API reference](wodoc/api.md)
-- [OCaml Package Documentation](index.md)
 
 ## API
 - [Module `Assemble.Parts`](wodoc/Wodoc-Assemble-Parts.md)

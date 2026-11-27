@@ -33,6 +33,12 @@ type 'tree section = {
 }
 ```
 ```ocaml
+type llms = {
+  llms_title : string option; (* the index's # title; default: the (title …) label, which is short because the site shows it by its logo *)
+  llms_summary : string option; (* the index's > summary; default: the first paragraph of the landing page *)
+}
+```
+```ocaml
 type blog = {
   dir : string; (* directory of post sources, named YYYY-MM-DD-slug.mld (the date is the publication date; posts sort newest-first on it). Relative to the config file's directory. The posts are plain .mld (author from @author). *)
   out : string; (* output subdirectory under the version root, e.g. "blog": posts deploy as <out>/blog/<slug>.html *)
@@ -80,6 +86,7 @@ type t = {
   blog : blog option; (* an optional (blog …) section (see blog) *)
   markdown : bool; (* emit the Markdown twin of every page + the llms.txt/llms-full.txt index (for AI/LLM consumption). On by default; (markdown false) turns it off. *)
   css : string list; (* stylesheet hrefs for the page <head>. Each is emitted verbatim when absolute (/…) or a URL, else made per-page relative ({{base}}/…) and, when it names a file next to the config, copied into the output, so a project can ship a self-contained theme that works at any deploy path. [] (the default) ships wodoc's built-in default theme as wodoc.css. *)
+  llms : llms; (* the (llms …) stanza (see llms) *)
 }
 ```
 ```ocaml
@@ -127,6 +134,9 @@ val parse_variants : Sexp.t list -> variant list
 val parse_hosted : 
   Sexp.t list ->
   (string * (string * Resolve.layout * string)) list
+```
+```ocaml
+val parse_llms : Sexp.t list -> llms
 ```
 ```ocaml
 val parse_blog : Sexp.t list -> blog option

@@ -24,7 +24,7 @@ Build it with:
 wodoc build --config doc/wodoc --out <site>/<label> \
             --menu https://ocsigen.org/doc/menu.html --label <label> [--latest] [--local]
 ```
-Every stanza below is checked: a stanza wodoc does not read, at the top level, inside `(variants …)` or `(blog …)`, or among the sections and entries of a `(nav …)` (in the config or in a `--nav` file), fails the build with the file name and the stanzas expected there. A typo, or a stanza left over from an older wodoc, would otherwise drop a setting silently. A retired stanza names its replacement: `(pub …)` is now `(url-prefix …)`, and `(anchor-menu …)` and `(manual-menu …)` give way to `(nav …)`.
+Every stanza below is checked: a stanza wodoc does not read, at the top level, inside `(variants …)`, `(blog …)` or `(llms …)`, or among the sections and entries of a `(nav …)` (in the config or in a `--nav` file), fails the build with the file name and the stanzas expected there. A typo, or a stanza left over from an older wodoc, would otherwise drop a setting silently. A retired stanza names its replacement: `(pub …)` is now `(url-prefix …)`, and `(anchor-menu …)` and `(manual-menu …)` give way to `(nav …)`.
 
 ## Core stanzas
 
@@ -123,6 +123,7 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see [`
 | `(manual-files <pkg>)` | package dir that receives `manual/files` (examples, images) |
 | `(highlight <file>)` | a project-specific syntax-highlight starter to ship as `wodoc-highlight.js`; without it, wodoc ships a built-in default covering eliom / lwt / js\_of\_ocaml syntax |
 | `(markdown false)` | turn off the Markdown twins and `llms.txt` index (on by default; see [Commands](./commands.md)) |
+| `(llms (title <t>) (summary <s>))` | how the `llms.txt` index presents the project to AIs, both optional: its `# title` (default: the `(title …)` label, short because it sits by the logo) and its summary (default: the first paragraph of the landing page). Each value is a quoted string, on one line in the index. `wodoc blog-llms` takes its own `--title` and `--summary` |
 | `(css <href> …)` | the page stylesheets. A relative href is copied into the build and linked per-version (self-contained, works at any path); an absolute (`/…`) or URL href is emitted verbatim. Omitted → wodoc ships its built-in default theme as `wodoc.css` |
 
 ## Other layouts
