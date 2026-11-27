@@ -7,7 +7,7 @@ wodoc stays generic: the project owns all of its chrome (header, menus, drawer, 
 - extracts the meaningful parts from odoc's HTML output ([`Parts.of_odoc_html`](./Wodoc-Assemble-Parts.md#val-of_odoc_html));
 - fills the holes of the template ([`fill`](./#val-fill));
 - marks the current navigation entry ([`mark_current`](./#val-mark_current)).
-A template is HTML containing holes written `{{name}}`. The standard holes filled by [`page`](./#val-page) are `{{base}}`, `{{title}}`, `{{preamble}}`, `{{toc}}` and `{{content}}`. Menu links carry a `data-wodoc-page` attribute; the entry whose value equals the current page id receives the `current` class.
+A template is HTML containing holes written `{{name}}`. The standard holes filled by [`page`](./#val-page) are `{{base}}`, `{{title}}`, `{{banner}}`, `{{preamble}}`, `{{toc}}` and `{{content}}`. Menu links carry a `data-wodoc-page` attribute; the entry whose value equals the current page id receives the `current` class.
 
 ```ocaml
 module Parts : sig ... end
@@ -38,6 +38,7 @@ val page :
   ?menu_current:string ->
   ?leftnav:string ->
   ?mdlink:string ->
+  ?banner:string ->
   template:string ->
   current:string ->
   string ->
@@ -54,3 +55,4 @@ val page :
 - `menu_current` (default `""`): like `current` but for the menu's current *project* entry (`data-wodoc-page=<project>`), kept separate from `current` so a project page can highlight both its menu entry and its in-page nav.
 - `leftnav` (default `""`): fills every `{{leftnav}}` hole (the drawer's mobile menu and the left column share one source), so the navigation is defined once instead of being `sed`\-expanded into both slots.
 - `mdlink` (default `""`): fills `{{mdlink}}` with the page's `<link rel="alternate" type="text/markdown">` element pointing at its Markdown twin (or `""` when there is no twin), so AIs/LLMs can discover the `.md` version of any page.
+- `banner` (default `""`): fills `{{banner}}`, a notice shown above the page title, e.g. the variant an API page documents.

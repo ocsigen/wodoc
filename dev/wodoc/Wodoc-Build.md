@@ -28,7 +28,7 @@ val esc : string -> string
 val default_highlight : string
 ```
 ```ocaml
-val template : ?body_extra:string -> ?extra_script:string -> Config.t -> string
+val template : ?body_extra:string -> Config.t -> string
 ```
 ```ocaml
 val docversion : latest:string option -> string list -> string
@@ -90,21 +90,6 @@ val asset_re : Str.regexp
 val local_assets : menu:string -> out:string -> unit
 ```
 ```ocaml
-val variant_switch : Config.variant list -> string
-```
-```ocaml
-val variant_switch_script : Config.t -> Config.variant list -> string
-```
-```ocaml
-val variant_leftnav : 
-  latest:string option ->
-  versions:string list ->
-  switch:string ->
-  manual_nav:string ->
-  api_nav:string ->
-  string
-```
-```ocaml
 val topdir : string -> string option
 ```
 ```ocaml
@@ -115,6 +100,56 @@ val variant_of : Config.variant list -> string -> string
 ```
 ```ocaml
 val drop_prefix : string -> string -> string
+```
+```ocaml
+type variant_target = 
+  | Same_page of string (* the same page in that variant *)
+  | Variant_index of string (* the page has no counterpart there: its index *)
+```
+```ocaml
+val variant_index : exists:(string -> bool) -> Config.variant -> string
+```
+```ocaml
+val page_variant : 
+  Config.variant list ->
+  string ->
+  (string * Config.variant) option
+```
+```ocaml
+val variant_target : 
+  exists:(string -> bool) ->
+  td:string ->
+  Config.variant ->
+  string ->
+  Config.variant ->
+  variant_target
+```
+```ocaml
+val counterpart : Config.variant -> Config.variant -> bool
+```
+```ocaml
+val variant_notice : 
+  Config.variant list ->
+  exists:(string -> bool) ->
+  base:string ->
+  string ->
+  string
+```
+```ocaml
+val variant_switch : 
+  Config.variant list ->
+  exists:(string -> bool) ->
+  base:string ->
+  string ->
+  string
+```
+```ocaml
+val variant_leftnav : 
+  version_sel:string ->
+  switch:string ->
+  manual_nav:string ->
+  api_nav:string ->
+  string
 ```
 ```ocaml
 val variant_current : Config.variant list -> string -> string

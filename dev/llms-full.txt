@@ -273,7 +273,7 @@ For a single library, `(packages myproj)` assembles its `dune build @doc` output
 ```text
 (packages myproj myproj-lwt myproj-unix)
 ```
-An API published in **variants**, libraries that share module names (a Unix and a browser implementation, or the server and client sides of an Eliom app), is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(variants …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its variant's API nav, a body class and a variant switch. See the `(variants …)` stanza in [Configuration](./config.md).
+An API published in **variants**, libraries that share module names (a Unix and a browser implementation, or the server and client sides of an Eliom app), is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(variants …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its variant's API nav, a body class, a variant switch, and a notice above the title that names the variant and links to the others. See the `(variants …)` stanza in [Configuration](./config.md).
 
 ## Theming: customising the look
 
@@ -299,7 +299,7 @@ By default wodoc links its built-in theme (`wodoc.css`, shipped per-version). Th
 - `(css /css/style.css …)` or a full URL: **absolute** hrefs, emitted verbatim, which you serve yourself (e.g. a shared site-wide stylesheet at the domain root).
 A custom stylesheet must style both the chrome and the content:
 
-- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.wodoc-variant-switch` and the blog `.wodoc-blog-*` classes;
+- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.wodoc-variant-switch`, `.wodoc-variant-notice` (with `.wodoc-variant-notice-<key>`) and the blog `.wodoc-blog-*` classes;
 - the odoc **content**: `.odoc-preamble`/`.odoc-content`, headings, code blocks (highlight.js `.hljs-*` tokens), tables and declaration specs.
 The [starter stylesheet](https://github.com/ocsigen/wodoc/tree/master/examples/starter/css) covers all of these; copy it and recolour. (If you would rather reuse odoc's stock theme for the content, note that `odoc.css` *is* shipped next to each version, so you can link or `@import` it from your `/css/ocsigen-odoc.css`.)
 
@@ -581,9 +581,10 @@ Some packages publish their API as several libraries that share module names: on
  (variant server (lib eliom.server) (indexdoc doc/server.indexdoc)
           (heading "Server API") (wrapper Eliom) (skip "Index"))
  (variant client (lib eliom.client) (indexdoc doc/client.indexdoc)
-          (heading "Client API") (wrapper Eliom)))
+          (heading "Client API") (wrapper Eliom)
+          (note "This code runs in the browser.")))
 ```
-A key is a lowercase identifier (`a-z`, then `a-z`, digits or `_`), used in class names; the few that would clash with wodoc's own classes (`page`, `doc`, `menu`, `switch`, `notice`…) are refused. Each variant gives its `(lib <pkg>.<key>)` (required), a curated `(indexdoc <file>)` (a section-grouped odoc index (`{N title}` \+ `{!modules: …}`) turned into the variant's module nav via [`Wodoc.Nav.api`](./Wodoc-Nav.md#val-api); without it, the variant has no API nav), a `(heading …)` (the API-nav title and switch label; the key by default), the `(wrapper <Module>)` its modules sit under, and any `(skip <title>)…` section titles to drop. wodoc then gives every page its variant's API nav, a body class (`wodoc-<key>`, e.g. `wodoc-server`, to colour each variant) and a variant switch (`.wodoc-variant-switch`). The **manual nav is shared** across the variants and comes from this config's `(section …)` blocks, exactly like a normal project. List the sibling projects in `(hosted …)` so their cross-references resolve.
+A key is a lowercase identifier (`a-z`, then `a-z`, digits or `_`), used in class names; the few that would clash with wodoc's own classes (`page`, `doc`, `menu`, `switch`, `notice`…) are refused. Each variant gives its `(lib <library>)` (required, any library name), a curated `(indexdoc <file>)` (a section-grouped odoc index (`{N title}` \+ `{!modules: …}`) turned into the variant's module nav via [`Wodoc.Nav.api`](./Wodoc-Nav.md#val-api); without it, the variant has no API nav), a `(heading …)` (the API-nav title and switch label; the key by default), the `(wrapper <Module>)` its modules sit under, any `(skip <title>)…` section titles to drop, and an optional `(note …)`. wodoc then gives every page its variant's API nav, a body class (`wodoc-<key>`, e.g. `wodoc-server`, to colour each variant) and a variant switch: one link per variant (`.wodoc-variant-switch a.wodoc-variant-<key>`, the page's own variant marked `current`), to the same page in that variant or to its index. Each API page also starts with a notice (`.wodoc-variant-notice`): "You are reading the Client API documentation", followed by the variant's note (plain text), and a link to the same page in each other variant with the same wrapper module, or to that variant's index when the page has no counterpart there (a variant with another wrapper, such as a ppx, gets no link). The **manual nav is shared** across the variants and comes from this config's `(section …)` blocks, exactly like a normal project. List the sibling projects in `(hosted …)` so their cross-references resolve.
 
 ## An ultra-simple blog: `(blog …)`
 
@@ -664,7 +665,7 @@ wodoc assemble --template <tmpl.html> [--current <id>] [--no-preamble] [--flat]
                [--blog-config <c>] [--blog-base <b>] [--byline <t>]
                [--mdlink <href>] <odoc.html>
 ```
-Wrap rendered odoc HTML in a site template, filling the `{{title}}`, `{{preamble}}`, `{{toc}}` and `{{content}}` holes and marking the current navigation entry. `assemble` runs `render` internally, so a typical per-page build is just `preprocess` → odoc → `assemble`.
+Wrap rendered odoc HTML in a site template, filling the `{{title}}`, `{{preamble}}`, `{{toc}}` and `{{content}}` holes (and `{{banner}}`, left empty) and marking the current navigation entry. `assemble` runs `render` internally, so a typical per-page build is just `preprocess` → odoc → `assemble`.
 
 A site usually shares one menu across every page and project: `--menu <f>` fills a `{{menu}}` hole with that fragment, `--subproject <s>` its `{{subproject}}` label, `--menu-current <id>` highlights the current project in it (scoped to the menu), and `--leftnav <f>` fills every `{{leftnav}}` hole (left column and mobile drawer) from one source. `--base <b>` fills `{{base}}` (the relative path to the doc root). `--byline <t>` inserts a `<p class="wodoc-blog-meta">` just after the page title (e.g. a blog post's "date, author"). `--mdlink <href>` adds a `<link rel="alternate" type="text/markdown">` advertising the page's Markdown twin. `--blog-config <c>` expands a `{%wodoc:blog-latest%}` marker on the page with the latest-posts fragment of the blog declared in config `<c>` (so a page built through this low-level path (e.g. a site home) can carry the blog listing, like `wodoc build` does for the turn-key path), `--blog-base <b>` giving the relative path from the page to the blog root. See [`Wodoc.Assemble`](./Wodoc-Assemble.md) and [the `(blog …)` stanza](./config.md).
 
@@ -780,7 +781,7 @@ The two mechanisms are independent. Without the `404.html`, the selector of the 
 
 ### API variants
 
-A package whose API comes in variants (libraries sharing module names, such as the server and client sides of Eliom, Ocsigen Toolkit and Ocsigen Start) adds a `(variants …)` block: one `(variant <key> …)` per library, each with its `(lib <pkg>.<key>)`, a curated `(indexdoc <file>)` (turned into a section-grouped module nav), a `(heading …)` and the `(wrapper <Module>)` the modules sit under. wodoc then gives every page its variant's API nav, a body class (`wodoc-<key>`) and a variant switch, and shares one manual nav across the variants (from the config's `(section …)` blocks, like any project). The `(hosted …)` block lists the sibling projects whose cross-references odoc points at `ocaml.org`: wodoc rewrites those to relative links into their wodoc docs (other dependencies stay on `ocaml.org`). The whole build is still ONE declarative `doc/wodoc` and a single `wodoc build`, no `build.sh`.
+A package whose API comes in variants (libraries sharing module names, such as the server and client sides of Eliom, Ocsigen Toolkit and Ocsigen Start) adds a `(variants …)` block: one `(variant <key> …)` per library, each with its `(lib <library>)`, a curated `(indexdoc <file>)` (turned into a section-grouped module nav), a `(heading …)`, the `(wrapper <Module>)` the modules sit under and an optional `(note …)`. wodoc then gives every page its variant's API nav, a body class (`wodoc-<key>`), a variant switch and a notice above the title naming the variant, and shares one manual nav across the variants (from the config's `(section …)` blocks, like any project). The `(hosted …)` block lists the sibling projects whose cross-references odoc points at `ocaml.org`: wodoc rewrites those to relative links into their wodoc docs (other dependencies stay on `ocaml.org`). The whole build is still ONE declarative `doc/wodoc` and a single `wodoc build`, no `build.sh`.
 
 ### Manual at the version root
 
@@ -962,7 +963,7 @@ wodoc stays generic: the project owns all of its chrome (header, menus, drawer, 
 - extracts the meaningful parts from odoc's HTML output ([`Parts.of_odoc_html`](./Wodoc-Assemble-Parts.md#val-of_odoc_html));
 - fills the holes of the template ([`fill`](./#val-fill));
 - marks the current navigation entry ([`mark_current`](./#val-mark_current)).
-A template is HTML containing holes written `{{name}}`. The standard holes filled by [`page`](./#val-page) are `{{base}}`, `{{title}}`, `{{preamble}}`, `{{toc}}` and `{{content}}`. Menu links carry a `data-wodoc-page` attribute; the entry whose value equals the current page id receives the `current` class.
+A template is HTML containing holes written `{{name}}`. The standard holes filled by [`page`](./#val-page) are `{{base}}`, `{{title}}`, `{{banner}}`, `{{preamble}}`, `{{toc}}` and `{{content}}`. Menu links carry a `data-wodoc-page` attribute; the entry whose value equals the current page id receives the `current` class.
 
 ```ocaml
 module Parts : sig ... end
@@ -993,6 +994,7 @@ val page :
   ?menu_current:string ->
   ?leftnav:string ->
   ?mdlink:string ->
+  ?banner:string ->
   template:string ->
   current:string ->
   string ->
@@ -1009,6 +1011,7 @@ val page :
 - `menu_current` (default `""`): like `current` but for the menu's current *project* entry (`data-wodoc-page=<project>`), kept separate from `current` so a project page can highlight both its menu entry and its in-page nav.
 - `leftnav` (default `""`): fills every `{{leftnav}}` hole (the drawer's mobile menu and the left column share one source), so the navigation is defined once instead of being `sed`\-expanded into both slots.
 - `mdlink` (default `""`): fills `{{mdlink}}` with the page's `<link rel="alternate" type="text/markdown">` element pointing at its Markdown twin (or `""` when there is no twin), so AIs/LLMs can discover the `.md` version of any page.
+- `banner` (default `""`): fills `{{banner}}`, a notice shown above the page title, e.g. the variant an API page documents.
 
 
 ---
@@ -1101,7 +1104,7 @@ val esc : string -> string
 val default_highlight : string
 ```
 ```ocaml
-val template : ?body_extra:string -> ?extra_script:string -> Config.t -> string
+val template : ?body_extra:string -> Config.t -> string
 ```
 ```ocaml
 val docversion : latest:string option -> string list -> string
@@ -1163,21 +1166,6 @@ val asset_re : Str.regexp
 val local_assets : menu:string -> out:string -> unit
 ```
 ```ocaml
-val variant_switch : Config.variant list -> string
-```
-```ocaml
-val variant_switch_script : Config.t -> Config.variant list -> string
-```
-```ocaml
-val variant_leftnav : 
-  latest:string option ->
-  versions:string list ->
-  switch:string ->
-  manual_nav:string ->
-  api_nav:string ->
-  string
-```
-```ocaml
 val topdir : string -> string option
 ```
 ```ocaml
@@ -1188,6 +1176,56 @@ val variant_of : Config.variant list -> string -> string
 ```
 ```ocaml
 val drop_prefix : string -> string -> string
+```
+```ocaml
+type variant_target = 
+  | Same_page of string (* the same page in that variant *)
+  | Variant_index of string (* the page has no counterpart there: its index *)
+```
+```ocaml
+val variant_index : exists:(string -> bool) -> Config.variant -> string
+```
+```ocaml
+val page_variant : 
+  Config.variant list ->
+  string ->
+  (string * Config.variant) option
+```
+```ocaml
+val variant_target : 
+  exists:(string -> bool) ->
+  td:string ->
+  Config.variant ->
+  string ->
+  Config.variant ->
+  variant_target
+```
+```ocaml
+val counterpart : Config.variant -> Config.variant -> bool
+```
+```ocaml
+val variant_notice : 
+  Config.variant list ->
+  exists:(string -> bool) ->
+  base:string ->
+  string ->
+  string
+```
+```ocaml
+val variant_switch : 
+  Config.variant list ->
+  exists:(string -> bool) ->
+  base:string ->
+  string ->
+  string
+```
+```ocaml
+val variant_leftnav : 
+  version_sel:string ->
+  switch:string ->
+  manual_nav:string ->
+  api_nav:string ->
+  string
 ```
 ```ocaml
 val variant_current : Config.variant list -> string -> string
@@ -1291,15 +1329,16 @@ an ultra-simple blog: a directory of dated `.mld` posts that wodoc builds like a
 
 ```ocaml
 type variant = {
-  key : string; (* e.g. "server": body class wodoc-server, switch class wodoc-variant-server *)
+  key : string; (* e.g. "server": body class wodoc-server, switch class wodoc-variant-server, notice class wodoc-variant-notice-server *)
   lib : string; (* odoc subtree dir / Nav.api ~lib, e.g. "eliom.server" *)
   indexdoc : string; (* curated index path (relative to the build cwd) *)
   heading : string; (* API-nav heading + switch label, e.g. "Server API" *)
   wrapper : string; (* Nav.api ~wrapper / page wrapper module, e.g. "Eliom" *)
   skip : string list; (* section titles to omit (Nav.api ~skip) *)
+  note : string; (* plain text added to the variant notice of its pages, e.g. "This code runs in the browser."; "" for none *)
 }
 ```
-one variant of the API of a package whose libraries share module names: the `eliom.server` and `eliom.client` libraries of Eliom, say, or `foo.unix` and `foo.js`. Its curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)); it also drives a body class (`wodoc-<key>`) and a link of the variant switch.
+one variant of the API of a package whose libraries share module names: the `eliom.server` and `eliom.client` libraries of Eliom, say, or `foo.unix` and `foo.js`. Its curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)); it also drives a body class (`wodoc-<key>`), a link of the variant switch and a notice at the top of each of its pages.
 
 ```ocaml
 type t = {
@@ -1329,10 +1368,15 @@ type t = {
 }
 ```
 ```ocaml
-val retired : (string * string) list
+val retired_stanzas : (string * string) list
 ```
 ```ocaml
-val check_keys : where:string -> string list -> Sexp.t list -> unit
+val check_keys : 
+  ?retired:(string * string) list ->
+  where:string ->
+  string list ->
+  Sexp.t list ->
+  unit
 ```
 ```ocaml
 val parse_entry : Sexp.t -> entry

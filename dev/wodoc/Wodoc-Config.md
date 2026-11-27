@@ -44,15 +44,16 @@ an ultra-simple blog: a directory of dated `.mld` posts that wodoc builds like a
 
 ```ocaml
 type variant = {
-  key : string; (* e.g. "server": body class wodoc-server, switch class wodoc-variant-server *)
+  key : string; (* e.g. "server": body class wodoc-server, switch class wodoc-variant-server, notice class wodoc-variant-notice-server *)
   lib : string; (* odoc subtree dir / Nav.api ~lib, e.g. "eliom.server" *)
   indexdoc : string; (* curated index path (relative to the build cwd) *)
   heading : string; (* API-nav heading + switch label, e.g. "Server API" *)
   wrapper : string; (* Nav.api ~wrapper / page wrapper module, e.g. "Eliom" *)
   skip : string list; (* section titles to omit (Nav.api ~skip) *)
+  note : string; (* plain text added to the variant notice of its pages, e.g. "This code runs in the browser."; "" for none *)
 }
 ```
-one variant of the API of a package whose libraries share module names: the `eliom.server` and `eliom.client` libraries of Eliom, say, or `foo.unix` and `foo.js`. Its curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)); it also drives a body class (`wodoc-<key>`) and a link of the variant switch.
+one variant of the API of a package whose libraries share module names: the `eliom.server` and `eliom.client` libraries of Eliom, say, or `foo.unix` and `foo.js`. Its curated index becomes a section-grouped module nav (via [`Nav.api`](./Wodoc-Nav.md#val-api)); it also drives a body class (`wodoc-<key>`), a link of the variant switch and a notice at the top of each of its pages.
 
 ```ocaml
 type t = {
@@ -82,10 +83,15 @@ type t = {
 }
 ```
 ```ocaml
-val retired : (string * string) list
+val retired_stanzas : (string * string) list
 ```
 ```ocaml
-val check_keys : where:string -> string list -> Sexp.t list -> unit
+val check_keys : 
+  ?retired:(string * string) list ->
+  where:string ->
+  string list ->
+  Sexp.t list ->
+  unit
 ```
 ```ocaml
 val parse_entry : Sexp.t -> entry

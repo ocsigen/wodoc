@@ -178,7 +178,7 @@ For a single library, `(packages myproj)` assembles its `dune build @doc` output
 ```text
 (packages myproj myproj-lwt myproj-unix)
 ```
-An API published in **variants**, libraries that share module names (a Unix and a browser implementation, or the server and client sides of an Eliom app), is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(variants …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its variant's API nav, a body class and a variant switch. See the `(variants …)` stanza in [Configuration](./config.md).
+An API published in **variants**, libraries that share module names (a Unix and a browser implementation, or the server and client sides of an Eliom app), is built through `odoc_driver` instead of `dune build @doc`. Just declare a `(variants …)` block (it implies `(odoc-driver <project>)`); wodoc then gives every page its variant's API nav, a body class, a variant switch, and a notice above the title that names the variant and links to the others. See the `(variants …)` stanza in [Configuration](./config.md).
 
 ## Theming: customising the look
 
@@ -204,7 +204,7 @@ By default wodoc links its built-in theme (`wodoc.css`, shipped per-version). Th
 - `(css /css/style.css …)` or a full URL: **absolute** hrefs, emitted verbatim, which you serve yourself (e.g. a shared site-wide stylesheet at the domain root).
 A custom stylesheet must style both the chrome and the content:
 
-- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.wodoc-variant-switch` and the blog `.wodoc-blog-*` classes;
+- the chrome wodoc emits: `.wodoc-page`, `.project-page`/`.twocols`/`.leftcol`/ `.rightcol`, the navigation (`.api-nav`, `.api-section`, `.ml2`/`.ml3`/…, `li.current`), `.docversion`/`.wodoc-version`, `.page-toc`, `.wodoc-variant-switch`, `.wodoc-variant-notice` (with `.wodoc-variant-notice-<key>`) and the blog `.wodoc-blog-*` classes;
 - the odoc **content**: `.odoc-preamble`/`.odoc-content`, headings, code blocks (highlight.js `.hljs-*` tokens), tables and declaration specs.
 The [starter stylesheet](https://github.com/ocsigen/wodoc/tree/master/examples/starter/css) covers all of these; copy it and recolour. (If you would rather reuse odoc's stock theme for the content, note that `odoc.css` *is* shipped next to each version, so you can link or `@import` it from your `/css/ocsigen-odoc.css`.)
 
