@@ -145,7 +145,9 @@ type t =
           -> compile -> link -> html-generate). The pages are the manual; the
           landing [index.html] is a real page (no redirect). *)
   ; mld_package : string
-    (** odoc [--package] for the direct-mld compile (the src subtree) *)
+    (** odoc parent id of the pages in the direct-mld build, and the root of
+          the ids of the assets under [<mld-dir>/files] (the src subtree). The
+          project when empty. *)
   ; flat : bool
     (** assemble [--flat] (content straddling odoc's preamble boundary) *)
   ; static_copy : (string * string) list
@@ -491,9 +493,9 @@ let of_string s =
     | None -> if variants = [] then None else Some project
   in
   (* (mld-dir <dir> [<package>]): direct-mld build of a directory of [.mld] pages;
-     the optional second atom is the odoc [--package]. When the dir is supplied on
-     the CLI ([--mld-dir], for a per-version manual) the package is still taken
-     from a standalone [(mld-package <pkg>)]. *)
+     the optional second atom is the parent id of the pages in odoc's tree. When
+     the dir is supplied on the CLI ([--mld-dir], for a per-version manual) the
+     package is still taken from a standalone [(mld-package <pkg>)]. *)
   let mld_dir, mld_package =
     match Sexp.fields "mld-dir" stanzas with
     | (Sexp.Atom dir :: Sexp.Atom pkg :: _) :: _ -> Some dir, pkg

@@ -40,6 +40,12 @@ Config simplifications (breaking):
 - Direct-mld builds link every page against all the others, so references between
   the pages of a manual resolve. They used to be compiled and linked one page at
   a time, which left every reference to a not-yet-compiled page dead.
+- Direct-mld builds compile the files under `<mld-dir>/files` as odoc assets of
+  the pages, so `{image!files/x.png}` resolves, as it does for the pages of a
+  package on ocaml.org. The pages are compiled the way odoc_driver does it, with
+  the package (or else the project) as parent id. For a project with no
+  package, this also fixes the links of the Markdown twins to its own pages,
+  which pointed to ocaml.org.
 - The Markdown twins no longer carry the wodoc markers. odoc's Markdown backend
   passes raw markup through verbatim, so every directive reached the twin as an
   HTML comment: the site's own `index.md` held 100 of them and the tutorial's

@@ -360,7 +360,9 @@ A project with no buildable library API (an archived project such as ocsimore, o
 tool whose libraries are internal such as html_of_wiki) has nothing for [dune build
 @doc] to render. Point [(mld-dir <dir> [<package>])] at a directory of [.mld]
 pages and wodoc builds them straight with odoc (preprocess → compile → link →
-html-generate, no dune); the optional second atom is the odoc package. The pages {e are} the
+html-generate, no dune); the optional second atom is the parent id of the pages
+(the project by default), and the files under [<dir>/files] are assets of the
+pages ([{image!files/x.png}]). The pages {e are} the
 manual: the landing [index.html] is a real page (no redirect). The left nav is
 the config's [(nav …)] sections like any project (in-page anchors are just links
 with a [#fragment]); a project that builds {e several} version directories with
