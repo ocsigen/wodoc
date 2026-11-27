@@ -19,6 +19,12 @@ val link_for : (string * string list) list -> string -> string -> string option
     ["Ppx_lwt"] -> [["lwt_ppx"; "Lwt_ppx"; "Ppx_lwt"]]); [base] is the relative
     path from the page to that root. *)
 
+val strip_kind_marks : string -> string
+(** [strip_kind_marks page] removes the [<!--wodoc-ref:KIND-->] sentinels
+    that {!Render} leaves before references (see {!Preprocess}). {!html} and
+    {!deps} consume the sentinel of a reference they link, and keep the others
+    for the next pass: strip what is left once both are done. *)
+
 val html :
    siblings:(string * string list) list
   -> base:string
@@ -26,7 +32,9 @@ val html :
   -> string
 (** [html ~siblings ~base page] rewrites every sibling reference in [page]
     (both [xref-unresolved] spans and bare [<code>] qualified names), outside
-    [<pre>] blocks, and returns the new HTML. *)
+    [<pre>] blocks, and returns the new HTML. A [<!--wodoc-ref:KIND-->]
+    sentinel right before a reference gives its kind, which odoc does not
+    render for an unresolved one. *)
 
 (** How a hosted project's libraries are laid out under [<dir>/latest/]. Below
     a library, the module path is odoc's in every layout. *)
@@ -83,7 +91,9 @@ val deps :
     development manual documents against development APIs); [side] is
     ["server"]/["client"]/[""] (a sided target with no side falls back to its
     server library); [self] is the package being documented (its own leftover
-    refs are kept as text). The OCaml port of [resolve-deps.py]. *)
+    refs are kept as text). The OCaml port of [resolve-deps.py]. As in
+    {!html}, a [<!--wodoc-ref:KIND-->] sentinel gives the kind of the reference
+    it precedes, hence its anchor ([#type-t] rather than [#val-t]). *)
 
 val requalify :
    wrapped:(string * string) list

@@ -17,7 +17,10 @@
       next element. The marker must stand alone (a blank line before the element
       it applies to), so it targets the following element rather than being
       absorbed into a paragraph;
-    - [img src=... class=... alt=...] emits a self-contained [<img>].
+    - [img src=... class=... alt=...] emits a self-contained [<img>];
+    - [ref KIND], put by {!Preprocess} before a reference, becomes the
+      [<!--wodoc-ref:KIND-->] sentinel that {!Resolve} reads. Dropped from
+      Markdown.
 
     The directive set is intentionally small and generic; project-specific
     widgets (menus, switches…) belong to the assembly layer, not here. *)

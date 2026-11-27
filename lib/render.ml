@@ -127,6 +127,13 @@ let emit_tags s =
                    a stable hyphen-form sentinel (this very scanner ignores it,
                    keyed on [<!--wodoc:]) for the build layer to substitute. *)
                 Buffer.add_string out "<!--wodoc-blog-latest-->"
+            | "ref"
+              when rest <> ""
+                   && String.for_all (fun c -> c >= 'a' && c <= 'z') rest ->
+                (* the kind of the reference that follows (see {!Preprocess}),
+                   passed through as a sentinel for {!Resolve} *)
+                Buffer.add_string out
+                  (Printf.sprintf "<!--wodoc-ref:%s-->" rest)
             | "" -> ()
             | other ->
                 Buffer.add_string out

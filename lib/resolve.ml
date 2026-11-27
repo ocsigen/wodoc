@@ -80,9 +80,9 @@ let global_sub re f s =
 
 (* The module directories and the in-page anchor of the reference components
    [rest] below a root module, for a reference of kind [kind] ("" if unknown):
-   a value or a type is a member of its parent module's page, anchored after
-   its kind; anything else is a module, a directory of its own. Without a kind,
-   a lowercase last component is taken for a value. *)
+   a value, a type or an exception is a member of its parent module's page,
+   anchored after its kind; anything else is a module, a directory of its own.
+   Without a kind, a lowercase last component is taken for a value. *)
 let member_anchor kind rest =
   match List.rev rest with
   | [] -> [], ""
@@ -91,6 +91,7 @@ let member_anchor kind rest =
       match kind with
       | "val" | "method" -> member "val"
       | "type" -> member "type"
+      | "exception" -> member "exception"
       | "" when String.length last > 0 && is_lower last.[0] -> member "val"
       | _ -> rest, "")
 
@@ -114,21 +115,43 @@ let link_for siblings base raw =
       Some (base ^ "/" ^ String.concat "/" segs ^ "/index.html" ^ anchor)
   | _ -> None
 
-(* <span class="xref-unresolved" [title="…"]>visible</span>.trailing.members *)
+(* The kind sentinel {!Render} leaves right before a reference whose source
+   named its kind ({!Preprocess}): odoc drops the kind from an unresolved
+   reference, so this is the only place it survives. *)
+let kind_mark = "\\(<!--wodoc-ref:\\([a-z]+\\)-->\\)?"
+
+let strip_kind_marks s =
+  Str.global_replace (Str.regexp "<!--wodoc-ref:[a-z]+-->") "" s
+
+(* [raw] with the kind [mark] read from a sentinel, when it has none of its
+   own. *)
+let with_kind mark raw =
+  if mark = "" || Str.string_match kind_re raw 0 then raw else mark ^ " " ^ raw
+
+(* [<!--wodoc-ref:kind-->]<span class="xref-unresolved" [title="…"]>visible</span>.trailing.members *)
 let span_re =
   Str.regexp
-    "<span class=\"xref-unresolved[^\"]*\"\\( title=\"\\([^\"]*\\)\"\\)?>\\([^<]*\\)</span>\\(\\(\\.[A-Za-z_][A-Za-z0-9_']*\\)*\\)"
+    (kind_mark
+   ^ "<span class=\"xref-unresolved[^\"]*\"\\( title=\"\\([^\"]*\\)\"\\)?>\\([^<]*\\)</span>\\(\\(\\.[A-Za-z_][A-Za-z0-9_']*\\)*\\)"
+    )
+
+(* The kind, the reference and the label of the [span_re] match on [whole]. *)
+let span_parts whole =
+  let mark = try Str.matched_group 2 whole with Not_found -> "" in
+  let title = try Str.matched_group 4 whole with Not_found -> "" in
+  let visible = Str.matched_group 5 whole in
+  let trailing = Str.matched_group 6 whole in
+  let label = visible ^ trailing in
+  let raw = String.trim (if title <> "" then title else label) in
+  with_kind mark raw, label
 
 let fix_spans siblings base s =
   global_sub span_re
     (fun whole ->
        (* capture groups before link_for runs its own Str matches *)
        let m0 = Str.matched_string whole in
-       let title = try Str.matched_group 2 whole with Not_found -> "" in
-       let visible = Str.matched_group 3 whole in
-       let trailing = Str.matched_group 4 whole in
-       let label = visible ^ trailing in
-       match link_for siblings base (if title <> "" then title else label) with
+       let raw, label = span_parts whole in
+       match link_for siblings base raw with
        | Some url ->
            Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)
        | None -> m0)
@@ -146,13 +169,15 @@ let fix_codes siblings base s =
     let code_re =
       Str.regexp
         (Printf.sprintf
-           "<code>\\(\\(%s\\)\\(\\.[A-Za-z_][A-Za-z0-9_']*\\)*\\)</code>" alt)
+           "%s<code>\\(\\(%s\\)\\(\\.[A-Za-z_][A-Za-z0-9_']*\\)*\\)</code>"
+           kind_mark alt)
     in
     global_sub code_re
       (fun whole ->
          let m0 = Str.matched_string whole in
-         let name = Str.matched_group 1 whole in
-         match link_for siblings base name with
+         let mark = try Str.matched_group 2 whole with Not_found -> "" in
+         let name = Str.matched_group 3 whole in
+         match link_for siblings base (with_kind mark name) with
          | Some url ->
              Printf.sprintf "<a href=\"%s\"><code>%s</code></a>" url
                (html_escape name)
@@ -352,8 +377,8 @@ let is_module_type_name c =
 let url_component c = if is_module_type_name c then "module-type-" ^ c else c
 
 (* The deployed URL of module [modhead] of hosted project [pkg]. [rest] holds the
-   reference components below it: nested modules, plus a trailing value or type
-   which becomes an anchor instead of a directory. *)
+   reference components below it: nested modules, plus a trailing value, type or
+   exception which becomes an anchor instead of a directory. *)
 let module_url hosted relroot version side pkg kind modhead rest =
   let dirs, anchor = member_anchor kind rest in
   let dir, layout, _ = List.assoc pkg hosted in
@@ -385,11 +410,7 @@ let fix_dep_spans hosted relroot version side self s =
   global_sub span_re
     (fun whole ->
        let m0 = Str.matched_string whole in
-       let title = try Str.matched_group 2 whole with Not_found -> "" in
-       let visible = Str.matched_group 3 whole in
-       let trailing = Str.matched_group 4 whole in
-       let label = visible ^ trailing in
-       let raw = String.trim (if title <> "" then title else label) in
+       let raw, label = span_parts whole in
        match page_link hosted relroot version raw with
        | Some url ->
            Printf.sprintf "<a href=\"%s\">%s</a>" url (html_escape label)

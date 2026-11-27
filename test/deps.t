@@ -122,9 +122,10 @@ library. Such a link goes to the server one:
 
 A project declared with no wrapper module (js_of_ocaml, tyxml, lwt…) keeps
 odoc's nested layout, and a reference into it starts with its own root module,
-matched against the package name. odoc states the kind of the LAST component
-only when the reference asked for it (`{!type:M.t}`); without it, a lowercase
-last component is taken for a value.
+matched against the package name. A kind in the title (`type M.t`) gives the
+anchor; without one, a lowercase last component is taken for a value. odoc 3
+leaves the kind out of an unresolved reference, which gets it from a sentinel
+instead (see `ref-kind.t`).
 
   $ cat > nowrapper.html <<'HTML'
   > <span class="xref-unresolved" title="Js_of_ocaml.Js.t">jsoo type</span>

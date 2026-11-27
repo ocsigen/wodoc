@@ -82,6 +82,9 @@ Cross-project references:
   The flat path only matched docs built before the project was wrapped, and
   led to a missing page on current ones. A reference to the wrapper alone
   (`Eliom`) now links to its page instead of staying as text.
+- A reference odoc could not resolve keeps the kind the `.mld` source gave it
+  (`{!M.type-t}`, `{!M.exception-E}`, `{!type:M.t}`): it links to `#type-t` or
+  `#exception-E`, where wodoc used to guess `#val-t` for every lowercase name.
 - A resolved link to a manual page in a subdirectory of another project's manual
   (`workflow/mobile.html` in Eliom) goes to that page, not under a library
   (`eliom.server/workflow/mobile.html`, a missing page).
