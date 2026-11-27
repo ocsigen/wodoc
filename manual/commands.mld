@@ -320,7 +320,7 @@ it as the error page of the site, or leave it: it is a harmless file there.
 A package whose API comes in variants (libraries sharing module names, such as
 the server and client sides of Eliom, Ocsigen Toolkit and Ocsigen Start) adds a
 [(variants …)] block: one [(variant <key> …)] per library, each with its
-[(lib <pkg>.<key>)], a curated [(indexdoc <file>)] (turned into a
+[(lib <library>)], a curated [(indexdoc <file>)] (turned into a
 section-grouped module nav), a [(heading …)], the [(wrapper <Module>)] the
 modules sit under and an optional [(note …)]. wodoc then gives every page its
 variant's API nav, a body class ([wodoc-<key>]), a variant switch and a notice

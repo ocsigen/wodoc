@@ -154,17 +154,16 @@ a:hover { text-decoration: underline; }
 
 /* --- variant switch (API variants) --------------------------------------- */
 .wodoc-variant-switch { display: flex; gap: 0.4rem; margin: 0 0 1.2rem; }
-.wodoc-variant-switch button,
 .wodoc-variant-switch a {
   flex: 1;
   padding: 0.3rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
-  font: inherit;
+  color: inherit;
   font-size: 0.85rem;
-  cursor: pointer;
   text-align: center;
+  text-decoration: none;
 }
 .wodoc-variant-switch .current { background: var(--accent); border-color: var(--accent); color: #fff; }
 

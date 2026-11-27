@@ -83,7 +83,37 @@ A manual page has no notice, even in a subdirectory, and no leftover hole:
   out/dev/guide/index.html:0
   [1]
 
-Nor has a page of a project without variants:
+The switch in the left column links the same way: to the page itself in its
+own variant (the current one), to its counterpart, or to the index of a
+variant that has none:
+
+  $ switch () {
+  >   sed -n '/<div class="wodoc-variant-switch">/,/<\/div>/p' "out/dev/$1" | sed 's/^ *//'
+  > }
+  $ switch demo.client/Demo/Both/index.html
+  <div class="wodoc-variant-switch">
+  <a class="wodoc-variant-server" href="../../../demo.server/Demo/Both/index.html">Server API</a>
+  <a class="wodoc-variant-client current" aria-current="page" href="../../../demo.client/Demo/Both/index.html">Client API</a>
+  <a class="wodoc-variant-ppx" href="../../../demo.ppx/index.html">PPX</a>
+  </div>
+  $ switch demo.server/Demo/Server_only/index.html | grep variant-client
+  <a class="wodoc-variant-client" href="../../../demo.client/Demo/index.html">Client API</a>
+  $ switch demo.server.extra/Demo_extra/index.html | grep variant-client
+  <a class="wodoc-variant-client" href="../../demo.client.extra/Demo_extra/index.html">Client API</a>
+
+From a manual page, even in a subdirectory, each variant's link goes to its
+index:
+
+  $ switch intro.html
+  <div class="wodoc-variant-switch">
+  <a class="wodoc-variant-server" href="./demo.server/Demo/index.html">Server API</a>
+  <a class="wodoc-variant-client" href="./demo.client/Demo/index.html">Client API</a>
+  <a class="wodoc-variant-ppx" href="./demo.ppx/index.html">PPX</a>
+  </div>
+  $ switch guide/index.html | grep variant-server
+  <a class="wodoc-variant-server" href="../demo.server/Demo/index.html">Server API</a>
+
+A page of a project without variants has no notice either:
 
   $ sed -i.bak '/variants/,$d' doc/wodoc
   $ wodoc build --config doc/wodoc --src html/demo --out out2/dev \

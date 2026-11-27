@@ -118,6 +118,11 @@ API variants:
   that shares its wrapper module, or to that variant's index when the page has
   no counterpart there. A variant's `(note …)` adds a sentence to it, such as
   where its code runs.
+- The variant switch is made of plain links, computed at build time like the
+  notice: `.wodoc-variant-switch a.wodoc-variant-<key>`, where 0.1 had
+  `.cs-switch button.cs-<key>`. The 0.1 buttons rewrote the URL in the browser
+  and led to a 404 for a module that exists in one variant only. The link of
+  the page's own variant has the `current` class.
 
 Version selector:
 

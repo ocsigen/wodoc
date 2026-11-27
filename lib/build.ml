@@ -147,7 +147,7 @@ let default_highlight =
 (* the per-page template (chrome around the odoc content); {{menu}}, {{leftnav}},
    {{base}}, {{mdlink}}, {{title}}, {{banner}}, {{preamble}}, {{content}} are
    filled by Assemble. *)
-let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
+let template ?(body_extra = "") (c : Config.t) =
   (* The highlight starter is always shipped per build (Build.run writes
      wodoc-highlight.js next to each version) and linked version-relatively, so a
      frozen version keeps the highlighter it was built with. (highlight <file>)
@@ -190,7 +190,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
   </div>
 
   <script>
-%s    var wodocPub = "%s";
+    var wodocPub = "%s";
     // Switch version: keep the current page, swapping only the version segment,
     // unless that page does not exist in the target version (a renamed module,
     // a merged manual page): then go to that version's index.
@@ -244,7 +244,7 @@ let template ?(body_extra = "") ?(extra_script = "") (c : Config.t) =
 </body>
 </html>
 |}
-    (esc c.title) css_links hl c.project body_extra extra_script c.url_prefix
+    (esc c.title) css_links hl c.project body_extra c.url_prefix
 
 (* the version <select> block (shared by the normal and per-variant left
    columns).
@@ -576,47 +576,8 @@ let local_assets ~menu ~out =
    server and client sides of an Eliom app ([eliom.server]/[eliom.client]), a
    Unix and a browser implementation ([foo.unix]/[foo.js]), and so on. Built
    with odoc_driver --remap. Each variant gets its own API nav (from a curated
-   index), a body class and a switch link; the manual nav is shared. *)
-
-(* the variant switch (one button per variant), shown above the api nav *)
-let variant_switch (variants : Config.variant list) =
-  let b = Buffer.create 256 in
-  let add s = Buffer.add_string b s; Buffer.add_char b '\n' in
-  add "<div class=\"wodoc-variant-switch\">";
-  List.iter
-    (fun (v : Config.variant) ->
-       add
-         (Printf.sprintf
-            "  <button type=\"button\" class=\"wodoc-variant-%s\" onclick=\"wodocSwitch('%s')\">%s</button>"
-            v.key v.key (esc v.heading)))
-    variants;
-  add "</div>";
-  Buffer.contents b
-
-(* the wodocSwitch() helper, injected into the page script: jump to the same
-   module's page in another variant by swapping the [<pkg>.<key>] path segment;
-   fall back to that variant's wrapper-module index. *)
-let variant_switch_script (c : Config.t) (variants : Config.variant list) =
-  let keys = List.map (fun (v : Config.variant) -> v.key) variants in
-  let wmap =
-    String.concat ", "
-      (List.map
-         (fun (v : Config.variant) ->
-            Printf.sprintf "%s: '%s'" v.key
-              (if v.wrapper = "" then "" else v.wrapper ^ "/"))
-         variants)
-  in
-  Printf.sprintf
-    "    // Toggle between the %s API of the same module.\n\    function wodocSwitch(v) {\n\      var w = { %s };\n\      var p = location.pathname;\n\      var np = p.replace(/\\/%s\\.(%s)\\//, '/%s.' + v + '/');\n\      location.href = np !== p ? np\n\        : '{{base}}/%s.' + v + '/' + (w[v] || '') + 'index.html';\n\    }\n"
-    (String.concat " / " keys) wmap c.project (String.concat "|" keys) c.project
-    c.project
-
-(* the per-variant left column: version selector + switch + on-this-page + the
-   shared manual nav + this variant's API nav ({{base}}/{{toc}} filled per
-   page). *)
-let variant_leftnav ~latest ~versions ~switch ~manual_nav ~api_nav =
-  String.concat ""
-    [docversion ~latest versions; switch; page_toc; manual_nav; "\n"; api_nav]
+   index), a body class and a link of the variant switch; the manual nav is
+   shared. *)
 
 (* a page's top directory ([<pkg>.<key>…/…]); None for a root manual page *)
 let topdir rel =
@@ -672,10 +633,15 @@ let variant_target ~exists ~td (v : Config.variant) rel (o : Config.variant) =
   then Same_page twin
   else Variant_index (variant_index ~exists o)
 
+(* whether variant [o] may hold the counterparts of the pages of variant [v]:
+   another variant under the same wrapper module (a ppx, under another one, has
+   none) *)
+let counterpart (v : Config.variant) (o : Config.variant) =
+  o.key <> v.key && o.wrapper = v.wrapper
+
 (* the notice above the title of an API page: the variant it documents, the
-   variant's note, and a link to each counterpart variant, those sharing its
-   wrapper module (to the same page when it exists there). "" for a manual
-   page. *)
+   variant's note, and a link to each counterpart variant (to the same page when
+   it exists there). "" for a manual page. *)
 let variant_notice (variants : Config.variant list) ~exists ~base rel =
   match page_variant variants rel with
   | None -> ""
@@ -690,13 +656,7 @@ let variant_notice (variants : Config.variant list) ~exists ~base rel =
               "This page has no equivalent in the <a href=\"%s/%s\">%s</a>."
               base p (esc o.heading)
       in
-      (* a variant under another wrapper (a ppx, say) has no counterpart
-         modules *)
-      let others =
-        List.filter
-          (fun (o : Config.variant) -> o.key <> v.key && o.wrapper = v.wrapper)
-          variants
-      in
+      let others = List.filter (counterpart v) variants in
       String.concat ""
         ([ Printf.sprintf
              "<div class=\"wodoc-variant-notice wodoc-variant-notice-%s\" role=\"note\">\n"
@@ -707,6 +667,37 @@ let variant_notice (variants : Config.variant list) ~exists ~base rel =
              (if v.note = "" then "" else " " ^ esc v.note) ]
         @ List.map (fun o -> "<p>" ^ link o ^ "</p>\n") others
         @ ["</div>\n"])
+
+(* the variant switch, shown above the api nav: one link per variant, to the
+   same page in a counterpart variant when it exists there, else to that
+   variant's index. The link of the page's own variant is [current]. *)
+let variant_switch (variants : Config.variant list) ~exists ~base rel =
+  let page = page_variant variants rel in
+  let link (o : Config.variant) =
+    let current, target =
+      match page with
+      | Some (_, v) when v.key = o.key -> true, rel
+      | Some (td, v) when counterpart v o ->
+          let (Same_page p | Variant_index p) =
+            variant_target ~exists ~td v rel o
+          in
+          false, p
+      | Some _ | None -> false, variant_index ~exists o
+    in
+    let cls, aria =
+      if current then " current", " aria-current=\"page\"" else "", ""
+    in
+    Printf.sprintf "  <a class=\"wodoc-variant-%s%s\"%s href=\"%s/%s\">%s</a>\n"
+      o.key cls aria base target (esc o.heading)
+  in
+  String.concat ""
+    (("<div class=\"wodoc-variant-switch\">\n" :: List.map link variants)
+    @ ["</div>\n"])
+
+(* the left column of a page of a project with variants: version selector +
+   switch + on-this-page + the shared manual nav + the API nav of its variant *)
+let variant_leftnav ~version_sel ~switch ~manual_nav ~api_nav =
+  String.concat "" [version_sel; switch; page_toc; manual_nav; "\n"; api_nav]
 
 (* the nav id to highlight: an API page's module path (under <topdir>/<wrapper>/,
    dotted), or a root manual page's own name (matching the config nav / Nav.api). *)
@@ -1028,8 +1019,7 @@ let run
           let page = expand_blog ~base page in
           resolve_refs ~base ~variant:"" page
     | variants ->
-        let script = variant_switch_script c variants in
-        let switch = variant_switch variants in
+        let version_sel = docversion ~latest vs in
         (* the shared manual nav comes from the config [(section …)] stanzas *)
         let manual_nav = manual_nav sections in
         (* a page the manual nav lists (also in a directory of a page tree, which
@@ -1043,8 +1033,8 @@ let run
         let default_variant =
           match variants with v :: _ -> v.key | [] -> ""
         in
-        (* the pages this build assembles: a page's counterpart in another
-           variant is linked only if it is one of them *)
+        (* the pages this build assembles: the notice and the switch link a
+           page's counterpart in another variant only if it is one of them *)
         let built =
           let t = Hashtbl.create (List.length rels) in
           List.iter (fun r -> Hashtbl.replace t r ()) rels;
@@ -1067,30 +1057,18 @@ let run
           | None ->
               Option.value ~default:"" (List.assoc_opt default_variant api_nav)
         in
-        (* template (by body class) and left column (by api variant) cached:
-           there are at most a handful of distinct variants *)
-        let tcache = Hashtbl.create 4 and ncache = Hashtbl.create 4 in
+        (* template cached by body class: there are at most a handful of
+           distinct variants *)
+        let tcache = Hashtbl.create 4 in
         let tmpl_of key =
           match Hashtbl.find_opt tcache key with
           | Some t -> t
           | None ->
               let body_extra = if key = "" then "" else " wodoc-" ^ key in
               let t =
-                replace_hole
-                  (template ~body_extra ~extra_script:script c)
-                  "pub" c.url_prefix
+                replace_hole (template ~body_extra c) "pub" c.url_prefix
               in
               Hashtbl.add tcache key t; t
-        in
-        let leftnav_of key =
-          match Hashtbl.find_opt ncache key with
-          | Some n -> n
-          | None ->
-              let n =
-                variant_leftnav ~latest ~versions:vs ~switch ~manual_nav
-                  ~api_nav:(api_of key)
-              in
-              Hashtbl.add ncache key n; n
         in
         fun rel ->
           let base = base_of rel in
@@ -1100,10 +1078,15 @@ let run
           let nav_variant = if variant = "" then default_variant else variant in
           let mdlink = md_alternate ~md_src ~base ~rel ~orel:rel in
           let banner = variant_notice variants ~exists:built ~base rel in
+          let leftnav =
+            variant_leftnav ~version_sel
+              ~switch:(variant_switch variants ~exists:built ~base rel)
+              ~manual_nav ~api_nav:(api_of nav_variant)
+          in
           let page =
             Assemble.page ~base ~menu:menu_html ~subproject
-              ~menu_current:c.menu_current ~leftnav:(leftnav_of nav_variant)
-              ~template:(tmpl_of variant) ~current:(current rel) ~mdlink ~banner
+              ~menu_current:c.menu_current ~leftnav ~template:(tmpl_of variant)
+              ~current:(current rel) ~mdlink ~banner
               (read_file (Filename.concat src rel))
           in
           let page = expand_blog ~base page in
