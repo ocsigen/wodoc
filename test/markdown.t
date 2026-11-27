@@ -144,3 +144,42 @@ with the landing page's summary); their links are pinned too:
   $ grep -o '([^)]*tyxml[^)]*)' x/1.0/llms-full.txt
   (../../../tyxml/latest/tyxml/ppx.md)
   (../../../tyxml/latest/tyxml/ppx.md)
+
+The Markdown tree of `dune build @doc`, like that of a multi-package odoc-driver
+build, starts with odoc's package list, `index.md`, which is no page of the
+manual: like its HTML page, it is left out.
+
+  $ mkdir -p rsrc/demo rmd/demo
+  $ printf '(project demo)\n(title Demo)\n(url-prefix /demo)\n(packages demo)\n(landing demo/index.html)\n' > doc/wodoc
+  $ canned "Demo" "Welcome to the demo." > rsrc/demo/index.html
+  $ printf '\n# Demo\n\nWelcome to the demo.\n' > rmd/demo/index.md
+  $ printf '\n# OCaml Package Documentation\n\n- [demo](demo/index.md)\n' > rmd/index.md
+  $ wodoc build --config doc/wodoc --src rsrc --md-src rmd --out p/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ test -e p/dev/index.md || echo "no package list"
+  no package list
+  $ grep -c 'Package Documentation' p/dev/llms.txt
+  0
+  [1]
+  $ printf '(project demo)\n(title Demo)\n(url-prefix /demo)\n(odoc-driver "demo other")\n(packages demo)\n(landing demo/index.html)\n' > doc/wodoc
+  $ wodoc build --config doc/wodoc --src rsrc --md-src rmd --out p2/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ test -e p2/dev/index.md || echo "no package list"
+  no package list
+
+In a manual-root project the landing's twin is deployed at that same
+`index.md`, so the list could replace it, and the index summed the project up
+with a list of packages:
+
+  $ printf '(project demo)\n(title Demo)\n(url-prefix /demo)\n(packages demo)\n(manual-root)\n(landing demo/index.html)\n' > doc/wodoc
+  $ wodoc build --config doc/wodoc --src rsrc --md-src rmd --out r/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ head -2 r/dev/index.md
+  # Demo
+  
+
+  $ grep -c 'Package Documentation' r/dev/llms.txt
+  0
+  [1]
+  $ sed -n '3s/^> //p' r/dev/llms.txt
+  Welcome to the demo.

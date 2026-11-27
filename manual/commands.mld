@@ -173,8 +173,9 @@ its twin with [<link rel="alternate" type="text/markdown">].
 
 Two index files are written at the version root: [llms.txt] (the project name, a
 one-line summary, then a Manual and an API section linking every page) and
-[llms-full.txt] (all pages concatenated, for single-shot ingestion). The site's
-root [/llms.txt] (built by the vitrine) links each project's [llms.txt] in turn.
+[llms-full.txt] (all pages concatenated, for single-shot ingestion). odoc's
+package list is left out, like its HTML page. The site's root [/llms.txt]
+(built by the vitrine) links each project's [llms.txt] in turn.
 
 The twins are {b free of wodoc markers}: odoc's Markdown backend passes raw markup
 through verbatim, so the [{%wodoc:%}] directives would otherwise land in them as

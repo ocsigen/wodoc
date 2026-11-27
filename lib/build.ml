@@ -940,9 +940,11 @@ let run
   let mld_mode = c.mld_dir <> None in
   (* the root index.html of [src] is a real page in a direct-mld build, and in a
      single-package odoc-driver build, whose [src] is the package's own subtree
-     ([_wodoc-html/<pkg>]): its index.mld. Only [dune build @doc]'s root holds
-     odoc's package list. *)
-  let root_index_is_page = mld_mode || c.odoc_driver <> None in
+     ([_wodoc-html/<pkg>]): its index.mld. The root of [dune build @doc]'s tree,
+     and of a multi-package odoc-driver one, holds odoc's package list. *)
+  let root_index_is_page =
+    mld_mode || (c.odoc_driver <> None && c.packages = [])
+  in
   (* the pages to assemble: the explicit (packages …) subtrees, or — by default —
      every .html odoc produced (recursively), skipping its support assets and the
      top-level package-list index (replaced by the redirect below). Default covers
@@ -1202,7 +1204,12 @@ let run
           Array.iter
             (fun e -> walk (if rel = "" then e else Filename.concat rel e))
             (Sys.readdir abs)
-        else if Filename.check_suffix rel ".md"
+        else if
+          Filename.check_suffix rel ".md"
+          (* odoc's package list, skipped like its HTML page above: it is no
+             page of the manual, and a manual-root project's landing twin
+             lands on the same [index.md] *)
+          && (root_index_is_page || rel <> "index.md")
         then (
           let orel = strip rel in
           let dst = Filename.concat out orel in
