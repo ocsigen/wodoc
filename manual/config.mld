@@ -205,7 +205,7 @@ odoc leaves some references dead in the HTML; these stanzas rewrite them (see
 {t
   | Stanza | Meaning |
   |--------|---------|
-  | [(odoc-driver <pkg>)] | build the API with [odoc_driver <pkg> --remap] (the engine ocaml.org uses) instead of [dune build @doc]; needed when several libraries of the package share module names (implied by [(variants …)]) |
+  | [(odoc-driver <pkg> …)] | build the API with [odoc_driver <pkg> … --remap] (the engine ocaml.org uses) instead of [dune build @doc], documenting the packages listed (the first is the main one, holding the manual); needed when several libraries of the package share module names (implied by [(variants …)]) |
   | [(profile <p>)] | dune build profile (e.g. [release]) for the [dune build @doc] |
   | [(doc-manual true)] | also build the [@doc-manual] alias (examples) |
   | [(manual-files <pkg>)] | package dir that receives [manual/files] (examples, images) |

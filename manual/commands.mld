@@ -156,9 +156,9 @@ on-this-page, the config-declared nav), then fills the shared menu, marks the
 current project/package, resolves sibling references and ships the assets, the
 version redirect and the [latest] symlink. Without [--src] it builds the odoc
 HTML itself: [dune build @doc] by default, or (when the config has
-[(odoc-driver <pkg>)]) [odoc_driver <pkg> --remap] on the {e installed} package
-(the engine ocaml.org uses), needed for a package whose libraries share module names
-([(variants …)]) and would collide under [dune build @doc].
+[(odoc-driver <pkg> …)]) [odoc_driver <pkg> … --remap] on the {e installed}
+packages (the engine ocaml.org uses), needed for a package whose libraries share
+module names ([(variants …)]) and would collide under [dune build @doc].
 
 {2 Markdown twins and the llms.txt index (for AIs)}
 

@@ -79,6 +79,9 @@ Config simplifications (breaking):
   project, for a project whose site label is short or whose landing page does
   not open with a description. Without a landing paragraph, the summary is
   now a neutral line instead of one naming Ocsigen.
+- `(odoc-driver <pkg> …)` takes its packages as a list, as well as one quoted
+  string. The list form was read as no setting at all, with no warning, so the
+  project silently built with `dune build @doc` instead (js_of_ocaml did).
 - A single-package odoc-driver project can land on its `index.mld`
   (`(landing index.html)`). The root `index.html` of its tree was taken for
   odoc's package list and skipped, and the version root redirect that replaced

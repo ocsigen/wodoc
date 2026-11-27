@@ -2,5 +2,5 @@
  (deps %{bin:wodoc}))
 
 (tests
- (names preprocess_tree md_xrefs)
+ (names preprocess_tree md_xrefs config_parse)
  (libraries wodoc unix))

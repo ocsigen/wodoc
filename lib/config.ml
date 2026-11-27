@@ -105,9 +105,12 @@ type t =
   ; highlight : string option  (** project highlight.js to ship, if any *)
   ; profile : string option  (** dune build profile (e.g. "release") *)
   ; odoc_driver : string option
-    (** when set, build the API with [odoc_driver <pkg> --remap] (the engine
-          ocaml.org uses) instead of [dune build @doc]: needed for a package
-          whose libraries share module names ([(variants …)], e.g.
+    (** when set, the packages to document, space-separated, the first being
+          the main one (it holds the manual, and a project with no
+          [(packages …)] is assembled from its subtree): build the API with
+          [odoc_driver <pkg> … --remap] (the engine ocaml.org uses) instead of
+          [dune build @doc]. Needed for a package whose libraries share module
+          names ([(variants …)], e.g.
           [eliom.server]/[eliom.client]), which would collide under
           [dune build @doc]. *)
   ; doc_manual : bool  (** also build the [@doc-manual] alias (examples) *)
@@ -488,9 +491,26 @@ let of_string s =
      names, so [dune build @doc] would collide): imply [(odoc-driver <project>)]
      when it is omitted, so the project only declares [(variants …)]. *)
   let odoc_driver =
-    match Sexp.field_atom "odoc-driver" stanzas with
-    | Some _ as d -> d
-    | None -> if variants = [] then None else Some project
+    (* the packages to document, as a list ([(odoc-driver a b)]) or as one
+       quoted string (["a b"]). A single-atom reading used to drop the list
+       form with no warning, and with it the whole odoc_driver build. *)
+    let error () =
+      raise
+        (Sexp.Error
+           "(odoc-driver ...) takes the packages to document, once: (odoc-driver <pkg> ...)")
+    in
+    match Sexp.fields "odoc-driver" stanzas with
+    | [] -> if variants = [] then None else Some project
+    | [pkgs]
+      when List.for_all (function Sexp.Atom _ -> true | _ -> false) pkgs -> (
+      (* each atom may itself hold several space-separated names *)
+      match
+        List.concat_map (fun a -> String.split_on_char ' ' (Sexp.atom a)) pkgs
+        |> List.filter (fun p -> p <> "")
+      with
+      | [] -> error ()
+      | names -> Some (String.concat " " names))
+    | _ -> error ()
   in
   (* (mld-dir <dir> [<package>]): direct-mld build of a directory of [.mld] pages;
      the optional second atom is the parent id of the pages in odoc's tree. When
