@@ -78,6 +78,22 @@ let global_sub re f s =
   if !pos <= len then Buffer.add_substring buf s !pos (len - !pos);
   Buffer.contents buf
 
+(* The module directories and the in-page anchor of the reference components
+   [rest] below a root module, for a reference of kind [kind] ("" if unknown):
+   a value or a type is a member of its parent module's page, anchored after
+   its kind; anything else is a module, a directory of its own. Without a kind,
+   a lowercase last component is taken for a value. *)
+let member_anchor kind rest =
+  match List.rev rest with
+  | [] -> [], ""
+  | last :: rev_dirs -> (
+      let member prefix = List.rev rev_dirs, "#" ^ prefix ^ "-" ^ last in
+      match kind with
+      | "val" | "method" -> member "val"
+      | "type" -> member "type"
+      | "" when String.length last > 0 && is_lower last.[0] -> member "val"
+      | _ -> rest, "")
+
 (* [link_for siblings base raw] is the relative URL for a qualified name rooted
    at a known sibling, or [None]. [raw] may carry a "val "/"type "/… kind
    prefix (from a value/type/… spec heading). *)
@@ -93,24 +109,7 @@ let link_for siblings base raw =
   match toks with
   | top :: rest when List.mem_assoc top siblings ->
       let base_segs = List.assoc top siblings in
-      let last =
-        match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1)
-      in
-      let but_last l =
-        match l with
-        | [] -> []
-        | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
-      in
-      let dirs, anchor =
-        if
-          rest <> []
-          && (kind = "val" || kind = "method"
-             || (kind = "" && String.length last > 0 && is_lower last.[0]))
-        then but_last rest, "#val-" ^ last
-        else if rest <> [] && kind = "type"
-        then but_last rest, "#type-" ^ last
-        else rest, ""
-      in
+      let dirs, anchor = member_anchor kind rest in
       let segs = base_segs @ dirs in
       Some (base ^ "/" ^ String.concat "/" segs ^ "/index.html" ^ anchor)
   | _ -> None
@@ -356,24 +355,7 @@ let url_component c = if is_module_type_name c then "module-type-" ^ c else c
    reference components below it: nested modules, plus a trailing value or type
    which becomes an anchor instead of a directory. *)
 let module_url hosted relroot version side pkg kind modhead rest =
-  let last =
-    match rest with [] -> "" | _ -> List.nth rest (List.length rest - 1)
-  in
-  let but_last l =
-    match l with
-    | [] -> []
-    | _ -> List.filteri (fun i _ -> i < List.length l - 1) l
-  in
-  let dirs, anchor =
-    if
-      rest <> []
-      && (kind = "val" || kind = "method"
-         || (kind = "" && String.length last > 0 && is_lower last.[0]))
-    then but_last rest, "#val-" ^ last
-    else if rest <> [] && kind = "type"
-    then but_last rest, "#type-" ^ last
-    else rest, ""
-  in
+  let dirs, anchor = member_anchor kind rest in
   let dir, layout, _ = List.assoc pkg hosted in
   dep_base relroot version side dir layout pkg
   ^ "/" ^ url_component modhead
