@@ -165,7 +165,13 @@ let excerpt s start =
   let text = plain (String.sub s !i (stop - !i)) in
   if String.length text <= excerpt_len
   then text
-  else String.sub text 0 excerpt_len ^ "…"
+  else
+    (* cut before the character holding byte [excerpt_len], not inside it:
+       a UTF-8 continuation byte is 0b10xxxxxx *)
+    let rec start i =
+      if i > 0 && Char.code text.[i] land 0xC0 = 0x80 then start (i - 1) else i
+    in
+    String.sub text 0 (start excerpt_len) ^ "…"
 
 (* file name [YYYY-MM-DD-slug.mld] -> (date, slug) *)
 let dated_re =

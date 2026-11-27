@@ -226,3 +226,19 @@ odoc's `author` lines, and stays out of the code block:
   # Nobody signs this one
   
   Published on 2026-02-02.
+
+An excerpt longer than 240 bytes is cut before the character that straddles
+the limit, never inside it, so the index and the feed stay valid UTF-8 (here
+one ASCII byte, then two-byte characters: byte 240 starts the second half of
+the 120th `é`, which is dropped whole):
+
+  $ mkdir -p utf8/posts
+  $ { printf '{0 Accents}\n\na'; for i in $(seq 130); do printf 'é'; done; printf '\n'; } \
+  >   > utf8/posts/2026-03-01-accents.mld
+  $ printf '(project utf8)\n(blog (dir posts) (out posts))\n' > utf8/wodoc
+  $ wodoc blog-feed --config utf8/wodoc --base-url https://example.org \
+  >   | grep -o '<summary[^>]*>[^<]*' | sed 's/.*>a//' | grep -o 'é' | wc -l | tr -d ' '
+  119
+  $ wodoc blog-feed --config utf8/wodoc --base-url https://example.org \
+  >   | grep -o '<summary[^>]*>[^<]*' | iconv -f UTF-8 -t UTF-8 >/dev/null && echo valid
+  valid

@@ -63,6 +63,8 @@ Config simplifications (breaking):
   documentation: a Markdown twin of each post, with its publication date and
   authors under the title, and the blog's `llms.txt` and `llms-full.txt`.
   A post's author is now every `@author` tag, not only the first one.
+- A blog excerpt is no longer cut inside a UTF-8 character, which made the Atom
+  feed invalid when the 240th byte fell in an accented letter.
 - A single-package odoc-driver project can land on its `index.mld`
   (`(landing index.html)`). The root `index.html` of its tree was taken for
   odoc's package list and skipped, and the version root redirect that replaced
