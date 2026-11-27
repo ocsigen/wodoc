@@ -835,6 +835,7 @@ let run
       (c : Config.t)
       ~src
       ~md_src
+      ~md_package
       ~out
       ~label
       ~menu
@@ -1134,11 +1135,19 @@ let run
     Resolve.is_ours ~hosted:c.hosted ~siblings:c.siblings ~self:c.project
       ~in_api:(in_api rel) ~pages
   in
+  (* the version of each dependency the HTML links to on ocaml.org, so that the
+     Markdown twins link to the same documentation *)
+  let dep_versions = Hashtbl.create 16 in
   List.iter
     (fun rel ->
        let dst = Filename.concat out (strip rel) in
        mkdir_p (Filename.dirname dst);
        let page = assemble_page rel in
+       List.iter
+         (fun (pkg, v) ->
+            if not (Hashtbl.mem dep_versions pkg)
+            then Hashtbl.add dep_versions pkg v)
+         (Resolve.ocaml_org_versions page);
        let note acc = function
          | [] -> ()
          | items -> acc := (strip rel, items) :: !acc
@@ -1161,15 +1170,36 @@ let run
     ( "reference into a dependency this site does not host"
     , "references into dependencies this site does not host" );
   (* the markdown twin tree: odoc's markdown backend emits a flat-module layout
-     ([<pkg>/Mod-Sub.md]) parallel to the HTML one, with self-consistent relative
-     .md xrefs. Copy it verbatim next to the HTML, applying the same manual-root
-     [strip] so the .md siblings land beside their .html pages and stay linkable.
-     This is what AIs/LLMs consume; the per-page <link rel="alternate"> and the
-     llms.txt index (below) point into it. *)
+     ([<pkg>/Mod-Sub.md]) parallel to the HTML one. Copy it next to the HTML,
+     applying the same manual-root [strip] so the .md siblings land beside their
+     .html pages, and re-aim the links that cross a package boundary
+     ({!Resolve.markdown}). This is what AIs/LLMs consume; the per-page
+     <link rel="alternate"> and the llms.txt index (below) point into it. *)
   (match md_src with
   | Some root ->
       if not (Sys.file_exists root)
       then raise (Missing_markdown ("no Markdown tree at " ^ root));
+      (* odoc's links are relative to its whole output tree, one directory per
+         package: [root] is either that tree, or the subtree of [md_package] *)
+      let in_tree rel =
+        match md_package with Some p -> p ^ "/" ^ rel | None -> rel
+      in
+      let own =
+        match md_package with
+        | Some p -> [p]
+        | None ->
+            List.filter
+              (fun e -> Sys.is_directory (Filename.concat root e))
+              (Array.to_list (Sys.readdir root))
+      in
+      let deployed t =
+        match md_package with
+        | Some p when String.starts_with ~prefix:(p ^ "/") t ->
+            let n = String.length p + 1 in
+            strip (String.sub t n (String.length t - n))
+        | _ -> strip t
+      in
+      let versions = List.of_seq (Hashtbl.to_seq dep_versions) in
       let copied = ref 0 in
       let rec walk rel =
         let abs = if rel = "" then root else Filename.concat root rel in
@@ -1180,13 +1210,18 @@ let run
             (Sys.readdir abs)
         else if Filename.check_suffix rel ".md"
         then (
-          let dst = Filename.concat out (strip rel) in
+          let orel = strip rel in
+          let dst = Filename.concat out orel in
           mkdir_p (Filename.dirname dst);
           (* the markers reach the twin verbatim: odoc's Markdown backend passes
              raw markup through. Render.markdown drops the presentational ones
              and keeps what carries content (see {!Render.markdown}). *)
-          write_file dst (Render.markdown (read_file abs));
-          incr copied)
+          let twin =
+            Resolve.markdown ~hosted:c.hosted ~versions ~version:dep_version
+              ~own ~deployed ~base:(base_of orel) ~src:(in_tree rel) ~out:orel
+              (Render.markdown (read_file abs))
+          in
+          write_file dst twin; incr copied)
       in
       walk "";
       (* An empty tree means the site would ship without a single twin, and
@@ -1410,10 +1445,13 @@ let run
    pages rewritten. A [dev] build links against the dev docs of the projects it
    depends on (see [dep_version] in {!run}), and a release freezes [dev] without
    rebuilding it: the released pages would otherwise follow the development docs
-   of their dependencies. Such a link is the one {!Resolve.deps} emits: relative,
-   climbing from the page to the root of the co-located projects (the page's
-   base, then [../..]), then into [<project>/dev/]. Only that exact climb is
-   rewritten, so links within the version are left alone. *)
+   of their dependencies. Such a link is the one {!Resolve.deps} emits in an
+   HTML page and {!Resolve.markdown} in a Markdown twin: relative, climbing from
+   the page to the root of the co-located projects (the page's base, then
+   [../..]), then into [<project>/dev/]. Only that exact climb is rewritten, so
+   links within the version are left alone. [llms-full.txt] holds the twins of
+   pages of every depth, so there any climb that ends in [../../<project>/dev/]
+   is rewritten. *)
 let pin_deps ~dir =
   let count = ref 0 in
   let rec walk rel =
@@ -1423,20 +1461,33 @@ let pin_deps ~dir =
       Array.iter
         (fun e -> walk (if rel = "" then e else Filename.concat rel e))
         (Sys.readdir abs)
-    else if Filename.check_suffix rel ".html"
-    then begin
-      let depth = List.length (String.split_on_char '/' rel) - 1 in
-      let base =
-        if depth = 0
-        then "."
-        else String.concat "/" (List.init depth (fun _ -> ".."))
+    else
+      (* the text before [<project>/dev/] in such a link, as a regexp: the
+         start of an HTML attribute or a Markdown link, then the climb *)
+      let climb opening = Str.quote (opening ^ base_of rel ^ "/../../") in
+      let before =
+        if Filename.check_suffix rel ".html"
+        then Some (climb "href=\"")
+        else if rel = "llms-full.txt"
+        then Some "](\\(\\./\\)?\\(\\.\\./\\)*\\.\\./\\.\\./"
+        else if Filename.check_suffix rel ".md"
+        then Some (climb "](")
+        else None
       in
-      let root = "href=\"" ^ base ^ "/../../" in
-      let re = Str.regexp (Str.quote root ^ "\\([A-Za-z0-9_.-]+\\)/dev/") in
-      let page = read_file abs in
-      let pinned = Str.global_replace re (root ^ "\\1/latest/") page in
-      if pinned <> page then (write_file abs pinned; incr count)
-    end
+      match before with
+      | None -> ()
+      | Some before ->
+          let re = Str.regexp (before ^ "[A-Za-z0-9_.-]+/dev/") in
+          let page = read_file abs in
+          let pinned =
+            Str.global_substitute re
+              (fun s ->
+                 let m = Str.matched_string s in
+                 (* the match ends with "/dev/" *)
+                 String.sub m 0 (String.length m - 4) ^ "latest/")
+              page
+          in
+          if pinned <> page then (write_file abs pinned; incr count)
   in
   walk ""; !count
 

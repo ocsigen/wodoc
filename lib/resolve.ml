@@ -301,16 +301,17 @@ let hosted_page_url relroot version dir layout pkg page =
   in
   Printf.sprintf "%s/%s/%s/%s%s" relroot dir version prefix page
 
-let resolved_re =
-  Str.regexp
-    "href=\"https://ocaml\\.org/p/\\([^/\"]+\\)/[^/\"]+/doc/\\([^\"]+\\)\""
+(* the start of a package's documentation on ocaml.org: groups 1 and 2 are the
+   package and its version *)
+let ocaml_org_doc = "https://ocaml\\.org/p/\\([^/\"]+\\)/\\([^/\"]+\\)/doc/"
+let resolved_re = Str.regexp ("href=\"" ^ ocaml_org_doc ^ "\\([^\"]+\\)\"")
 
 let fix_resolved hosted relroot version side s =
   global_sub resolved_re
     (fun whole ->
        let m0 = Str.matched_string whole in
        let pkg = Str.matched_group 1 whole in
-       let path = Str.matched_group 2 whole in
+       let path = Str.matched_group 3 whole in
        match find_hosted hosted pkg with
        | Some (dir, layout, _) when not (String.starts_with ~prefix:"src/" path)
          ->
@@ -473,6 +474,153 @@ let is_ours ~hosted ~siblings ~self ~in_api ~pages raw =
 let deps ~hosted ~relroot ~version ~side ~self s =
   fix_dep_spans hosted relroot version side self
     (fix_resolved hosted relroot version side s)
+
+(* ---- Cross-package links in the Markdown twins ----
+
+   odoc's Markdown backend takes no remap: a reference into another package is
+   a link relative to odoc's own output tree, where every package is a
+   directory ([<pkg>/<lib>/<Mod-Sub>.md] for a module, [<pkg>/<page>.md] for a
+   manual page). The site deploys only this project's packages, and moves them
+   ({!Build}'s manual-root strip), so such a link leads nowhere. [markdown]
+   gives it the target {!deps} gives the same reference in the HTML: the
+   hosted project's deployed page (its Markdown twin here), else the package's
+   documentation on ocaml.org. *)
+
+let ocaml_org_re = Str.regexp ocaml_org_doc
+
+let ocaml_org_versions page =
+  let rec scan from acc =
+    match Str.search_forward ocaml_org_re page from with
+    | exception Not_found -> acc
+    | _ ->
+        let pkg = Str.matched_group 1 page and ver = Str.matched_group 2 page in
+        let acc = if List.mem_assoc pkg acc then acc else (pkg, ver) :: acc in
+        scan (Str.match_end ()) acc
+  in
+  scan 0 []
+
+(* the segments of a '/'-separated path once "." and ".." are applied, with the
+   number of ".." that climbed above its start *)
+let normalize segs =
+  let ups, rev =
+    List.fold_left
+      (fun (ups, rev) seg ->
+         match seg, rev with
+         | ("" | "."), _ -> ups, rev
+         | "..", _ :: t -> ups, t
+         | "..", [] -> ups + 1, []
+         | s, _ -> ups, s :: rev)
+      (0, []) segs
+  in
+  ups, List.rev rev
+
+let dir_segs path =
+  match List.rev (String.split_on_char '/' path) with
+  | _ :: rev_dir -> List.rev rev_dir
+  | [] -> []
+
+(* odoc's Markdown backend names a module page by its path, '-'-separated
+   ([Stdlib-Map-Make.md], [M-module-type-S.md], [F-argument-1-X.md]), where the
+   HTML backend nests it ([Stdlib/Map/Make/index.html]). Module names hold no
+   '-', so the kind prefixes are the only multi-token components. *)
+let nested_of_flat flat =
+  let rec go = function
+    | "module" :: "type" :: n :: t -> ("module-type-" ^ n) :: go t
+    | "class" :: "type" :: n :: t -> ("class-type-" ^ n) :: go t
+    | "class" :: n :: t -> ("class-" ^ n) :: go t
+    | "argument" :: k :: n :: t -> ("argument-" ^ k ^ "-" ^ n) :: go t
+    | s :: t -> s :: go t
+    | [] -> []
+  in
+  go (String.split_on_char '-' flat)
+
+(* [dirs @ [last]] split back into [dirs] and [last] *)
+let rec split_last x = function
+  | [] -> [], x
+  | y :: t ->
+      let dirs, last = split_last y t in
+      x :: dirs, last
+
+(* The link to page [file] (ending in .md), in directory [dirs] of package
+   [pkg], which this build does not document. A module page sits under its
+   library's directory, which every deployed layout but [Multilib] drops, as
+   {!dep_base} does for the HTML; ocaml.org keeps it in its canonical URLs. *)
+let foreign_link ~hosted ~versions ~version ~relroot pkg dirs file anchor =
+  let is_module = file <> "" && is_upper file.[0] in
+  match find_hosted hosted pkg with
+  | Some (dir, layout, _) ->
+      let path =
+        match layout, is_module with
+        | Multilib, _ | Root, false -> dirs @ [file]
+        | Root, true -> [file]
+        | Subdir, true -> [pkg; file]
+        | Subdir, false -> (pkg :: dirs) @ [file]
+      in
+      Printf.sprintf "%s/%s/%s/%s%s" relroot dir version
+        (String.concat "/" path) anchor
+  | None ->
+      let ver = Option.value ~default:"latest" (List.assoc_opt pkg versions) in
+      let name = Filename.remove_extension file in
+      let page =
+        if is_module
+        then String.concat "/" (dirs @ nested_of_flat name) ^ "/index.html"
+        else String.concat "/" (dirs @ [name]) ^ ".html"
+      in
+      Printf.sprintf "https://ocaml.org/p/%s/%s/doc/%s%s" pkg ver page anchor
+
+(* [](target)]: the destination of an inline Markdown link or image. odoc
+   escapes the parentheses of an operator's anchor ([#val-\(>>=\)]), so a
+   backslash escape is part of it. *)
+let md_link_re = Str.regexp "](\\(\\([^() \t\n\\\\]\\|\\\\.\\)*\\))"
+
+let markdown ~hosted ~versions ~version ~own ~deployed ~base ~src ~out page =
+  let relink target =
+    let path, anchor =
+      match String.index_opt target '#' with
+      | Some i ->
+          String.sub target 0 i, String.sub target i (String.length target - i)
+      | None -> target, ""
+    in
+    if path = "" || path.[0] = '/' || String.contains path ':'
+    then target
+    else
+      match normalize (dir_segs src @ String.split_on_char '/' path) with
+      | 0, (pkg :: r :: rest as t) ->
+          if List.mem pkg own
+          then
+            let dst = deployed (String.concat "/" t) in
+            let reached =
+              normalize (dir_segs out @ String.split_on_char '/' path)
+            in
+            if reached = (0, String.split_on_char '/' dst)
+            then target
+            else base ^ "/" ^ dst ^ anchor
+          else
+            let dirs, file = split_last r rest in
+            foreign_link ~hosted ~versions ~version ~relroot:(base ^ "/../..")
+              pkg dirs file anchor
+      | _ -> target
+  in
+  let relink_line l =
+    global_sub md_link_re
+      (fun s ->
+         let target = Str.matched_group 1 s in
+         "](" ^ relink target ^ ")")
+      l
+  in
+  (* a fenced code block is example source: its lines are left alone *)
+  let _, lines =
+    List.fold_left
+      (fun (in_code, acc) l ->
+         if String.starts_with ~prefix:"```" (String.trim l)
+         then not in_code, l :: acc
+         else if in_code
+         then in_code, l :: acc
+         else in_code, relink_line l :: acc)
+      (false, [])
+      (String.split_on_char '\n' page)
+  in
+  String.concat "\n" (List.rev lines)
 
 (* --- requalify cross-project links to wrapped libraries (post-pass) ---
    A link can name a wrapped library's module by a FLAT path (e.g.

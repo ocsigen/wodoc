@@ -109,3 +109,38 @@ A project can opt out of the whole Markdown pipeline with (markdown false): no
   $ grep -c 'rel="alternate"' off/dev/demo/index.html
   0
   [1]
+
+odoc's Markdown backend has no remap: a reference into another package is a
+link relative to odoc's output tree, one directory per package, which leads
+nowhere once deployed. The twin gets the target the HTML gets: the deployed
+twin of a hosted project (in its dev docs, for a dev build), else the
+package's documentation on ocaml.org, at the version the HTML links to.
+
+  $ mkdir -p xsrc/demo xmd/demo
+  $ printf '(project demo)\n(title Demo)\n(url-prefix /demo)\n(packages demo)\n(landing demo/index.html)\n(hosted (tyxml tyxml subdir))\n' > doc/wodoc
+  $ canned "Demo" '<a href="https://ocaml.org/p/react/1.2.2/doc/React/index.html">React</a>' \
+  >   > xsrc/demo/index.html
+  $ printf '\n# Demo\n\nSee [the PPX](./../tyxml/ppx.md), [React](./../react/react/React.md#val-s) and [Mod](./Mod.md).\n' \
+  >   > xmd/demo/index.md
+  $ wodoc build --config doc/wodoc --src xsrc --md-src xmd --out x/dev \
+  >   --menu menu.html --label dev 2>/dev/null
+  $ grep -o '([^)]*)' x/dev/demo/index.md
+  (../../../tyxml/dev/tyxml/ppx.md)
+  (https://ocaml.org/p/react/1.2.2/doc/react/React/index.html#val-s)
+  (./Mod.md)
+
+A release freezes the dev docs; the twins then link to the latest docs of the
+hosted projects too:
+
+  $ wodoc release --site x --version 1.0 2>/dev/null
+  $ grep -o '([^)]*tyxml[^)]*)' x/1.0/demo/index.md
+  (../../../tyxml/latest/tyxml/ppx.md)
+
+`llms-full.txt` concatenates the twins of pages of every depth (and starts
+with the landing page's summary); their links are pinned too:
+
+  $ grep -c 'tyxml/dev/' x/dev/llms-full.txt
+  2
+  $ grep -o '([^)]*tyxml[^)]*)' x/1.0/llms-full.txt
+  (../../../tyxml/latest/tyxml/ppx.md)
+  (../../../tyxml/latest/tyxml/ppx.md)
